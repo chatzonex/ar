@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 2100);
 
     setTimeout(() => {
-        window.location.href = 'signup.html';
+        const isLoggedIn = !!localStorage.getItem('cz_verified_email');
+        window.location.href = isLoggedIn ? 'MainActivity.html' : 'signup.html';
     }, 2550);
 });
