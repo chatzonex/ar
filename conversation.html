@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ChatZone — المحادثة</title>
+<link rel="stylesheet" href="main.css">
+<style>
+    .placeholder-wrap {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 24px;
+    }
+    .placeholder-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+    .placeholder-title {
+        font-family: var(--font-display);
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+    .placeholder-sub {
+        font-size: 13.5px;
+        color: var(--text-dim);
+        margin-bottom: 4px;
+        direction: ltr;
+    }
+    .back-link {
+        margin-top: 24px;
+        color: var(--accent);
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+    }
+</style>
+</head>
+<body>
+
+    <div class="placeholder-wrap">
+        <div class="placeholder-icon">🚧</div>
+        <h1 class="placeholder-title">صفحة المحادثة لسه بتتبني</h1>
+        <p class="placeholder-sub" id="chattingWith"></p>
+        <a href="MainActivity.html" class="back-link">رجوع للدردشات</a>
+    </div>
+
+    <script>
+        const activeChatEmail = localStorage.getItem('cz_active_chat_email');
+        if (activeChatEmail) {
+            document.getElementById('chattingWith').textContent = activeChatEmail;
+        }
+    </script>
+</body>
+</html>
