@@ -41,42 +41,6 @@ body {
     overflow: hidden;
 }
 
-.ripple-field {
-    position: absolute;
-    top: 38%;
-    left: 50%;
-    width: 1px;
-    height: 1px;
-    pointer-events: none;
-}
-
-.ripple {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 120px;
-    height: 120px;
-    margin: -60px 0 0 -60px;
-    border-radius: 50%;
-    border: 1.5px solid var(--accent);
-    opacity: 0;
-    animation: rippleOut 2.8s cubic-bezier(.2, .7, .3, 1) infinite;
-}
-
-.ripple.r2 { animation-delay: 0.7s; }
-.ripple.r3 { animation-delay: 1.4s; }
-
-@keyframes rippleOut {
-    0% {
-        transform: scale(0.5);
-        opacity: 0.55;
-    }
-    100% {
-        transform: scale(3.2);
-        opacity: 0;
-    }
-}
-
 .splash-content {
     position: relative;
     z-index: 2;
@@ -97,46 +61,17 @@ body {
     }
 }
 
-.logo-wrap {
-    width: 92px;
-    height: 92px;
-    border-radius: 26px;
-    overflow: hidden;
-    box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.08),
-        0 12px 40px rgba(37, 217, 160, 0.25);
-    margin-bottom: 22px;
-    animation: logoPulse 2.8s ease-in-out infinite;
-}
-
 .logo-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    width: 220px;
+    height: 220px;
+    object-fit: contain;
     display: block;
+    animation: logoPulse 2.8s ease-in-out infinite;
 }
 
 @keyframes logoPulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.045); }
-}
-
-.brand-name {
-    font-family: var(--font-display);
-    font-size: 30px;
-    font-weight: 700;
-    letter-spacing: -0.4px;
-    margin-bottom: 6px;
-    background: linear-gradient(120deg, var(--text) 40%, var(--accent) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-}
-
-.brand-tag {
-    font-size: 13.5px;
-    color: var(--text-dim);
-    letter-spacing: 0.2px;
 }
 
 .splash-footer {
@@ -173,9 +108,19 @@ body {
     }
 }
 
+.made-by {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.2px;
+}
+
 @media(prefers-reduced-motion: reduce) {
-    .ripple,
-    .logo-wrap,
+    .logo-img,
     .splash-content {
         animation: none;
     }
