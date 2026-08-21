@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ChatZone — اسمك</title>
+<link rel="stylesheet" href="auth.css">
+</head>
+<body>
+
+    <div class="auth-screen">
+        <div class="auth-top">
+            <div class="mini-logo">
+                <img src="chatzone.png" alt="ChatZone">
+            </div>
+        </div>
+
+        <div class="auth-card">
+            <h1 class="auth-title">إيه اسمك؟</h1>
+            <p class="auth-sub">هيظهر الاسم ده لباقي المستخدمين في ChatZone</p>
+
+            <div class="field-group">
+                <label for="nameInput">الاسم</label>
+                <input type="text" id="nameInput" placeholder="اكتب اسمك هنا" autocomplete="name" maxlength="30">
+                <span class="field-error" id="nameError"></span>
+            </div>
+
+            <button class="primary-btn" id="saveNameBtn">
+                <span class="btn-label">تأكيد</span>
+                <span class="btn-spinner" id="btnSpinner"></span>
+            </button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="module" src="profile.js"></script>
+</body>
+</html>

@@ -62,10 +62,11 @@ body {
 }
 
 .logo-img {
-    width: 220px;
-    height: 220px;
+    width: 280px;
+    height: 280px;
     object-fit: contain;
     display: block;
+    background: transparent;
     animation: logoPulse 2.8s ease-in-out infinite;
 }
 

@@ -79,7 +79,7 @@
             localStorage.removeItem('cz_pending_code');
             localStorage.removeItem('cz_pending_expires');
             setTimeout(() => {
-                window.location.href = 'MainActivity.html';
+                window.location.href = 'profile.html';
             }, 900);
         } else {
             showToast('الكود غلط، حاول تاني', true);
