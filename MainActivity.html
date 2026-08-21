@@ -22,7 +22,7 @@
                     </button>
                     <button class="add-btn" id="addChatBtn" aria-label="محادثة جديدة">+</button>
                 </div>
-                <h1 class="topbar-title">Chats</h1>
+                <h1 class="topbar-title">الدردشات</h1>
             </header>
 
             <div class="search-wrap">
@@ -42,6 +42,24 @@
             </div>
 
         </section>
+
+        <!-- ===== New Chat Modal ===== -->
+        <div class="modal-overlay hidden" id="newChatOverlay">
+            <div class="modal-box">
+                <h2 class="modal-title">ChatZone</h2>
+                <p class="modal-sub">اكتب الإيميل اللي هتكلمه</p>
+
+                <div class="field-group">
+                    <input type="email" id="newChatEmail" placeholder="example@mail.com" autocomplete="email" inputmode="email">
+                    <span class="field-error" id="newChatError"></span>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="modal-btn-secondary" id="cancelNewChat">إلغاء</button>
+                    <button class="modal-btn-primary" id="startNewChat">ابدأ المحادثة</button>
+                </div>
+            </div>
+        </div>
 
         <!-- ===== Profile Screen ===== -->
         <section class="screen hidden" id="screen-profile">
@@ -74,7 +92,7 @@
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M4 4h16v12H7l-3 3V4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                 </svg>
-                <span>Chats</span>
+                <span>الدردشات</span>
             </button>
             <button class="nav-btn" id="navProfile" data-target="screen-profile">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
