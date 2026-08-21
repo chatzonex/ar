@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ChatZone</title>
+<link rel="stylesheet" href="main.css">
+</head>
+<body>
+
+    <div class="app-shell">
+
+        <!-- ===== Chats Screen ===== -->
+        <section class="screen" id="screen-chats">
+
+            <header class="topbar">
+                <div class="topbar-actions">
+                    <button class="icon-btn" id="menuBtn" aria-label="خيارات">
+                        <span class="dots">
+                            <span></span><span></span><span></span>
+                        </span>
+                    </button>
+                    <button class="add-btn" id="addChatBtn" aria-label="محادثة جديدة">+</button>
+                </div>
+                <h1 class="topbar-title">Chats</h1>
+            </header>
+
+            <div class="search-wrap">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+                    <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <input type="text" class="search-input" placeholder="ابحث عن الشتات" id="chatSearch">
+            </div>
+
+            <div class="chats-list" id="chatsList">
+                <div class="empty-state">
+                    <div class="empty-icon">💬</div>
+                    <p class="empty-title">مفيش شتات لسه</p>
+                    <p class="empty-sub">دوس على علامة + وابدأ أول محادثة</p>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ===== Profile Screen ===== -->
+        <section class="screen hidden" id="screen-profile">
+
+            <header class="topbar topbar-simple">
+                <h1 class="topbar-title">أنت</h1>
+            </header>
+
+            <div class="profile-body">
+                <div class="profile-avatar-wrap">
+                    <div class="profile-avatar" id="profileAvatar">؟</div>
+                </div>
+                <h2 class="profile-name" id="profileName">اسم المستخدم</h2>
+                <p class="profile-email" id="profileEmail"></p>
+
+                <div class="settings-list">
+                    <div class="settings-item">
+                        <span class="settings-icon">⚙️</span>
+                        <span class="settings-label">الإعدادات</span>
+                        <span class="settings-chevron">‹</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ===== Bottom Floating Nav ===== -->
+        <nav class="bottom-nav">
+            <button class="nav-btn active" id="navChats" data-target="screen-chats">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 4h16v12H7l-3 3V4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+                <span>Chats</span>
+            </button>
+            <button class="nav-btn" id="navProfile" data-target="screen-profile">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="2"/>
+                    <path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span>أنت</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
