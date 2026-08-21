@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ChatZone — تأكيد الكود</title>
+<link rel="stylesheet" href="auth.css">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+
+    <div class="auth-screen">
+        <div class="auth-top">
+            <div class="mini-logo">
+                <img src="chatzone.png" alt="ChatZone">
+            </div>
+        </div>
+
+        <div class="auth-card">
+            <h1 class="auth-title">أدخل الكود</h1>
+            <p class="auth-sub">بعتنالك كود تأكيد مكوّن من 6 أرقام على <b id="targetEmail">إيميلك</b></p>
+
+            <div class="otp-row" id="otpRow">
+                <input type="text" class="otp-box" inputmode="numeric" maxlength="1" data-index="0">
+                <input type="text" class="otp-box" inputmode="numeric" maxlength="1" data-index="1">
+                <input type="text" class="otp-box" inputmode="numeric" maxlength="1" data-index="2">
+                <input type="text" class="otp-box" inputmode="numeric" maxlength="1" data-index="3">
+                <input type="text" class="otp-box" inputmode="numeric" maxlength="1" data-index="4">
+                <input type="text" class="otp-box" inputmode="numeric" maxlength="1" data-index="5">
+            </div>
+
+            <div class="verify-status" id="verifyStatus"></div>
+
+            <div class="resend-row">
+                مستني الكود؟
+                <span class="resend-link" id="resendLink">إعادة الإرسال</span>
+                <span id="resendTimer"></span>
+            </div>
+
+            <a href="signup.html" class="change-email-link">مش الإيميل ده؟ غيّره</a>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="verify.js"></script>
+</body>
+</html>
