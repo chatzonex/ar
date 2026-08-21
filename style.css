@@ -1,133 +1,165 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+(function() {
+    emailjs.init({ publicKey: 'idu5gyORWMQOOai2X' });
 
-html, body {
-    height: 100%;
-    overflow: hidden;
-}
+    const EMAILJS_SERVICE_ID = 'service_czab8wl';
+    const EMAILJS_TEMPLATE_ID = 'template_mafrpgp';
+    const RESEND_COOLDOWN_SECONDS = 30;
 
-body {
-    font-family: 'Inter', 'IBM Plex Sans Arabic', sans-serif;
-    background: #0A0F14;
-    color: #F2F5F4;
-}
+    const otpBoxes = Array.from(document.querySelectorAll('.otp-box'));
+    const verifyStatus = document.getElementById('verifyStatus');
+    const targetEmailEl = document.getElementById('targetEmail');
+    const resendLink = document.getElementById('resendLink');
+    const resendTimer = document.getElementById('resendTimer');
+    const toast = document.getElementById('toast');
 
-:root {
-    --bg: #0A0F14;
-    --bg-deep: #060A0D;
-    --accent: #25D9A0;
-    --accent-dim: rgba(37, 217, 160, 0.35);
-    --violet: #5B7FFF;
-    --text: #F2F5F4;
-    --text-dim: #8A9691;
-    --font-display: 'Space Grotesk', 'Inter', sans-serif;
-}
+    const pendingEmail = localStorage.getItem('cz_pending_email');
 
-.splash {
-    position: relative;
-    width: 100%;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background:
-        radial-gradient(circle at 50% 38%, rgba(37, 217, 160, 0.10), transparent 55%),
-        radial-gradient(circle at 20% 85%, rgba(91, 127, 255, 0.08), transparent 50%),
-        var(--bg);
-    overflow: hidden;
-}
-
-.splash-content {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    animation: contentRise 0.9s cubic-bezier(.16, .84, .28, 1) both;
-}
-
-@keyframes contentRise {
-    from {
-        opacity: 0;
-        transform: translateY(18px) scale(0.97);
+    if (!pendingEmail) {
+        window.location.href = 'signup.html';
+        return;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+
+    targetEmailEl.textContent = pendingEmail;
+
+    function showToast(message, isError) {
+        toast.textContent = message;
+        toast.className = 'toast show' + (isError ? ' error' : '');
+        setTimeout(() => {
+            toast.className = 'toast';
+        }, 2600);
     }
-}
 
-.logo-img {
-    width: 300px;
-    height: 300px;
-    max-width: 75vw;
-    object-fit: contain;
-    display: block;
-    background: transparent;
-    animation: logoPulse 2.8s ease-in-out infinite;
-}
-
-@keyframes logoPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.045); }
-}
-
-.splash-footer {
-    position: absolute;
-    bottom: 56px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2;
-}
-
-.load-track {
-    width: 120px;
-    height: 3px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    overflow: hidden;
-}
-
-.load-bar {
-    width: 0%;
-    height: 100%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, var(--accent), var(--violet));
-}
-
-.splash.fade-out {
-    animation: splashFadeOut 0.5s ease forwards;
-}
-
-@keyframes splashFadeOut {
-    to {
-        opacity: 0;
-        transform: scale(1.02);
+    function generateCode() {
+        return String(Math.floor(100000 + Math.random() * 900000));
     }
-}
 
-.made-by {
-    position: absolute;
-    bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2;
-    font-size: 12px;
-    color: var(--text-dim);
-    letter-spacing: 0.2px;
-}
+    function getStoredCode() {
+        return {
+            code: localStorage.getItem('cz_pending_code'),
+            expiresAt: Number(localStorage.getItem('cz_pending_expires') || 0)
+        };
+    }
 
-@media(prefers-reduced-motion: reduce) {
-    .logo-img,
-    .splash-content {
-        animation: none;
+    function clearBoxesError() {
+        otpBoxes.forEach(box => box.classList.remove('error'));
     }
-    .splash-content {
-        opacity: 1;
-        transform: none;
+
+    function markVerified() {
+        otpBoxes.forEach(box => {
+            box.disabled = true;
+            box.classList.add('verified');
+        });
+        verifyStatus.innerHTML = '<span class="dot"></span> تم التأكيد بنجاح';
     }
-}
+
+    function shakeBoxes() {
+        otpBoxes.forEach(box => box.classList.add('error'));
+        setTimeout(() => {
+            otpBoxes.forEach(box => box.value = '');
+            clearBoxesError();
+            otpBoxes[0].focus();
+        }, 400);
+    }
+
+    function checkCode() {
+        const entered = otpBoxes.map(box => box.value).join('');
+        if (entered.length < 6) return;
+
+        const { code, expiresAt } = getStoredCode();
+
+        if (!code || Date.now() > expiresAt) {
+            showToast('الكود انتهت صلاحيته، ابعت كود جديد', true);
+            shakeBoxes();
+            return;
+        }
+
+        if (entered === code) {
+            markVerified();
+            localStorage.setItem('cz_verified_email', pendingEmail);
+            localStorage.removeItem('cz_pending_code');
+            localStorage.removeItem('cz_pending_expires');
+            setTimeout(() => {
+                window.location.href = 'profile.html';
+            }, 3000);
+        } else {
+            showToast('الكود غلط، حاول تاني', true);
+            shakeBoxes();
+        }
+    }
+
+    otpBoxes.forEach((box, index) => {
+        box.addEventListener('input', () => {
+            box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+            clearBoxesError();
+            if (box.value && index < otpBoxes.length - 1) {
+                otpBoxes[index + 1].focus();
+            }
+            checkCode();
+        });
+
+        box.addEventListener('keydown', e => {
+            if (e.key === 'Backspace' && !box.value && index > 0) {
+                otpBoxes[index - 1].focus();
+            }
+        });
+
+        box.addEventListener('paste', e => {
+            e.preventDefault();
+            const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+            if (!pasted) return;
+            pasted.slice(0, 6).split('').forEach((digit, i) => {
+                if (otpBoxes[i]) otpBoxes[i].value = digit;
+            });
+            const nextEmpty = otpBoxes.findIndex(b => !b.value);
+            (nextEmpty === -1 ? otpBoxes[otpBoxes.length - 1] : otpBoxes[nextEmpty]).focus();
+            checkCode();
+        });
+    });
+
+    otpBoxes[0].focus();
+
+    let cooldownInterval = null;
+
+    function startCooldown() {
+        let remaining = RESEND_COOLDOWN_SECONDS;
+        resendLink.classList.add('disabled');
+        resendTimer.textContent = `(${remaining}s)`;
+
+        cooldownInterval = setInterval(() => {
+            remaining -= 1;
+            if (remaining <= 0) {
+                clearInterval(cooldownInterval);
+                resendLink.classList.remove('disabled');
+                resendTimer.textContent = '';
+            } else {
+                resendTimer.textContent = `(${remaining}s)`;
+            }
+        }, 1000);
+    }
+
+    async function handleResend() {
+        if (resendLink.classList.contains('disabled')) return;
+
+        const code = generateCode();
+        const expiresAt = Date.now() + 10 * 60 * 1000;
+
+        resendLink.classList.add('disabled');
+        try {
+            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                to_email: pendingEmail,
+                code: code
+            });
+            localStorage.setItem('cz_pending_code', code);
+            localStorage.setItem('cz_pending_expires', String(expiresAt));
+            showToast('اتبعت كود جديد على إيميلك');
+            startCooldown();
+        } catch (err) {
+            console.error('Resend failed:', err);
+            showToast('حصل خطأ أثناء إرسال الكود، حاول تاني', true);
+            resendLink.classList.remove('disabled');
+        }
+    }
+
+    resendLink.addEventListener('click', handleResend);
+    startCooldown();
+})();
