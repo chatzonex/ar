@@ -1,4 +1,10 @@
 (function () {
+    // ===== حماية الصفحة: أي حد يفتح MainActivity مباشرة من غير تسجيل دخول يترحّل =====
+    if (!localStorage.getItem('cz_verified_email')) {
+        window.location.href = 'index.html';
+        return;
+    }
+
     const navButtons = document.querySelectorAll('.nav-btn');
     const screens = document.querySelectorAll('.screen');
 
