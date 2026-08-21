@@ -1,0 +1,186 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Inter', 'IBM Plex Sans Arabic', sans-serif;
+    background: #0A0F14;
+    color: #F2F5F4;
+}
+
+:root {
+    --bg: #0A0F14;
+    --bg-deep: #060A0D;
+    --accent: #25D9A0;
+    --accent-dim: rgba(37, 217, 160, 0.35);
+    --violet: #5B7FFF;
+    --text: #F2F5F4;
+    --text-dim: #8A9691;
+    --font-display: 'Space Grotesk', 'Inter', sans-serif;
+}
+
+.splash {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background:
+        radial-gradient(circle at 50% 38%, rgba(37, 217, 160, 0.10), transparent 55%),
+        radial-gradient(circle at 20% 85%, rgba(91, 127, 255, 0.08), transparent 50%),
+        var(--bg);
+    overflow: hidden;
+}
+
+.ripple-field {
+    position: absolute;
+    top: 38%;
+    left: 50%;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+}
+
+.ripple {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 120px;
+    height: 120px;
+    margin: -60px 0 0 -60px;
+    border-radius: 50%;
+    border: 1.5px solid var(--accent);
+    opacity: 0;
+    animation: rippleOut 2.8s cubic-bezier(.2, .7, .3, 1) infinite;
+}
+
+.ripple.r2 { animation-delay: 0.7s; }
+.ripple.r3 { animation-delay: 1.4s; }
+
+@keyframes rippleOut {
+    0% {
+        transform: scale(0.5);
+        opacity: 0.55;
+    }
+    100% {
+        transform: scale(3.2);
+        opacity: 0;
+    }
+}
+
+.splash-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: contentRise 0.9s cubic-bezier(.16, .84, .28, 1) both;
+}
+
+@keyframes contentRise {
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.logo-wrap {
+    width: 92px;
+    height: 92px;
+    border-radius: 26px;
+    overflow: hidden;
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.08),
+        0 12px 40px rgba(37, 217, 160, 0.25);
+    margin-bottom: 22px;
+    animation: logoPulse 2.8s ease-in-out infinite;
+}
+
+.logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+@keyframes logoPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.045); }
+}
+
+.brand-name {
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    margin-bottom: 6px;
+    background: linear-gradient(120deg, var(--text) 40%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.brand-tag {
+    font-size: 13.5px;
+    color: var(--text-dim);
+    letter-spacing: 0.2px;
+}
+
+.splash-footer {
+    position: absolute;
+    bottom: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+}
+
+.load-track {
+    width: 120px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.load-bar {
+    width: 0%;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--violet));
+}
+
+.splash.fade-out {
+    animation: splashFadeOut 0.5s ease forwards;
+}
+
+@keyframes splashFadeOut {
+    to {
+        opacity: 0;
+        transform: scale(1.02);
+    }
+}
+
+@media(prefers-reduced-motion: reduce) {
+    .ripple,
+    .logo-wrap,
+    .splash-content {
+        animation: none;
+    }
+    .splash-content {
+        opacity: 1;
+        transform: none;
+    }
+}
