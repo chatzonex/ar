@@ -14,8 +14,9 @@ html, body {
 
 body {
     font-family: 'IBM Plex Sans Arabic', 'Inter', sans-serif;
-    background: #0A0F14;
-    color: #F2F5F4;
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.25s ease, color 0.25s ease;
 }
 
 :root {
@@ -209,37 +210,43 @@ body {
     color: var(--text-dim);
 }
 
-/* ===== Profile Screen ===== */
-.profile-body {
+/* ===== Profile Header (inline at the top of the Settings screen) ===== */
+.settings-scroll {
     flex: 1;
     overflow-y: auto;
+    padding-bottom: 110px;
+}
+
+.profile-header {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 20px 20px 110px;
+    padding: 6px 20px 26px;
+    text-align: center;
 }
 
 .profile-avatar-wrap {
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 
 .profile-avatar {
-    width: 110px;
-    height: 110px;
+    width: 92px;
+    height: 92px;
     border-radius: 50%;
     background: var(--grad);
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--font-display);
-    font-size: 42px;
+    font-size: 36px;
     font-weight: 700;
     color: #06110C;
+    box-shadow: 0 8px 26px rgba(37, 217, 160, 0.28);
 }
 
 .profile-name {
     font-family: var(--font-display);
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 700;
     margin-bottom: 4px;
 }
@@ -247,45 +254,101 @@ body {
 .profile-email {
     font-size: 13px;
     color: var(--text-dim);
-    margin-bottom: 30px;
     direction: ltr;
 }
 
-.settings-list {
-    width: 100%;
-    max-width: 400px;
+/* ===== Dropdown menu (3-dots button) ===== */
+.sidebar-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 250;
+    background: rgba(0, 0, 0, 0);
+    pointer-events: none;
+    transition: background 0.28s ease;
 }
 
-.settings-item {
+.sidebar-overlay.open {
+    background: rgba(0, 0, 0, 0.28);
+    pointer-events: all;
+}
+
+.sidebar {
+    position: absolute;
+    top: 70px;
+    width: 240px;
+    max-width: calc(100vw - 28px);
+    z-index: 260;
+    border-radius: 20px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.85);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.24s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.18s ease;
+    background: rgba(20, 26, 32, 0.82);
+    backdrop-filter: blur(18px) saturate(1.5);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+html[dir="rtl"] .sidebar {
+    right: 14px;
+    transform-origin: top right;
+}
+
+html[dir="ltr"] .sidebar {
+    left: 14px;
+    transform-origin: top left;
+}
+
+.sidebar.open {
+    transform: scale(1);
+    opacity: 1;
+    pointer-events: all;
+}
+
+.sidebar-item {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 16px 18px;
-    background: var(--glass);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
+    gap: 12px;
+    padding: 12px 12px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background 0.15s ease;
 }
 
-.settings-item:hover {
-    background: var(--glass-strong);
+.sidebar-item:active,
+.sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.08);
 }
 
-.settings-icon {
-    font-size: 18px;
+.sidebar-item-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
-.settings-label {
-    flex: 1;
-    font-size: 14.5px;
+.sidebar-item-icon svg {
+    width: 21px;
+    height: 21px;
+}
+
+.sidebar-item-text h4 {
+    font-size: 13.5px;
     font-weight: 600;
+    color: var(--text);
+    margin-bottom: 1px;
 }
 
-.settings-chevron {
-    font-size: 20px;
-    color: var(--text-faint);
-    transform: rotate(180deg);
+.sidebar-item-text p {
+    font-size: 11px;
+    color: var(--text-dim);
 }
 
 /* ===== New Chat Modal ===== */
