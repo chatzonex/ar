@@ -171,8 +171,8 @@ html[dir="rtl"] .conv-back-btn svg {
 
 /* الفقاعة الخاصة برسائلي أنا (يمين) — right_bubble.png، الذيل في الركن السفلي اليمين */
 .bubble.bubble-right {
-    -webkit-border-image-source: url('images/right_bubble.png');
-    border-image-source: url('images/right_bubble.png');
+    -webkit-border-image-source: url('right_bubble.png');
+    border-image-source: url('right_bubble.png');
     -webkit-border-image-slice: 34 46 30 30 fill;
     border-image-slice: 34 46 30 30 fill;
     margin-inline-start: 54px;
@@ -181,8 +181,8 @@ html[dir="rtl"] .conv-back-btn svg {
 
 /* الفقاعة الخاصة برسائل الطرف التاني (شمال) — left_bubble.png، الذيل في الركن السفلي الشمال */
 .bubble.bubble-left {
-    -webkit-border-image-source: url('images/left_bubble.png');
-    border-image-source: url('images/left_bubble.png');
+    -webkit-border-image-source: url('left_bubble.png');
+    border-image-source: url('left_bubble.png');
     -webkit-border-image-slice: 34 30 30 46 fill;
     border-image-slice: 34 30 30 46 fill;
     margin-inline-end: 54px;
@@ -229,10 +229,10 @@ html[dir="rtl"] .conv-back-btn svg {
     background-position: center;
 }
 
-.bubble-tick.tick-read   { background-image: url('images/read_tick.png'); }
-.bubble-tick.tick-unread { background-image: url('images/unread.png'); }
-.bubble-tick.tick-offline{ background-image: url('images/offline.png'); }
-.bubble-tick.tick-unsent { background-image: url('images/unsent.png'); }
+.bubble-tick.tick-read   { background-image: url('read_tick.png'); }
+.bubble-tick.tick-unread { background-image: url('unread.png'); }
+.bubble-tick.tick-offline{ background-image: url('offline.png'); }
+.bubble-tick.tick-unsent { background-image: url('unsent.png'); }
 
 /* رسايل الطرف التاني معندهاش صح قراءة (الصح بتاعة رسايلي أنا بس) */
 .bubble-left .bubble-meta .bubble-tick {
