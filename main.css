@@ -297,7 +297,7 @@ body {
 
 /* ===== Dropdown menu (3-dots button) ===== */
 .sidebar-overlay {
-    position: absolute;
+    position: fixed;
     inset: 0;
     z-index: 250;
     background: rgba(0, 0, 0, 0);
@@ -311,7 +311,7 @@ body {
 }
 
 .sidebar {
-    position: absolute;
+    position: fixed;
     top: 70px;
     width: 240px;
     max-width: calc(100vw - 28px);
@@ -391,7 +391,7 @@ html[dir="ltr"] .sidebar {
 
 /* ===== New Chat Modal ===== */
 .modal-overlay {
-    position: absolute;
+    position: fixed;
     inset: 0;
     background: rgba(6, 10, 13, 0.72);
     backdrop-filter: blur(6px);
@@ -520,7 +520,7 @@ html[dir="ltr"] .sidebar {
 
 /* ===== Floating Bottom Nav — calm dark slate base + real iOS 26 Liquid Glass ===== */
 .bottom-nav {
-    position: absolute;
+    position: fixed;
     bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px));
     left: 14px;
     right: 14px;
