@@ -1,416 +1,372 @@
-/* ===================================================
-   CONVERSATION SCREEN
-=================================================== */
+import {
+    db,
+    doc,
+    setDoc,
+    getDoc,
+    addDoc,
+    updateDoc,
+    arrayUnion,
+    collection,
+    query,
+    orderBy,
+    onSnapshot,
+    serverTimestamp,
+    ensureAuthenticated
+} from "./firebase-init.js";
 
-html, body {
-    height: 100%;
-    overflow: hidden;
-}
+(function () {
+    // =====================================================
+    // 1) احترام الثيم واللغة والـ Liquid Glass المحفوظين
+    //    من شاشة الإعدادات — بنفس منطق باقي شاشات الأبب
+    // =====================================================
+    const lang = localStorage.getItem('cz_lang') || 'ar';
+    const theme = localStorage.getItem('cz_theme') || 'dark';
+    const isAr = lang === 'ar';
 
-.conv-shell {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    height: 100dvh;
-}
+    document.documentElement.lang = lang;
+    document.documentElement.dir = isAr ? 'rtl' : 'ltr';
 
-/* ===== Top Bar ===== */
-.conv-topbar {
-    position: relative;
-    display: flex;
-    align-items: center;
-    padding: 14px 12px;
-    padding-top: max(14px, env(safe-area-inset-top));
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--glass-border);
-    background: var(--bg);
-    z-index: 10;
-}
+    if (theme === 'white') document.body.classList.add('theme-white');
+    if (theme === 'custom') {
+        document.body.classList.add('theme-custom');
+        const color = localStorage.getItem('cz_theme_color');
+        if (color) document.documentElement.style.setProperty('--accent', color);
+    }
 
-.conv-back-btn {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    border: none;
-    background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border-radius: 50%;
-    color: var(--text);
-    transition: background 0.2s ease, transform 0.15s ease;
-    flex-shrink: 0;
-    order: 1;
-}
+    if (localStorage.getItem('cz_lg_bottombar') === 'on') {
+        document.body.classList.add('lg-bottombar-on');
+    }
 
-.conv-back-btn:active {
-    transform: scale(0.92);
-    background: var(--glass-strong);
-}
+    const I18N = {
+        ar: {
+            type_message: 'اكتب رسالة...',
+            back: 'رجوع',
+            online: 'أونلاين',
+            offline: 'غير متصل',
+            unknown_contact: 'مستخدم',
+            connecting: 'جاري الاتصال...'
+        },
+        en: {
+            type_message: 'Type a message...',
+            back: 'Back',
+            online: 'Online',
+            offline: 'Offline',
+            unknown_contact: 'User',
+            connecting: 'Connecting...'
+        }
+    };
+    const T = I18N[isAr ? 'ar' : 'en'];
 
-/* RTL: back arrow points right (توي زر الرجوع بيبقى أقصى اليمين البصري
-   لأن الصفحة RTL، بس منطقياً هو "الأول" على يمين المستخدم). في LTR
-   بيتقلب تلقائي مع اتجاه الصفحة. */
-.conv-back-btn svg {
-    transform: scaleX(var(--dir-flip, 1));
-}
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (T[key]) el.setAttribute('placeholder', T[key]);
+    });
 
-html[dir="rtl"] .conv-back-btn svg {
-    --dir-flip: -1;
-}
+    // =====================================================
+    // 2) لازم يكون فيه مستخدم مسجل دخول (Firebase Auth) قبل
+    //    أي حاجة، وإلا نرجّعه لصفحة التسجيل
+    // =====================================================
+    const myEmail = localStorage.getItem('cz_verified_email');
+    const otherEmail = localStorage.getItem('cz_active_chat_email') || '';
 
-.conv-identity {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    order: 2;
-    cursor: pointer;
-}
+    if (!myEmail || !otherEmail) {
+        window.location.href = 'MainActivity.html';
+        return;
+    }
 
-.conv-name {
-    font-family: var(--font-display);
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-}
+    const convNameEl = document.getElementById('convName');
+    const convStatusEl = document.getElementById('convStatus');
 
-.conv-status {
-    font-size: 12px;
-    color: var(--text-dim);
-    margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-}
+    function displayNameFromEmail(email) {
+        if (!email) return T.unknown_contact;
+        const namePart = email.split('@')[0];
+        return namePart.charAt(0).toUpperCase() + namePart.slice(1);
+    }
 
-.conv-status.is-online {
-    color: var(--accent);
-}
+    convNameEl.textContent = displayNameFromEmail(otherEmail);
+    convStatusEl.textContent = T.connecting;
 
-/* عنصر فارغ بنفس عرض زرار الرجوع عشان الاسم يفضل في المنتصف بالظبط */
-.conv-topbar-spacer {
-    width: 40px;
-    min-width: 40px;
-    flex-shrink: 0;
-    order: 3;
-}
+    // =====================================================
+    // 3) زرار الرجوع
+    // =====================================================
+    const backBtn = document.getElementById('convBackBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            window.location.href = 'MainActivity.html';
+        });
+    }
 
-/* ===== Messages Area ===== */
-.conv-messages {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 16px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    scroll-behavior: smooth;
-}
+    // =====================================================
+    // 4) بناء chatId ثابت من الإيميلين (مرتبين أبجديًا) عشان
+    //    نفس الاتنين يوصلوا لنفس المحادثة أيًا كان مين بدأها
+    // =====================================================
+    function makeChatId(emailA, emailB) {
+        return [emailA.toLowerCase(), emailB.toLowerCase()].sort().join('__');
+    }
 
-.conv-day-divider {
-    align-self: center;
-    font-size: 11.5px;
-    font-weight: 600;
-    color: var(--text-faint);
-    background: var(--glass);
-    border: 1px solid var(--glass-border);
-    padding: 5px 14px;
-    border-radius: 999px;
-    margin: 10px 0;
-}
+    const chatId = makeChatId(myEmail, otherEmail);
 
-/* ===== Message Bubbles ===== */
-.msg-row {
-    display: flex;
-    width: 100%;
-    /* بنثبّت اتجاه الصف LTR دايماً بغض النظر عن لغة الواجهة، عشان "رسايلي
-       أنا" تفضل دايماً يمين و"رسايل التاني" تفضل دايماً شمال — زي أي أبب
-       شات معروف — من غير ما اتجاه RTL/LTR بتاع الصفحة يقلب المكان */
-    direction: ltr;
-}
+    const TICK_ICON = {
+        unsent: 'tick-unsent',
+        offline: 'tick-offline',
+        unread: 'tick-unread',
+        read: 'tick-read'
+    };
 
-.msg-row.from-me {
-    justify-content: flex-end;
-}
+    function formatTime(date) {
+        let h = date.getHours();
+        const m = date.getMinutes().toString().padStart(2, '0');
+        const ampmAr = h < 12 ? 'ص' : 'م';
+        const ampmEn = h < 12 ? 'AM' : 'PM';
+        h = h % 12;
+        if (h === 0) h = 12;
+        return isAr ? `${h}:${m} ${ampmAr}` : `${h}:${m} ${ampmEn}`;
+    }
 
-.msg-row.from-them {
-    justify-content: flex-start;
-}
+    const messagesEl = document.getElementById('convMessages');
 
-.bubble {
-    position: relative;
-    max-width: 78%;
-    min-width: 64px;
-    box-sizing: border-box;
-    animation: bubbleIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-    /* فقاعة CSS نضيفة بالكامل — من غير أي صور، خلفية بيضا وزوايا دائرية
-       وذيل صغير مرسوم بـ ::before */
-    background: #FFFFFF;
-    border-radius: 16px;
-    padding: 8px 12px 7px;
-}
+    function appendMessage(msg, myEmailLower) {
+        // بنحدد "هل الرسالة دي بتاعتي أنا؟" بمقارنة الإيميل، مش الـ uid،
+        // لأن الـ uid بتاع Anonymous Auth ممكن يتغيّر بين جلسة وتانية
+        // (لو الكاش اتمسح أو الجهاز غيّر حالة الاتصال)، لكن الإيميل ثابت.
+        const isMine = (msg.senderEmail || '').toLowerCase() === myEmailLower;
 
-@keyframes bubbleIn {
-    from { opacity: 0; transform: translateY(6px) scale(0.98); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-}
+        const row = document.createElement('div');
+        row.className = 'msg-row ' + (isMine ? 'from-me' : 'from-them');
 
-/* الفقاعة الخاصة برسائلي أنا (يمين) — ذيل في الركن السفلي اليمين */
-.bubble.bubble-right {
-    margin-inline-start: 54px;
-    border-bottom-right-radius: 4px;
-}
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble ' + (isMine ? 'bubble-right' : 'bubble-left');
 
-.bubble.bubble-right::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: -7px;
-    width: 14px;
-    height: 14px;
-    background: #FFFFFF;
-    clip-path: polygon(0 0, 0% 100%, 100% 100%);
-}
+        const textEl = document.createElement('p');
+        textEl.className = 'bubble-text';
+        textEl.textContent = msg.text;
+        bubble.appendChild(textEl);
 
-/* الفقاعة الخاصة برسائل الطرف التاني (شمال) — ذيل في الركن السفلي الشمال */
-.bubble.bubble-left {
-    margin-inline-end: 54px;
-    border-bottom-left-radius: 4px;
-}
+        const meta = document.createElement('div');
+        meta.className = 'bubble-meta';
 
-.bubble.bubble-left::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: -7px;
-    width: 14px;
-    height: 14px;
-    background: #FFFFFF;
-    clip-path: polygon(100% 0, 0% 100%, 100% 100%);
-}
+        const timeEl = document.createElement('span');
+        timeEl.className = 'bubble-time';
+        const time = msg.createdAt && msg.createdAt.toDate ? msg.createdAt.toDate() : new Date();
+        timeEl.textContent = formatTime(time);
+        meta.appendChild(timeEl);
 
-.bubble-text {
-    font-size: 14.5px;
-    line-height: 1.5;
-    color: #10161A;
-    word-break: break-word;
-    white-space: pre-wrap;
-    position: relative;
-    z-index: 1;
-    /* النص بيدي اتجاهه الطبيعي تلقائياً (عربي RTL / إنجليزي LTR) حسب
-       محتواه، حتى لو صف الفقاعة نفسه بره ثابت LTR */
-    unicode-bidi: plaintext;
-}
+        if (isMine) {
+            const tick = document.createElement('span');
+            const status = msg.status || 'unread';
+            tick.className = 'bubble-tick ' + (TICK_ICON[status] || TICK_ICON.unread);
+            meta.appendChild(tick);
+        }
 
-.bubble-meta {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 4px;
-    margin-top: 3px;
-    direction: ltr;
-    position: relative;
-    z-index: 1;
-}
+        bubble.appendChild(meta);
+        row.appendChild(bubble);
+        messagesEl.appendChild(row);
+    }
 
-.bubble-time {
-    font-size: 10.5px;
-    color: rgba(16, 22, 26, 0.55);
-    font-weight: 500;
-}
+    function scrollToBottom(smooth) {
+        messagesEl.scrollTo({
+            top: messagesEl.scrollHeight,
+            behavior: smooth ? 'smooth' : 'auto'
+        });
+    }
 
-/* علامات الصح مرسومة بـ CSS نضيف (بدون صور) — خط واحد أو اتنين
-   حسب حالة الرسالة، بألوان بتفرّق بين الحالات */
-.bubble-tick {
-    width: 15px;
-    height: 15px;
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    line-height: 1;
-}
+    function renderEmptyState() {
+        messagesEl.innerHTML = '';
+        const empty = document.createElement('div');
+        empty.className = 'conv-empty';
+        empty.textContent = isAr ? 'مفيش رسائل لسه، ابدأ المحادثة 👋' : 'No messages yet, say hi 👋';
+        messagesEl.appendChild(empty);
+    }
 
-.bubble-tick.tick-unsent::before {
-    content: '🕒';
-    font-size: 10px;
-    opacity: 0.6;
-}
+    // =====================================================
+    // 5) بار الكتابة
+    // =====================================================
+    const textarea = document.getElementById('convTextarea');
+    const inputBar = document.getElementById('convInputBar');
+    const sendBtn = document.getElementById('convSendBtn');
 
-.bubble-tick.tick-offline::before {
-    content: '✓';
-    color: rgba(16, 22, 26, 0.45);
-    font-weight: 700;
-}
+    function autoResize() {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    }
 
-.bubble-tick.tick-unread::before {
-    content: '✓✓';
-    color: rgba(16, 22, 26, 0.45);
-    font-weight: 700;
-    letter-spacing: -3px;
-    padding-left: 3px;
-}
+    function updateSendVisibility() {
+        const hasText = textarea.value.trim().length > 0;
+        inputBar.classList.toggle('has-text', hasText);
+    }
 
-.bubble-tick.tick-read::before {
-    content: '✓✓';
-    color: #4FA3FF;
-    font-weight: 700;
-    letter-spacing: -3px;
-    padding-left: 3px;
-}
+    textarea.addEventListener('input', () => {
+        autoResize();
+        updateSendVisibility();
+    });
 
-/* رسايل الطرف التاني معندهاش صح قراءة (الصح بتاعة رسايلي أنا بس) */
-.bubble-left .bubble-meta .bubble-tick {
-    display: none;
-}
+    textarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
 
-/* ===== Empty state ===== */
-.conv-empty {
-    margin: auto;
-    text-align: center;
-    color: var(--text-faint);
-    font-size: 13.5px;
-    padding: 40px 20px;
-}
+    updateSendVisibility();
 
-/* ===================================================
-   INPUT BAR — normal (docked) vs Liquid Glass (floating)
-=================================================== */
+    // =====================================================
+    // 6) الاتصال الفعلي بـ Firestore
+    // =====================================================
+    let myUid = null;
+    let unsubscribeMessages = null;
 
-.conv-input-area {
-    flex-shrink: 0;
-    padding: 10px 12px;
-    padding-bottom: max(10px, env(safe-area-inset-bottom));
-    border-top: 1px solid var(--glass-border);
-    background: var(--bg);
-    transition: all 0.4s ease;
-}
+    async function initChat() {
+        // لازم جلسة Firebase Auth حقيقية قبل أي قراءة/كتابة، وإلا
+        // الـ Firestore Rules هترفض الطلب.
+        const user = await ensureAuthenticated();
+        myUid = user.uid;
 
-.conv-input-bar {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    background: var(--glass-strong);
-    border: 1px solid var(--glass-border);
-    border-radius: 22px;
-    padding: 6px 6px 6px 6px;
-    transition: background 0.4s ease, backdrop-filter 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, border-radius 0.3s ease;
-}
+        const chatDocRef = doc(db, 'chats', chatId);
 
-.conv-textarea {
-    flex: 1;
-    min-width: 0;
-    border: none;
-    outline: none;
-    background: transparent;
-    color: var(--text);
-    font-family: inherit;
-    font-size: 14.5px;
-    line-height: 1.4;
-    resize: none;
-    max-height: 120px;
-    padding: 8px 10px;
-}
+        // بنفرّق هنا بين حالتين مختلفتين تمامًا:
+        //   - المستند مش موجود خالص (أول مرة يتفتح فيها الشات ده) → ننشئه.
+        //   - المستند موجود، لكن الـ Rules رفضت القراءة لأن uid بتاعي
+        //     لسه مش مسجل ضمن participants (أنا الطرف التاني وبفتح
+        //     المحادثة أول مرة) → نضيف نفسي بـ updateDoc.
+        let chatExists = false;
+        let iAmAlreadyParticipant = false;
 
-.conv-textarea::placeholder {
-    color: var(--text-faint);
-}
+        try {
+            const chatSnap = await getDoc(chatDocRef);
+            chatExists = chatSnap.exists();
+            if (chatExists) {
+                const data = chatSnap.data();
+                iAmAlreadyParticipant = !!(data.participants && data.participants.includes(myUid));
+            }
+        } catch (err) {
+            // permission-denied هنا معناها الأرجح: المستند موجود بالفعل
+            // لكن أنا لسه مش طرف مسجل فيه، فالـ Rules رفضت القراءة.
+            chatExists = true;
+            iAmAlreadyParticipant = false;
+        }
 
-.conv-send-btn {
-    width: 38px;
-    height: 38px;
-    min-width: 38px;
-    border-radius: 50%;
-    border: none;
-    background: linear-gradient(150deg, #2FE08A, var(--whatsapp-green) 55%, #1AA855);
-    color: #06110C;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-    box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4);
-    transform: scale(0);
-    opacity: 0;
-    pointer-events: none;
-    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.18s ease;
-}
+        if (!chatExists) {
+            // أول مرة يتفتح فيها الشات ده على الإطلاق.
+            await setDoc(chatDocRef, {
+                participants: [myUid],
+                participantsEmails: [myEmail.toLowerCase(), otherEmail.toLowerCase()],
+                createdAt: serverTimestamp()
+            });
+        } else if (!iAmAlreadyParticipant) {
+            // المحادثة موجودة أصلاً (أنشأها الطرف التاني)، وأنا بفتحها
+            // لأول مرة، فلازم أضيف uid بتاعي لمصفوفة participants.
+            // الـ Rules بتسمح بده لأني بضيف نفسي بس من غير ما أشيل حد.
+            await updateDoc(chatDocRef, {
+                participants: arrayUnion(myUid)
+            });
+        }
 
-/* زرار الإرسال يظهر بس لما فيه نص مكتوب */
-.conv-input-bar.has-text .conv-send-btn {
-    transform: scale(1);
-    opacity: 1;
-    pointer-events: auto;
-}
+        // حالة الأونلاين: نسجّل وقت آخر ظهور بتاعي في مستند المحادثة،
+        // ونقرا حالة الطرف التاني من نفس المستند لحظيًا.
+        markMyPresence(chatDocRef);
+        window.addEventListener('beforeunload', () => markMyPresence(chatDocRef, true));
 
-.conv-send-btn svg {
-    width: 18px;
-    height: 18px;
-    transform: rotate(var(--send-rotate, 0deg));
-}
+        onSnapshot(chatDocRef, (snap) => {
+            if (!snap.exists()) return;
+            updateOtherPresence(snap.data());
+        });
 
-html[dir="rtl"] .conv-send-btn svg {
-    --send-rotate: 180deg;
-}
+        // الاستماع اللحظي للرسايل
+        const messagesRef = collection(db, 'chats', chatId, 'messages');
+        const q = query(messagesRef, orderBy('createdAt', 'asc'));
 
-.conv-send-btn:active {
-    transform: scale(0.9);
-}
+        unsubscribeMessages = onSnapshot(q, (snapshot) => {
+            const docs = snapshot.docs;
+            if (!docs.length) {
+                renderEmptyState();
+                return;
+            }
+            messagesEl.innerHTML = '';
+            docs.forEach(d => appendMessage(d.data(), myEmail.toLowerCase()));
+            scrollToBottom(false);
+        }, (err) => {
+            console.error('فشل الاستماع للرسايل:', err);
+        });
+    }
 
-/* ===== Liquid Glass mode: bar عايم بدل ما يكون ثابت تحت ===== */
-body.lg-bottombar-on .conv-input-area {
-    position: fixed;
-    left: 14px;
-    right: 14px;
-    bottom: max(18px, calc(env(safe-area-inset-bottom) + 10px));
-    max-width: 460px;
-    margin: 0 auto;
-    border-top: none;
-    background: transparent;
-    padding: 0;
-    z-index: 50;
-}
+    // نعتبر المستخدم أونلاين لو آخر تحديث لحضوره كان خلال آخر 25 ثانية.
+    // مفتاح الحضور مبني على الإيميل (بعد تنظيفه من نقطة/@ لأن مفاتيح
+    // Firestore الحقول مينفعش تحتوي على نقطة) بدل الـ uid، لأن uid
+    // الـ Anonymous Auth ممكن يتغيّر بين جلسة وتانية، لكن الإيميل ثابت.
+    const PRESENCE_HEARTBEAT_MS = 15000;
+    const PRESENCE_ONLINE_THRESHOLD_MS = 25000;
+    let presenceInterval = null;
 
-body.lg-bottombar-on .conv-messages {
-    padding-bottom: 90px;
-}
+    function presenceKeyFor(email) {
+        return 'presence_' + email.toLowerCase().replace(/[.@]/g, '_');
+    }
 
-body.lg-bottombar-on .conv-input-bar {
-    background: rgba(27, 32, 39, 0.55);
-    backdrop-filter: blur(26px) saturate(1.7) brightness(1.12);
-    -webkit-backdrop-filter: blur(26px) saturate(1.7) brightness(1.12);
-    border-color: rgba(255, 255, 255, 0.14);
-    box-shadow: 0 16px 46px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-    border-radius: 999px;
-}
+    const myPresenceKey = presenceKeyFor(myEmail);
+    const otherPresenceKey = presenceKeyFor(otherEmail);
 
-/* ===== theme-white support ===== */
-body.theme-white .conv-topbar,
-body.theme-white .conv-input-area {
-    background: #F5F6FA;
-}
+    async function markMyPresence(chatDocRef, isLeaving) {
+        try {
+            await updateDoc(chatDocRef, {
+                [myPresenceKey]: isLeaving ? null : serverTimestamp()
+            });
+        } catch (e) {
+            // مينفعش نستنى رد وقت إغلاق الصفحة، فبنتجاهل الخطأ بهدوء
+        }
+    }
 
-body.theme-white .bubble-text {
-    color: #10161A;
-}
+    function updateOtherPresence(chatData) {
+        const lastSeenTs = chatData[otherPresenceKey];
 
-body.theme-white .bubble-time {
-    color: rgba(16, 22, 26, 0.5);
-}
+        let isOnline = false;
+        if (lastSeenTs && lastSeenTs.toDate) {
+            isOnline = (Date.now() - lastSeenTs.toDate().getTime()) < PRESENCE_ONLINE_THRESHOLD_MS;
+        }
 
-body.theme-white.lg-bottombar-on .conv-input-bar {
-    background: rgba(255, 255, 255, 0.55);
-    border-color: rgba(0, 0, 0, 0.08);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-}
+        if (isOnline) {
+            convStatusEl.textContent = T.online;
+            convStatusEl.classList.add('is-online');
+        } else {
+            convStatusEl.textContent = T.offline;
+            convStatusEl.classList.remove('is-online');
+        }
+    }
+
+    function sendMessage() {
+        const text = textarea.value.trim();
+        if (!text || !myUid) return;
+
+        textarea.value = '';
+        autoResize();
+        updateSendVisibility();
+
+        const messagesRef = collection(db, 'chats', chatId, 'messages');
+        addDoc(messagesRef, {
+            senderUid: myUid,
+            senderEmail: myEmail,
+            text,
+            createdAt: serverTimestamp(),
+            status: 'unread'
+        }).then(() => {
+            if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
+        }).catch((err) => {
+            console.error('فشل إرسال الرسالة:', err);
+        });
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    initChat().then(() => {
+        presenceInterval = setInterval(() => {
+            const chatDocRef = doc(db, 'chats', chatId);
+            markMyPresence(chatDocRef);
+        }, PRESENCE_HEARTBEAT_MS);
+    }).catch((err) => {
+        console.error('فشل تهيئة المحادثة:', err);
+        convStatusEl.textContent = isAr ? 'تعذر الاتصال' : 'Connection failed';
+    });
+
+    window.addEventListener('unload', () => {
+        if (unsubscribeMessages) unsubscribeMessages();
+        if (presenceInterval) clearInterval(presenceInterval);
+    });
+})();
