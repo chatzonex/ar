@@ -10,9 +10,9 @@
     }
 
     const sheetTriggers = {
-        openLiquidGlass: 'sheet-liquidglass',
         openThemes: 'sheet-themes',
         openLanguage: 'sheet-language',
+        openPrivacy: 'sheet-privacy',
         openVersion: 'sheet-version',
         openAbout: 'sheet-about'
     };
@@ -184,9 +184,14 @@
         version_sub: 'معرفة الإصدار الحالي',
         version_body: 'أنت تستخدم أحدث إصدار من ChatZone. يتم تحديث الأبب بانتظام لضمان أفضل تجربة.',
         version_badge: 'الإصدار الحالي: 1.0',
-        about_title: 'من نحن',
+        about_title: 'info',
         about_sub: 'تعرّف على فريق ChatZone',
-        about_body: 'أهلاً بيك في ChatZone، تطبيق دردشة بسيط وسريع، بيهدف يديك تجربة تواصل مريحة وآمنة مع أي حد بس بإيميله. نتمنى نكون دايماً عند حسن ظنك 💚'
+        about_body: 'أهلاً بيك في ChatZone، تطبيق دردشة بسيط وسريع، بيهدف يديك تجربة تواصل مريحة وآمنة مع أي حد بس بإيميله. نتمنى نكون دايماً عند حسن ظنك 💚',
+        nav_chats_row: 'الصفحة الرئيسية',
+        chat_row: 'الدردشة',
+        privacy_row: 'الخصوصية',
+        privacy_title: 'الخصوصية',
+        privacy_body: 'بنحترم خصوصيتك، وبيانات محادثاتك متشفّرة ومتخزنة بأمان. مش بنشارك بياناتك مع أي طرف تالت.'
     };
 
     const EN_TEXT = {
@@ -225,9 +230,14 @@
         version_sub: 'Check the current version',
         version_body: 'You are using the latest version of ChatZone. The app is updated regularly to ensure the best experience.',
         version_badge: 'Current version: 1.0',
-        about_title: 'About Us',
+        about_title: 'info',
         about_sub: 'Meet the ChatZone team',
-        about_body: 'Welcome to ChatZone, a simple and fast chat app that aims to give you a comfortable and secure way to connect with anyone using just their email. We hope to always be worthy of your trust 💚'
+        about_body: 'Welcome to ChatZone, a simple and fast chat app that aims to give you a comfortable and secure way to connect with anyone using just their email. We hope to always be worthy of your trust 💚',
+        nav_chats_row: 'Home',
+        chat_row: 'Chat',
+        privacy_row: 'Privacy',
+        privacy_title: 'Privacy',
+        privacy_body: 'We respect your privacy. Your chat data is encrypted and stored securely. We never share your data with third parties.'
     };
 
     let currentLang = localStorage.getItem('cz_lang') || 'ar';
@@ -380,6 +390,16 @@
         sidebarSettingsShortcut.addEventListener('click', () => {
             switchTab('screen-settings');
         });
+    }
+
+    // ===== صف "الصفحة الرئيسية" و"الدردشة" في الإعدادات (لسة جديدة) =====
+    const navHomeShortcut = document.getElementById('navHomeShortcut');
+    const openChatRow = document.getElementById('openChatRow');
+    if (navHomeShortcut) {
+        navHomeShortcut.addEventListener('click', () => switchTab('screen-chats'));
+    }
+    if (openChatRow) {
+        openChatRow.addEventListener('click', () => switchTab('screen-chats'));
     }
     if (sidebarRestart) {
         sidebarRestart.addEventListener('click', () => {

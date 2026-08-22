@@ -11,66 +11,84 @@
 
 .settings-card {
     display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 15px 16px;
+    flex-direction: column;
     border-radius: var(--radius-md);
     background: var(--glass);
     border: 1px solid var(--glass-border);
+    overflow: hidden;
+}
+
+.settings-card-divider {
+    height: 1px;
+    margin: 0 16px;
+    background: var(--glass-border);
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 15px 16px;
     cursor: pointer;
     transition: background 0.2s ease;
 }
 
-.settings-card:hover {
+.settings-row:hover {
     background: var(--glass-strong);
 }
 
-.settings-card-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+.settings-row-icon {
+    width: 26px;
+    height: 26px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    color: var(--accent);
 }
 
-.settings-card-icon svg {
-    width: 20px;
-    height: 20px;
+.settings-row-icon svg {
+    width: 100%;
+    height: 100%;
 }
 
-.icon-lg { background: linear-gradient(135deg, #7dd3fc, #0ea5e9); }
-.icon-themes { background: linear-gradient(135deg, #f472b6, var(--violet)); }
-.icon-lang { background: linear-gradient(135deg, var(--accent), #0d9488); }
-.icon-version { background: linear-gradient(135deg, #22d3ee, #0891b2); }
-.icon-about { background: linear-gradient(135deg, #a78bfa, #7c3aed); }
-
-.settings-card-text {
+.settings-row-text {
     flex: 1;
     min-width: 0;
 }
 
-.settings-card-text h4 {
+.settings-row-text h4 {
     font-size: 14.5px;
     font-weight: 700;
-    margin-bottom: 2px;
     color: var(--text);
-}
-
-.settings-card-text p {
-    font-size: 12px;
-    color: var(--text-dim);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .settings-card-chevron {
     flex-shrink: 0;
     color: var(--text-faint);
     transform: rotate(180deg);
+}
+
+/* ===== Profile row (inside the first settings card) ===== */
+.profile-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+}
+
+.profile-row-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.profile-row-text .profile-name {
+    text-align: start;
+    margin-bottom: 2px;
+}
+
+.profile-row-text .profile-email {
+    text-align: start;
 }
 
 /* ===== Bottom Sheets ===== */
@@ -493,7 +511,6 @@ body.lg-icons-on .modal-btn-secondary {
     -webkit-backdrop-filter: blur(10px);
 }
 
-body.lg-icons-on .settings-card-icon,
 body.lg-icons-on .sec-icon,
 body.lg-icons-on .profile-avatar {
     backdrop-filter: blur(10px) saturate(1.4);
@@ -530,7 +547,6 @@ body.lg-bottombar-on .bottom-nav {
 
 body.lg-icons-on .icon-btn,
 body.lg-icons-on .add-btn,
-body.lg-icons-on .settings-card-icon,
 body.lg-icons-on .profile-avatar {
     backdrop-filter: blur(10px) saturate(1.4);
     -webkit-backdrop-filter: blur(10px) saturate(1.4);
