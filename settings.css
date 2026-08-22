@@ -222,6 +222,7 @@
     flex-shrink: 0;
     width: 50px;
     height: 30px;
+    direction: ltr;
 }
 
 .ios-switch input {
@@ -260,10 +261,6 @@
 
 .ios-switch input:checked + .ios-switch-track .ios-switch-thumb {
     transform: translateX(20px);
-}
-
-html[dir="rtl"] .ios-switch input:checked + .ios-switch-track .ios-switch-thumb {
-    transform: translateX(-20px);
 }
 
 /* ===== Theme grid ===== */
