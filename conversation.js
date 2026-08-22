@@ -125,8 +125,11 @@ import {
 
     const messagesEl = document.getElementById('convMessages');
 
-    function appendMessage(msg, myUid) {
-        const isMine = msg.senderUid === myUid;
+    function appendMessage(msg, myEmailLower) {
+        // بنحدد "هل الرسالة دي بتاعتي أنا؟" بمقارنة الإيميل، مش الـ uid،
+        // لأن الـ uid بتاع Anonymous Auth ممكن يتغيّر بين جلسة وتانية
+        // (لو الكاش اتمسح أو الجهاز غيّر حالة الاتصال)، لكن الإيميل ثابت.
+        const isMine = (msg.senderEmail || '').toLowerCase() === myEmailLower;
 
         const row = document.createElement('div');
         row.className = 'msg-row ' + (isMine ? 'from-me' : 'from-them');
@@ -279,22 +282,32 @@ import {
                 return;
             }
             messagesEl.innerHTML = '';
-            docs.forEach(d => appendMessage(d.data(), myUid));
+            docs.forEach(d => appendMessage(d.data(), myEmail.toLowerCase()));
             scrollToBottom(false);
         }, (err) => {
             console.error('فشل الاستماع للرسايل:', err);
         });
     }
 
-    // نعتبر المستخدم أونلاين لو آخر تحديث لحضوره كان خلال آخر 25 ثانية
+    // نعتبر المستخدم أونلاين لو آخر تحديث لحضوره كان خلال آخر 25 ثانية.
+    // مفتاح الحضور مبني على الإيميل (بعد تنظيفه من نقطة/@ لأن مفاتيح
+    // Firestore الحقول مينفعش تحتوي على نقطة) بدل الـ uid، لأن uid
+    // الـ Anonymous Auth ممكن يتغيّر بين جلسة وتانية، لكن الإيميل ثابت.
     const PRESENCE_HEARTBEAT_MS = 15000;
     const PRESENCE_ONLINE_THRESHOLD_MS = 25000;
     let presenceInterval = null;
 
+    function presenceKeyFor(email) {
+        return 'presence_' + email.toLowerCase().replace(/[.@]/g, '_');
+    }
+
+    const myPresenceKey = presenceKeyFor(myEmail);
+    const otherPresenceKey = presenceKeyFor(otherEmail);
+
     async function markMyPresence(chatDocRef, isLeaving) {
         try {
             await updateDoc(chatDocRef, {
-                ['presence_' + myUid]: isLeaving ? null : serverTimestamp()
+                [myPresenceKey]: isLeaving ? null : serverTimestamp()
             });
         } catch (e) {
             // مينفعش نستنى رد وقت إغلاق الصفحة، فبنتجاهل الخطأ بهدوء
@@ -302,11 +315,7 @@ import {
     }
 
     function updateOtherPresence(chatData) {
-        // بندور على أي مفتاح presence_* غير بتاعي أنا
-        const otherPresenceKey = Object.keys(chatData).find(
-            k => k.startsWith('presence_') && k !== 'presence_' + myUid
-        );
-        const lastSeenTs = otherPresenceKey ? chatData[otherPresenceKey] : null;
+        const lastSeenTs = chatData[otherPresenceKey];
 
         let isOnline = false;
         if (lastSeenTs && lastSeenTs.toDate) {
