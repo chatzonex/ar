@@ -97,14 +97,26 @@
     bottom: 0;
     max-height: 80%;
     overflow-y: auto;
-    background: var(--bg-elevated);
-    border: 1px solid var(--glass-border-strong);
+    background: rgba(21, 26, 32, 0.78);
+    backdrop-filter: blur(28px) saturate(1.7) brightness(1.08);
+    -webkit-backdrop-filter: blur(28px) saturate(1.7) brightness(1.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-bottom: none;
     border-radius: 26px 26px 0 0;
     padding: 14px 22px calc(28px + env(safe-area-inset-bottom, 0px));
-    box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
     transform: translateY(100%);
     transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    position: relative;
+}
+
+.sheet-box::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 40%);
+    pointer-events: none;
 }
 
 .sheet-overlay.open .sheet-box {
@@ -117,6 +129,8 @@
     border-radius: 3px;
     background: rgba(255, 255, 255, 0.25);
     margin: 0 auto 16px;
+    position: relative;
+    z-index: 1;
 }
 
 .sheet-close {
@@ -435,6 +449,80 @@ html[dir="rtl"] .ios-switch input:checked + .ios-switch-track .ios-switch-thumb 
     color: var(--accent);
 }
 
+/* ===================================================
+   LIQUID GLASS — extends across the whole app when
+   "Liquid Glass from icons" is enabled in Settings
+=================================================== */
+
+/* Circular icon buttons (3-dots, +) get true frosted glass */
+body.lg-icons-on .icon-btn,
+body.lg-icons-on .add-btn {
+    background: rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(14px) saturate(1.6) brightness(1.1);
+    -webkit-backdrop-filter: blur(14px) saturate(1.6) brightness(1.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+body.lg-icons-on .add-btn {
+    background: linear-gradient(150deg, rgba(47, 224, 138, 0.85), rgba(37, 211, 102, 0.85) 55%, rgba(26, 168, 85, 0.85));
+    backdrop-filter: blur(14px) saturate(1.7) brightness(1.15);
+    -webkit-backdrop-filter: blur(14px) saturate(1.7) brightness(1.15);
+}
+
+body.lg-icons-on .search-input {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(16px) saturate(1.5);
+    -webkit-backdrop-filter: blur(16px) saturate(1.5);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+body.lg-icons-on .modal-box {
+    background: rgba(20, 26, 32, 0.65);
+    backdrop-filter: blur(30px) saturate(1.8) brightness(1.1);
+    -webkit-backdrop-filter: blur(30px) saturate(1.8) brightness(1.1);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+body.lg-icons-on .modal-box .field-group input {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+body.lg-icons-on .modal-btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+body.lg-icons-on .settings-card-icon,
+body.lg-icons-on .sec-icon,
+body.lg-icons-on .profile-avatar {
+    backdrop-filter: blur(10px) saturate(1.4);
+    -webkit-backdrop-filter: blur(10px) saturate(1.4);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+body.lg-icons-on .sidebar {
+    background: rgba(20, 26, 32, 0.55);
+    backdrop-filter: blur(24px) saturate(1.8) brightness(1.12);
+    -webkit-backdrop-filter: blur(24px) saturate(1.8) brightness(1.12);
+}
+
+body.lg-icons-on .chip,
+body.lg-icons-on .settings-card {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.lg-icons-on * {
+        transition-duration: 0.01ms !important;
+    }
+}
+
 /* ===== Liquid Glass mode: applied to app chrome when enabled ===== */
 body.lg-bottombar-on .bottom-nav {
     background: rgba(255, 255, 255, 0.06);
@@ -475,13 +563,34 @@ body.theme-white .app-shell {
 }
 
 body.theme-white .bottom-nav {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: var(--glass-border-strong);
-    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.1);
+    background: #E4E7EA;
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+body.theme-white.lg-bottombar-on .bottom-nav {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(26px) saturate(1.7) brightness(1.05);
+    -webkit-backdrop-filter: blur(26px) saturate(1.7) brightness(1.05);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+body.theme-white .tab-pill {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+body.theme-white.lg-bottombar-on .tab-pill {
+    background: rgba(0, 0, 0, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 body.theme-white .nav-btn:not(.active) {
     color: var(--text-dim);
+}
+
+body.theme-white.lg-bottombar-on .nav-btn.active {
+    color: var(--text);
 }
 
 body.theme-white .search-input,
@@ -490,11 +599,27 @@ body.theme-white .modal-box .field-group input {
 }
 
 body.theme-white .modal-box {
+    background: rgba(255, 255, 255, 0.92);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
 }
 
+body.theme-white.lg-icons-on .modal-box {
+    background: rgba(255, 255, 255, 0.68);
+    backdrop-filter: blur(30px) saturate(1.6) brightness(1.05);
+    -webkit-backdrop-filter: blur(30px) saturate(1.6) brightness(1.05);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
 body.theme-white .sheet-box {
-    box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.14);
+    background: rgba(248, 249, 250, 0.85);
+    backdrop-filter: blur(28px) saturate(1.5) brightness(1.02);
+    -webkit-backdrop-filter: blur(28px) saturate(1.5) brightness(1.02);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+body.theme-white .sheet-box::before {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 40%);
 }
 
 body.theme-white .sheet-close {
