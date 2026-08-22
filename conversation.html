@@ -2,79 +2,63 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ChatZone — المحادثة</title>
+<script>
+    if (!localStorage.getItem('cz_verified_email')) {
+        window.location.replace('index.html');
+    }
+</script>
 <link rel="stylesheet" href="main.css">
-<style>
-    .placeholder-wrap {
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 24px;
-    }
-    .placeholder-icon {
-        font-size: 48px;
-        margin-bottom: 16px;
-    }
-    .placeholder-title {
-        font-family: var(--font-display);
-        font-size: 18px;
-        font-weight: 700;
-        margin-bottom: 8px;
-    }
-    .placeholder-sub {
-        font-size: 13.5px;
-        color: var(--text-dim);
-        margin-bottom: 4px;
-        direction: ltr;
-    }
-    .back-link {
-        margin-top: 24px;
-        color: var(--accent);
-        font-size: 14px;
-        font-weight: 600;
-        text-decoration: none;
-    }
-</style>
+<link rel="stylesheet" href="settings.css">
+<link rel="stylesheet" href="conversation.css">
 </head>
 <body>
 
-    <div class="placeholder-wrap">
-        <div class="placeholder-icon">🚧</div>
-        <h1 class="placeholder-title" id="placeholderTitle">صفحة المحادثة لسه بتتبني</h1>
-        <p class="placeholder-sub" id="chattingWith"></p>
-        <a href="MainActivity.html" class="back-link" id="backLink">رجوع للدردشات</a>
+    <div class="conv-shell">
+
+        <!-- ===== Top Bar: زرار الرجوع أقصى اليسار + اسم الشخص في المنتصف ===== -->
+        <header class="conv-topbar">
+            <button class="conv-back-btn" id="convBackBtn" aria-label="رجوع">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+
+            <div class="conv-identity" id="convIdentity">
+                <h1 class="conv-name" id="convName">—</h1>
+                <p class="conv-status" id="convStatus"></p>
+            </div>
+
+            <div class="conv-topbar-spacer"></div>
+        </header>
+
+        <!-- ===== منطقة الرسائل ===== -->
+        <div class="conv-messages" id="convMessages">
+            <!-- الرسايل بتتحط هنا ديناميكياً من conversation.js -->
+        </div>
+
+        <!-- ===== بار الكتابة السفلي: عادي أو عايم (Liquid Glass) ===== -->
+        <div class="conv-input-area" id="convInputArea">
+            <div class="conv-input-bar" id="convInputBar">
+                <textarea
+                    class="conv-textarea"
+                    id="convTextarea"
+                    rows="1"
+                    data-i18n-placeholder="type_message"
+                    placeholder="اكتب رسالة..."
+                ></textarea>
+                <button class="conv-send-btn" id="convSendBtn" aria-label="إرسال">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
     </div>
 
-    <script>
-        // احترام الثيم واللغة المحفوظين من شاشة الإعدادات
-        (function () {
-            const lang = localStorage.getItem('cz_lang') || 'ar';
-            const theme = localStorage.getItem('cz_theme') || 'dark';
-            const isAr = lang === 'ar';
-            document.documentElement.lang = lang;
-            document.documentElement.dir = isAr ? 'rtl' : 'ltr';
-            if (theme === 'white') document.body.classList.add('theme-white');
-            if (theme === 'custom') {
-                document.body.classList.add('theme-custom');
-                const color = localStorage.getItem('cz_theme_color');
-                if (color) document.documentElement.style.setProperty('--accent', color);
-            }
-            document.getElementById('placeholderTitle').textContent = isAr
-                ? 'صفحة المحادثة لسه بتتبني'
-                : 'The chat screen is still being built';
-            document.getElementById('backLink').textContent = isAr
-                ? 'رجوع للدردشات'
-                : 'Back to chats';
-        })();
-
-        const activeChatEmail = localStorage.getItem('cz_active_chat_email');
-        if (activeChatEmail) {
-            document.getElementById('chattingWith').textContent = activeChatEmail;
-        }
-    </script>
+    <script src="conversation.js"></script>
 </body>
 </html>
