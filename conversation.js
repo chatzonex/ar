@@ -14,6 +14,37 @@ import {
     ensureAuthenticated
 } from "./firebase-init.js";
 
+// =====================================================
+// دالة أمان أساسية: بتتأكد إن الـ uid الحالي بتاع جلسة
+// Firebase Auth (anonymous) هو فعلاً نفس الـ uid اللي
+// اتسجل وقت التحقق من الإيميل ده (users/{email}.uid).
+//
+// المشكلة اللي بتحلها: لو حد كتب إيميلك يدويًا في
+// localStorage بتاعه (cz_verified_email) على جهاز تاني،
+// هيدخل بجلسة anonymous جديدة ليها uid مختلف تمامًا عن
+// اللي مسجل فعليًا لإيميلك. من غير الفحص ده، الكود القديم
+// كان بيسمحله يفتح المحادثة ويضيف نفسه للـ participants
+// (arrayUnion) من غير أي تحقق حقيقي إنه صاحب الإيميل.
+//
+// ملحوظة: ده تحسين على مستوى الفرونت إند بيمنع السيناريو
+// العملي (حد يكتب إيميلك في localStorage بتاعه). مش بديل
+// كامل عن تحقق سيرفري حقيقي (Cloud Function + custom token)
+// لأن أي حد عنده أدوات مطورين برضو يقدر نظريًا يتلاعب بالكود
+// الشغال عنده محليًا. الحل الكامل محتاج Blaze plan.
+// =====================================================
+async function verifyOwnership(email, uid) {
+    try {
+        const userDocRef = doc(db, 'users', email.toLowerCase());
+        const userSnap = await getDoc(userDocRef);
+        if (!userSnap.exists()) return false;
+        const data = userSnap.data();
+        return data.uid === uid;
+    } catch (e) {
+        console.error('فشل التحقق من ملكية الإيميل:', e);
+        return false;
+    }
+}
+
 (function () {
     // =====================================================
     // 1) احترام الثيم واللغة والـ Liquid Glass المحفوظين
@@ -220,6 +251,19 @@ import {
         // الـ Firestore Rules هترفض الطلب.
         const user = await ensureAuthenticated();
         myUid = user.uid;
+
+        // فحص ملكية الإيميل: لازم الـ uid الحالي يطابق اللي مسجل
+        // فعليًا لإيميلي في users/{email}. لو مش متطابق، معناه إن
+        // اللي حاطط الإيميل ده في localStorage مش هو صاحبه الحقيقي،
+        // فنرفض الدخول فورًا قبل ما نلمس أي محادثة.
+        const owns = await verifyOwnership(myEmail, myUid);
+        if (!owns) {
+            console.error('فشل التحقق من ملكية الإيميل — الجلسة الحالية غير مطابقة.');
+            localStorage.removeItem('cz_verified_email');
+            localStorage.removeItem('cz_active_chat_email');
+            window.location.href = 'MainActivity.html';
+            return;
+        }
 
         const chatDocRef = doc(db, 'chats', chatId);
 
