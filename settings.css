@@ -44,7 +44,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--accent);
+    color: #FFFFFF;
 }
 
 .settings-row-icon svg {
@@ -214,6 +214,14 @@
 
 .lg-toggle-row:last-child {
     border-bottom: none;
+}
+
+.lg-toggle-disabled {
+    opacity: 0.45;
+}
+
+.lg-toggle-disabled .ios-switch-track {
+    cursor: not-allowed;
 }
 
 .lg-toggle-text {

@@ -14,7 +14,9 @@
         openLanguage: 'sheet-language',
         openPrivacy: 'sheet-privacy',
         openVersion: 'sheet-version',
-        openAbout: 'sheet-about'
+        openAbout: 'sheet-about',
+        navHomeShortcut: 'sheet-lg-home',
+        openChatRow: 'sheet-lg-chat'
     };
 
     Object.keys(sheetTriggers).forEach(btnId => {
@@ -57,6 +59,74 @@
     });
 
     applyLgState();
+
+    // ===== Privacy Toggles =====
+    // إخفاء الأونلاين، تثبيت آخر ظهور، إخفاء الصح الزرقاء.
+    // كل خيار بيتحفظ في localStorage وبيتفعّل فوراً بدون ما يحتاج إعادة تحميل.
+    const PRIVACY_OPTIONS = {
+        hideOnline: 'cz_privacy_hide_online',
+        pinLastSeen: 'cz_privacy_pin_lastseen',
+        hideReadReceipts: 'cz_privacy_hide_read_receipts'
+    };
+
+    const privacyState = {};
+    Object.keys(PRIVACY_OPTIONS).forEach(key => {
+        privacyState[key] = localStorage.getItem(PRIVACY_OPTIONS[key]) === 'on';
+    });
+
+    // لو المستخدم فعّل "تثبيت آخر ظهور"، بنسجل القيمة الحالية (لو مفيش قيمة
+    // مسجّلة قبل كده) عشان تفضل ثابتة ومتتحدثش تلقائياً حتى وهو أونلاين.
+    function pinCurrentLastSeenIfNeeded() {
+        if (!privacyState.pinLastSeen) return;
+        if (!localStorage.getItem('cz_last_seen_pinned_value')) {
+            const now = new Date().toISOString();
+            localStorage.setItem('cz_last_seen_pinned_value', now);
+        }
+    }
+
+    // نقطة الدخول اللي أي كود تاني في الأبب (شاشة الشات، حالة الاتصال...)
+    // المفروض يستخدمها قبل ما يحدّث "آخر ظهور" الفعلي، عشان لو كان مفعّل
+    // "تثبيت آخر ظهور" منمنعش التحديث خالص.
+    window.CZPrivacy = {
+        isOnlineHidden: () => !!privacyState.hideOnline,
+        isLastSeenPinned: () => !!privacyState.pinLastSeen,
+        areReadReceiptsHidden: () => !!privacyState.hideReadReceipts,
+        getPinnedLastSeen: () => localStorage.getItem('cz_last_seen_pinned_value'),
+        // بيتنادى قبل أي تحديث لـ "آخر ظهور": لو التثبيت مفعّل، بيرجّع
+        // القيمة المثبّتة بدل السماح بتحديثها؛ لو مش مفعّل، بيرجع null
+        // (يعني حدّث عادي).
+        resolveLastSeenUpdate: () => {
+            if (privacyState.pinLastSeen) {
+                return localStorage.getItem('cz_last_seen_pinned_value');
+            }
+            return null;
+        }
+    };
+
+    function applyPrivacyState() {
+        document.body.classList.toggle('privacy-hide-online', !!privacyState.hideOnline);
+        document.body.classList.toggle('privacy-pin-lastseen', !!privacyState.pinLastSeen);
+        document.body.classList.toggle('privacy-hide-read-receipts', !!privacyState.hideReadReceipts);
+        pinCurrentLastSeenIfNeeded();
+    }
+
+    Object.keys(PRIVACY_OPTIONS).forEach(key => {
+        const input = document.getElementById('privacySwitch-' + key);
+        if (!input) return;
+        input.checked = !!privacyState[key];
+        input.addEventListener('change', () => {
+            privacyState[key] = input.checked;
+            localStorage.setItem(PRIVACY_OPTIONS[key], input.checked ? 'on' : 'off');
+            // لو بيلغي تثبيت آخر ظهور، نمسح القيمة المثبتة عشان ترجع تتحدث عادي
+            if (key === 'pinLastSeen' && !input.checked) {
+                localStorage.removeItem('cz_last_seen_pinned_value');
+            }
+            applyPrivacyState();
+            if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
+        });
+    });
+
+    applyPrivacyState();
 
     // ===== Themes =====
     function hexToRgb(hex) {
@@ -171,6 +241,14 @@
         lg_bottombar_sub: 'شريط تنقل زجاجي شفاف',
         lg_icons_title: 'الزجاج السائل من الأيقونات',
         lg_icons_sub: 'طبّق خامة الزجاج على الأزرار الدائرية',
+        lg_home_title: 'الزجاج السائل في الرئيسية',
+        lg_home_toggle_title: 'الزجاج السائل في الرئيسية',
+        lg_icons_home_title: 'الزجاج السائل في الأيقونة',
+        lg_chat_title: 'الزجاج السائل في الدردشة',
+        lg_chat_toggle_title: 'الزجاج السائل في الدردشة',
+        lg_icons_chat_title: 'الزجاج السائل في الأيقونة',
+        lg_chat_soon_body: 'هذه الميزة قيد التطوير حالياً وستكون متاحة قريباً.',
+        lg_soon_sub: 'قريباً',
         themes_title: 'ثيمات التطبيق',
         themes_sub: 'خصّص مظهر ألوان التطبيق',
         themes_body: 'اختر ثيم ألوان للتطبيق، وسيتم حفظ اختيارك تلقائياً.',
@@ -184,14 +262,20 @@
         version_sub: 'معرفة الإصدار الحالي',
         version_body: 'أنت تستخدم أحدث إصدار من ChatZone. يتم تحديث الأبب بانتظام لضمان أفضل تجربة.',
         version_badge: 'الإصدار الحالي: 1.0',
-        about_title: 'info',
+        about_title: 'معلومات عنا',
         about_sub: 'تعرّف على فريق ChatZone',
         about_body: 'أهلاً بيك في ChatZone، تطبيق دردشة بسيط وسريع، بيهدف يديك تجربة تواصل مريحة وآمنة مع أي حد بس بإيميله. نتمنى نكون دايماً عند حسن ظنك 💚',
         nav_chats_row: 'الصفحة الرئيسية',
         chat_row: 'الدردشة',
         privacy_row: 'الخصوصية',
         privacy_title: 'الخصوصية',
-        privacy_body: 'بنحترم خصوصيتك، وبيانات محادثاتك متشفّرة ومتخزنة بأمان. مش بنشارك بياناتك مع أي طرف تالت.'
+        privacy_body: 'بنحترم خصوصيتك، وبيانات محادثاتك متشفّرة ومتخزنة بأمان. مش بنشارك بياناتك مع أي طرف تالت.',
+        privacy_hide_online_title: 'إخفاء ظهورك أونلاين',
+        privacy_hide_online_sub: 'محدش هيقدر يشوفك متصل دلوقتي',
+        privacy_pin_lastseen_title: 'تثبيت آخر ظهور',
+        privacy_pin_lastseen_sub: 'آخر ظهورك يفضل ثابت، حتى لو كنت أونلاين',
+        privacy_hide_readreceipts_title: 'منع الصح الزرقاء',
+        privacy_hide_readreceipts_sub: 'علامات القراءة الزرقاء مش هتظهر في الشات'
     };
 
     const EN_TEXT = {
@@ -217,6 +301,14 @@
         lg_bottombar_sub: 'A translucent glass navigation bar',
         lg_icons_title: 'Liquid Glass from icons',
         lg_icons_sub: 'Apply glass material to circular buttons',
+        lg_home_title: 'Liquid Glass in Home',
+        lg_home_toggle_title: 'Liquid Glass in Home',
+        lg_icons_home_title: 'Liquid Glass in icon',
+        lg_chat_title: 'Liquid Glass in Chat',
+        lg_chat_toggle_title: 'Liquid Glass in Chat',
+        lg_icons_chat_title: 'Liquid Glass in icon',
+        lg_chat_soon_body: 'This feature is currently in development and will be available soon.',
+        lg_soon_sub: 'Coming soon',
         themes_title: 'App Themes',
         themes_sub: 'Customize your color scheme',
         themes_body: 'Choose a color theme for the app. Your choice is saved automatically.',
@@ -230,14 +322,20 @@
         version_sub: 'Check the current version',
         version_body: 'You are using the latest version of ChatZone. The app is updated regularly to ensure the best experience.',
         version_badge: 'Current version: 1.0',
-        about_title: 'info',
+        about_title: 'Info',
         about_sub: 'Meet the ChatZone team',
         about_body: 'Welcome to ChatZone, a simple and fast chat app that aims to give you a comfortable and secure way to connect with anyone using just their email. We hope to always be worthy of your trust 💚',
         nav_chats_row: 'Home',
         chat_row: 'Chat',
         privacy_row: 'Privacy',
         privacy_title: 'Privacy',
-        privacy_body: 'We respect your privacy. Your chat data is encrypted and stored securely. We never share your data with third parties.'
+        privacy_body: 'We respect your privacy. Your chat data is encrypted and stored securely. We never share your data with third parties.',
+        privacy_hide_online_title: 'Hide online status',
+        privacy_hide_online_sub: 'No one will be able to see when you\'re online',
+        privacy_pin_lastseen_title: 'Pin last seen',
+        privacy_pin_lastseen_sub: 'Your last seen stays fixed, even while you\'re online',
+        privacy_hide_readreceipts_title: 'Hide read receipts',
+        privacy_hide_readreceipts_sub: 'Blue read receipts won\'t appear in chat'
     };
 
     let currentLang = localStorage.getItem('cz_lang') || 'ar';
@@ -392,15 +490,8 @@
         });
     }
 
-    // ===== صف "الصفحة الرئيسية" و"الدردشة" في الإعدادات (لسة جديدة) =====
-    const navHomeShortcut = document.getElementById('navHomeShortcut');
-    const openChatRow = document.getElementById('openChatRow');
-    if (navHomeShortcut) {
-        navHomeShortcut.addEventListener('click', () => switchTab('screen-chats'));
-    }
-    if (openChatRow) {
-        openChatRow.addEventListener('click', () => switchTab('screen-chats'));
-    }
+    // ملحوظة: صفوف "الصفحة الرئيسية" و"الدردشة" في الإعدادات بقت بتفتح
+    // شيت Liquid Glass الخاص بيها (مسجلة فوق في sheetTriggers)، مش بتنقل الشاشة.
     if (sidebarRestart) {
         sidebarRestart.addEventListener('click', () => {
             closeSidebarMenu();
