@@ -284,8 +284,28 @@ import {
             messagesEl.innerHTML = '';
             docs.forEach(d => appendMessage(d.data(), myEmail.toLowerCase()));
             scrollToBottom(false);
+
+            // أي رسالة وصلتلي من الطرف التاني ولسه حالتها unread/offline،
+            // معناه إني دلوقتي فاتح الشات وشايفها فعليًا، فنعلّمها read
+            // عشان الطرف اللي بعتها يشوف الصح الزرقة عنده.
+            markIncomingMessagesAsRead(docs);
         }, (err) => {
             console.error('فشل الاستماع للرسايل:', err);
+        });
+    }
+
+    const myEmailLower = myEmail.toLowerCase();
+
+    function markIncomingMessagesAsRead(docs) {
+        docs.forEach(d => {
+            const data = d.data();
+            const isFromOther = (data.senderEmail || '').toLowerCase() !== myEmailLower;
+            const needsUpdate = data.status === 'unread' || data.status === 'offline';
+            if (isFromOther && needsUpdate) {
+                updateDoc(d.ref, { status: 'read' }).catch((err) => {
+                    console.error('فشل تحديث حالة الرسالة إلى مقروءة:', err);
+                });
+            }
         });
     }
 
@@ -314,6 +334,8 @@ import {
         }
     }
 
+    let otherIsOnline = false;
+
     function updateOtherPresence(chatData) {
         const lastSeenTs = chatData[otherPresenceKey];
 
@@ -321,6 +343,7 @@ import {
         if (lastSeenTs && lastSeenTs.toDate) {
             isOnline = (Date.now() - lastSeenTs.toDate().getTime()) < PRESENCE_ONLINE_THRESHOLD_MS;
         }
+        otherIsOnline = isOnline;
 
         if (isOnline) {
             convStatusEl.textContent = T.online;
@@ -345,7 +368,10 @@ import {
             senderEmail: myEmail,
             text,
             createdAt: serverTimestamp(),
-            status: 'unread'
+            // لو الطرف التاني أونلاين وقت الإرسال، الرسالة هتوصله فورًا
+            // (صح رمادية مزدوجة، لحد ما يفتح الشات فعلاً وتتحول زرقاء).
+            // لو أوفلاين، صح رمادية مفردة لحد ما يتصل ونحدّثها بعدين.
+            status: otherIsOnline ? 'unread' : 'offline'
         }).then(() => {
             if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
         }).catch((err) => {
