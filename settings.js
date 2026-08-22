@@ -265,19 +265,57 @@
     // ===== شاشات: تنقل بين الدردشات والإعدادات =====
     const screens = document.querySelectorAll('.screen');
     const navButtons = document.querySelectorAll('.nav-btn');
+    const tabPill = document.getElementById('tabPill');
+    const bottomNav = document.getElementById('bottomNav');
+
+    function movePillTo(btn, animate) {
+        if (!tabPill || !bottomNav || !btn) return;
+        const navRect = bottomNav.getBoundingClientRect();
+        const btnRect = btn.getBoundingClientRect();
+        const left = btnRect.left - navRect.left;
+        const width = btnRect.width;
+        if (!animate) {
+            tabPill.style.transition = 'none';
+        }
+        tabPill.style.width = width + 'px';
+        tabPill.style.transform = 'translateX(' + left + 'px)';
+        if (!animate) {
+            void tabPill.offsetHeight;
+            tabPill.style.transition = '';
+        }
+    }
 
     function switchTab(targetId) {
         screens.forEach(screen => {
             screen.classList.toggle('hidden', screen.id !== targetId);
         });
+        let activeBtn = null;
         navButtons.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.target === targetId);
+            const isActive = btn.dataset.target === targetId;
+            btn.classList.toggle('active', isActive);
+            if (isActive) activeBtn = btn;
         });
+        if (activeBtn) movePillTo(activeBtn, true);
         closeSidebarMenu();
     }
 
     navButtons.forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.target));
+    });
+
+    // نضبط مكان الـ pill عند التحميل الأول (بدون أنيميشن) وعند تغيير حجم الشاشة
+    window.addEventListener('load', () => {
+        const activeBtn = document.querySelector('.nav-btn.active');
+        movePillTo(activeBtn, false);
+    });
+    window.addEventListener('resize', () => {
+        const activeBtn = document.querySelector('.nav-btn.active');
+        movePillTo(activeBtn, false);
+    });
+    // Fallback فوري في حالة الـ load event فات قبل ما نوصله
+    requestAnimationFrame(() => {
+        const activeBtn = document.querySelector('.nav-btn.active');
+        movePillTo(activeBtn, false);
     });
 
     // ===== بيانات البروفايل (اسم + إيميل + أفاتار) فوق شاشة الإعدادات =====
