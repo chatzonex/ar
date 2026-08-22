@@ -5,6 +5,7 @@ import {
     getDoc,
     addDoc,
     updateDoc,
+    arrayUnion,
     collection,
     query,
     orderBy,
@@ -218,26 +219,43 @@ import {
         myUid = user.uid;
 
         const chatDocRef = doc(db, 'chats', chatId);
-        const chatSnap = await getDoc(chatDocRef).catch(() => null);
 
-        // لو المحادثة مش موجودة، ننشئها. participants لازم يحتوي uid
-        // بتاعي أنا على الأقل عشان الـ Rules تسمح بالإنشاء. الـ uid بتاع
-        // الطرف التاني هينضاف لمستند participantsEmails دلوقتي، وهيتظبط
-        // بالـ uid الحقيقي بتاعه أول ما هو يفتح نفس المحادثة (لأن النظام
-        // الحالي معندوش دليل مركزي يربط إيميل بـ uid قبل ما صاحبه يسجل دخول).
-        if (!chatSnap || !chatSnap.exists()) {
+        // بنفرّق هنا بين حالتين مختلفتين تمامًا:
+        //   - المستند مش موجود خالص (أول مرة يتفتح فيها الشات ده) → ننشئه.
+        //   - المستند موجود، لكن الـ Rules رفضت القراءة لأن uid بتاعي
+        //     لسه مش مسجل ضمن participants (أنا الطرف التاني وبفتح
+        //     المحادثة أول مرة) → نضيف نفسي بـ updateDoc.
+        let chatExists = false;
+        let iAmAlreadyParticipant = false;
+
+        try {
+            const chatSnap = await getDoc(chatDocRef);
+            chatExists = chatSnap.exists();
+            if (chatExists) {
+                const data = chatSnap.data();
+                iAmAlreadyParticipant = !!(data.participants && data.participants.includes(myUid));
+            }
+        } catch (err) {
+            // permission-denied هنا معناها الأرجح: المستند موجود بالفعل
+            // لكن أنا لسه مش طرف مسجل فيه، فالـ Rules رفضت القراءة.
+            chatExists = true;
+            iAmAlreadyParticipant = false;
+        }
+
+        if (!chatExists) {
+            // أول مرة يتفتح فيها الشات ده على الإطلاق.
             await setDoc(chatDocRef, {
                 participants: [myUid],
                 participantsEmails: [myEmail.toLowerCase(), otherEmail.toLowerCase()],
                 createdAt: serverTimestamp()
-            }, { merge: true });
-        } else {
-            const data = chatSnap.data();
-            if (!data.participants || !data.participants.includes(myUid)) {
-                await updateDoc(chatDocRef, {
-                    participants: [...(data.participants || []), myUid]
-                }).catch(() => {});
-            }
+            });
+        } else if (!iAmAlreadyParticipant) {
+            // المحادثة موجودة أصلاً (أنشأها الطرف التاني)، وأنا بفتحها
+            // لأول مرة، فلازم أضيف uid بتاعي لمصفوفة participants.
+            // الـ Rules بتسمح بده لأني بضيف نفسي بس من غير ما أشيل حد.
+            await updateDoc(chatDocRef, {
+                participants: arrayUnion(myUid)
+            });
         }
 
         // حالة الأونلاين: نسجّل وقت آخر ظهور بتاعي في مستند المحادثة،
