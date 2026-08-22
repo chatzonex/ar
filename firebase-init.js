@@ -7,8 +7,22 @@ import {
   getFirestore,
   doc,
   setDoc,
+  getDoc,
+  addDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDFgxjZgoaP7Q7vSUjXOJvM1-UIRYIEsyk",
@@ -30,5 +44,55 @@ try {
 }
 
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-export { db, doc, setDoc, serverTimestamp };
+/**
+ * بيرجع Promise بحالة تسجيل الدخول الحالية في Firebase Auth (أول مرة بس،
+ * بعدين بيقفل نفسه). لازم يتستنى قبل أي قراءة/كتابة في Firestore محمية
+ * بقاعدة "request.auth != null".
+ */
+function waitForAuthUser() {
+  return new Promise((resolve) => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      unsub();
+      resolve(user);
+    });
+  });
+}
+
+/**
+ * بيتأكد إن فيه مستخدم مسجل دخول (anonymous) في Firebase Auth، ولو مفيش
+ * بيعمل signInAnonymously تلقائيًا. ده بيوفر request.auth.uid حقيقي
+ * تقدر Firestore Rules تعتمد عليه بدل قاعدة "allow read, write: if true".
+ *
+ * ملحوظة مهمة: ده بيقفل ثغرة "أي حد يقرا/يمسح الداتا بيز من غير أي
+ * تسجيل دخول أصلاً"، لكنه لسه مش بديل كامل عن تحقق سيرفري حقيقي من
+ * ملكية الإيميل (ده محتاج Cloud Function + Custom Token).
+ */
+async function ensureAuthenticated() {
+  const existing = await waitForAuthUser();
+  if (existing) return existing;
+  const result = await signInAnonymously(auth);
+  return result.user;
+}
+
+export {
+  db,
+  auth,
+  doc,
+  setDoc,
+  getDoc,
+  addDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  serverTimestamp,
+  signInAnonymously,
+  onAuthStateChanged,
+  signOut,
+  waitForAuthUser,
+  ensureAuthenticated
+};

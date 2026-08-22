@@ -1,3 +1,18 @@
+import {
+    db,
+    doc,
+    setDoc,
+    getDoc,
+    addDoc,
+    updateDoc,
+    collection,
+    query,
+    orderBy,
+    onSnapshot,
+    serverTimestamp,
+    ensureAuthenticated
+} from "./firebase-init.js";
+
 (function () {
     // =====================================================
     // 1) احترام الثيم واللغة والـ Liquid Glass المحفوظين
@@ -17,8 +32,6 @@
         if (color) document.documentElement.style.setProperty('--accent', color);
     }
 
-    // الـ Liquid Glass بتاع البار السفلي: نفس مفتاح "cz_lg_bottombar" اللي
-    // بيتفعّل من الإعدادات → الصفحة الرئيسية. لو مفعّل، بار الكتابة يبقى عايم.
     if (localStorage.getItem('cz_lg_bottombar') === 'on') {
         document.body.classList.add('lg-bottombar-on');
     }
@@ -29,14 +42,16 @@
             back: 'رجوع',
             online: 'أونلاين',
             offline: 'غير متصل',
-            unknown_contact: 'مستخدم'
+            unknown_contact: 'مستخدم',
+            connecting: 'جاري الاتصال...'
         },
         en: {
             type_message: 'Type a message...',
             back: 'Back',
             online: 'Online',
             offline: 'Offline',
-            unknown_contact: 'User'
+            unknown_contact: 'User',
+            connecting: 'Connecting...'
         }
     };
     const T = I18N[isAr ? 'ar' : 'en'];
@@ -47,10 +62,17 @@
     });
 
     // =====================================================
-    // 2) هوية الشخص اللي بنكلمه (من localStorage مؤقتاً لحد
-    //    ما يتوصل بباك إند حقيقي)
+    // 2) لازم يكون فيه مستخدم مسجل دخول (Firebase Auth) قبل
+    //    أي حاجة، وإلا نرجّعه لصفحة التسجيل
     // =====================================================
-    const activeChatEmail = localStorage.getItem('cz_active_chat_email') || '';
+    const myEmail = localStorage.getItem('cz_verified_email');
+    const otherEmail = localStorage.getItem('cz_active_chat_email') || '';
+
+    if (!myEmail || !otherEmail) {
+        window.location.href = 'MainActivity.html';
+        return;
+    }
+
     const convNameEl = document.getElementById('convName');
     const convStatusEl = document.getElementById('convStatus');
 
@@ -60,21 +82,11 @@
         return namePart.charAt(0).toUpperCase() + namePart.slice(1);
     }
 
-    convNameEl.textContent = displayNameFromEmail(activeChatEmail);
-
-    // حالة الاتصال بتاعة الطرف التاني (تجريبية/تجميلية دلوقتي، هتتوصل
-    // بحالة حقيقية بعدين). محدش بيعرض حالته لو هو مفعّل "إخفاء الأونلاين".
-    const otherIsOnline = true; // placeholder — يستبدل بحالة حقيقية من السيرفر
-    if (otherIsOnline) {
-        convStatusEl.textContent = T.online;
-        convStatusEl.classList.add('is-online');
-    } else {
-        convStatusEl.textContent = T.offline;
-        convStatusEl.classList.remove('is-online');
-    }
+    convNameEl.textContent = displayNameFromEmail(otherEmail);
+    convStatusEl.textContent = T.connecting;
 
     // =====================================================
-    // 3) زرار الرجوع — أقصى يسار البار العلوي
+    // 3) زرار الرجوع
     // =====================================================
     const backBtn = document.getElementById('convBackBtn');
     if (backBtn) {
@@ -84,16 +96,15 @@
     }
 
     // =====================================================
-    // 4) عرض الرسائل: فقاعة يمين (رسايلي) وفقاعة شمال (الطرف
-    //    التاني)، وعلامة الصح جوه الفقاعة نفسها لرسايلي بس
+    // 4) بناء chatId ثابت من الإيميلين (مرتبين أبجديًا) عشان
+    //    نفس الاتنين يوصلوا لنفس المحادثة أيًا كان مين بدأها
     // =====================================================
-    const messagesEl = document.getElementById('convMessages');
+    function makeChatId(emailA, emailB) {
+        return [emailA.toLowerCase(), emailB.toLowerCase()].sort().join('__');
+    }
 
-    // حالة القراءة الممكنة لأي رسالة باعتها أنا:
-    //   'unsent'   -> لسه بترسل / الطرف التاني مش فاتح نت وقت الإرسال (ساعة)
-    //   'offline'  -> اتبعتت لكن الطرف التاني غير متصل (صح رمادية مفردة الشكل)
-    //   'unread'   -> وصلت لكنه لسه ماشافهاش (صح بيضا مزدوجة)
-    //   'read'     -> شافها (صح زرقا مزدوجة)
+    const chatId = makeChatId(myEmail, otherEmail);
+
     const TICK_ICON = {
         unsent: 'tick-unsent',
         offline: 'tick-offline',
@@ -111,20 +122,16 @@
         return isAr ? `${h}:${m} ${ampmAr}` : `${h}:${m} ${ampmEn}`;
     }
 
-    /**
-     * بيضيف رسالة على الشاشة.
-     * @param {Object} msg
-     * @param {'me'|'them'} msg.sender
-     * @param {string} msg.text
-     * @param {Date} [msg.time]
-     * @param {'unsent'|'offline'|'unread'|'read'} [msg.status] - مطلوبة بس لو sender === 'me'
-     */
-    function appendMessage(msg) {
+    const messagesEl = document.getElementById('convMessages');
+
+    function appendMessage(msg, myUid) {
+        const isMine = msg.senderUid === myUid;
+
         const row = document.createElement('div');
-        row.className = 'msg-row ' + (msg.sender === 'me' ? 'from-me' : 'from-them');
+        row.className = 'msg-row ' + (isMine ? 'from-me' : 'from-them');
 
         const bubble = document.createElement('div');
-        bubble.className = 'bubble ' + (msg.sender === 'me' ? 'bubble-right' : 'bubble-left');
+        bubble.className = 'bubble ' + (isMine ? 'bubble-right' : 'bubble-left');
 
         const textEl = document.createElement('p');
         textEl.className = 'bubble-text';
@@ -136,11 +143,11 @@
 
         const timeEl = document.createElement('span');
         timeEl.className = 'bubble-time';
-        timeEl.textContent = formatTime(msg.time || new Date());
+        const time = msg.createdAt && msg.createdAt.toDate ? msg.createdAt.toDate() : new Date();
+        timeEl.textContent = formatTime(time);
         meta.appendChild(timeEl);
 
-        // علامة الصح جوه الفقاعة نفسها — بتظهر بس في رسايلي أنا
-        if (msg.sender === 'me') {
+        if (isMine) {
             const tick = document.createElement('span');
             const status = msg.status || 'unread';
             tick.className = 'bubble-tick ' + (TICK_ICON[status] || TICK_ICON.unread);
@@ -159,48 +166,16 @@
         });
     }
 
-    // =====================================================
-    // 5) تحميل الرسائل المحفوظة (لكل محادثة على حدة، بحسب
-    //    الإيميل) — تخزين محلي مؤقت لحد ما يتوصل بباك إند
-    // =====================================================
-    function conversationStorageKey(email) {
-        return 'cz_conv_' + (email || 'unknown');
-    }
-
-    function loadConversation(email) {
-        try {
-            const raw = localStorage.getItem(conversationStorageKey(email));
-            return raw ? JSON.parse(raw) : [];
-        } catch (e) {
-            return [];
-        }
-    }
-
-    function saveConversation(email, msgs) {
-        try {
-            localStorage.setItem(conversationStorageKey(email), JSON.stringify(msgs));
-        } catch (e) {}
-    }
-
-    let conversation = loadConversation(activeChatEmail);
-
-    function renderAll() {
+    function renderEmptyState() {
         messagesEl.innerHTML = '';
-        if (!conversation.length) {
-            const empty = document.createElement('div');
-            empty.className = 'conv-empty';
-            empty.textContent = isAr ? 'مفيش رسائل لسه، ابدأ المحادثة 👋' : 'No messages yet, say hi 👋';
-            messagesEl.appendChild(empty);
-            return;
-        }
-        conversation.forEach(m => appendMessage({ ...m, time: new Date(m.time) }));
-        scrollToBottom(false);
+        const empty = document.createElement('div');
+        empty.className = 'conv-empty';
+        empty.textContent = isAr ? 'مفيش رسائل لسه، ابدأ المحادثة 👋' : 'No messages yet, say hi 👋';
+        messagesEl.appendChild(empty);
     }
 
-    renderAll();
-
     // =====================================================
-    // 6) بار الكتابة: زرار الإرسال يظهر بس لما فيه نص
+    // 5) بار الكتابة
     // =====================================================
     const textarea = document.getElementById('convTextarea');
     const inputBar = document.getElementById('convInputBar');
@@ -228,47 +203,143 @@
         }
     });
 
+    updateSendVisibility();
+
+    // =====================================================
+    // 6) الاتصال الفعلي بـ Firestore
+    // =====================================================
+    let myUid = null;
+    let unsubscribeMessages = null;
+
+    async function initChat() {
+        // لازم جلسة Firebase Auth حقيقية قبل أي قراءة/كتابة، وإلا
+        // الـ Firestore Rules هترفض الطلب.
+        const user = await ensureAuthenticated();
+        myUid = user.uid;
+
+        const chatDocRef = doc(db, 'chats', chatId);
+        const chatSnap = await getDoc(chatDocRef).catch(() => null);
+
+        // لو المحادثة مش موجودة، ننشئها. participants لازم يحتوي uid
+        // بتاعي أنا على الأقل عشان الـ Rules تسمح بالإنشاء. الـ uid بتاع
+        // الطرف التاني هينضاف لمستند participantsEmails دلوقتي، وهيتظبط
+        // بالـ uid الحقيقي بتاعه أول ما هو يفتح نفس المحادثة (لأن النظام
+        // الحالي معندوش دليل مركزي يربط إيميل بـ uid قبل ما صاحبه يسجل دخول).
+        if (!chatSnap || !chatSnap.exists()) {
+            await setDoc(chatDocRef, {
+                participants: [myUid],
+                participantsEmails: [myEmail.toLowerCase(), otherEmail.toLowerCase()],
+                createdAt: serverTimestamp()
+            }, { merge: true });
+        } else {
+            const data = chatSnap.data();
+            if (!data.participants || !data.participants.includes(myUid)) {
+                await updateDoc(chatDocRef, {
+                    participants: [...(data.participants || []), myUid]
+                }).catch(() => {});
+            }
+        }
+
+        // حالة الأونلاين: نسجّل وقت آخر ظهور بتاعي في مستند المحادثة،
+        // ونقرا حالة الطرف التاني من نفس المستند لحظيًا.
+        markMyPresence(chatDocRef);
+        window.addEventListener('beforeunload', () => markMyPresence(chatDocRef, true));
+
+        onSnapshot(chatDocRef, (snap) => {
+            if (!snap.exists()) return;
+            updateOtherPresence(snap.data());
+        });
+
+        // الاستماع اللحظي للرسايل
+        const messagesRef = collection(db, 'chats', chatId, 'messages');
+        const q = query(messagesRef, orderBy('createdAt', 'asc'));
+
+        unsubscribeMessages = onSnapshot(q, (snapshot) => {
+            const docs = snapshot.docs;
+            if (!docs.length) {
+                renderEmptyState();
+                return;
+            }
+            messagesEl.innerHTML = '';
+            docs.forEach(d => appendMessage(d.data(), myUid));
+            scrollToBottom(false);
+        }, (err) => {
+            console.error('فشل الاستماع للرسايل:', err);
+        });
+    }
+
+    // نعتبر المستخدم أونلاين لو آخر تحديث لحضوره كان خلال آخر 25 ثانية
+    const PRESENCE_HEARTBEAT_MS = 15000;
+    const PRESENCE_ONLINE_THRESHOLD_MS = 25000;
+    let presenceInterval = null;
+
+    async function markMyPresence(chatDocRef, isLeaving) {
+        try {
+            await updateDoc(chatDocRef, {
+                ['presence_' + myUid]: isLeaving ? null : serverTimestamp()
+            });
+        } catch (e) {
+            // مينفعش نستنى رد وقت إغلاق الصفحة، فبنتجاهل الخطأ بهدوء
+        }
+    }
+
+    function updateOtherPresence(chatData) {
+        // بندور على أي مفتاح presence_* غير بتاعي أنا
+        const otherPresenceKey = Object.keys(chatData).find(
+            k => k.startsWith('presence_') && k !== 'presence_' + myUid
+        );
+        const lastSeenTs = otherPresenceKey ? chatData[otherPresenceKey] : null;
+
+        let isOnline = false;
+        if (lastSeenTs && lastSeenTs.toDate) {
+            isOnline = (Date.now() - lastSeenTs.toDate().getTime()) < PRESENCE_ONLINE_THRESHOLD_MS;
+        }
+
+        if (isOnline) {
+            convStatusEl.textContent = T.online;
+            convStatusEl.classList.add('is-online');
+        } else {
+            convStatusEl.textContent = T.offline;
+            convStatusEl.classList.remove('is-online');
+        }
+    }
+
     function sendMessage() {
         const text = textarea.value.trim();
-        if (!text) return;
-
-        // أونلاين المستخدم الحالي (لو مقفول نت هيتبعت status: 'unsent')
-        const iAmOnline = navigator.onLine;
-
-        const newMsg = {
-            sender: 'me',
-            text,
-            time: new Date().toISOString(),
-            status: iAmOnline ? 'unread' : 'unsent'
-        };
-
-        conversation.push(newMsg);
-        saveConversation(activeChatEmail, conversation);
-        renderAll();
+        if (!text || !myUid) return;
 
         textarea.value = '';
         autoResize();
         updateSendVisibility();
 
-        if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
+        const messagesRef = collection(db, 'chats', chatId, 'messages');
+        addDoc(messagesRef, {
+            senderUid: myUid,
+            senderEmail: myEmail,
+            text,
+            createdAt: serverTimestamp(),
+            status: 'unread'
+        }).then(() => {
+            if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
+        }).catch((err) => {
+            console.error('فشل إرسال الرسالة:', err);
+        });
     }
 
     sendBtn.addEventListener('click', sendMessage);
 
-    // لو النت رجع بعد ما كانت الرسالة unsent، نحدّثها لـ unread تلقائياً
-    window.addEventListener('online', () => {
-        let changed = false;
-        conversation.forEach(m => {
-            if (m.sender === 'me' && m.status === 'unsent') {
-                m.status = 'unread';
-                changed = true;
-            }
-        });
-        if (changed) {
-            saveConversation(activeChatEmail, conversation);
-            renderAll();
-        }
+    initChat().then(() => {
+        presenceInterval = setInterval(() => {
+            const chatDocRef = doc(db, 'chats', chatId);
+            markMyPresence(chatDocRef);
+        }, PRESENCE_HEARTBEAT_MS);
+    }).catch((err) => {
+        console.error('فشل تهيئة المحادثة:', err);
+        convStatusEl.textContent = isAr ? 'تعذر الاتصال' : 'Connection failed';
     });
 
-    updateSendVisibility();
+    window.addEventListener('unload', () => {
+        if (unsubscribeMessages) unsubscribeMessages();
+        if (presenceInterval) clearInterval(presenceInterval);
+    });
 })();

@@ -1,4 +1,4 @@
-import { db, doc, setDoc, serverTimestamp } from "./firebase-init.js";
+import { db, doc, setDoc, serverTimestamp, ensureAuthenticated } from "./firebase-init.js";
 
 (function () {
     const nameInput = document.getElementById('nameInput');
@@ -55,16 +55,24 @@ import { db, doc, setDoc, serverTimestamp } from "./firebase-init.js";
         setLoading(true);
 
         try {
-            // بنستخدم الإيميل كمعرّف فريد للمستخدم في Firestore
+            // لازم يكون فيه جلسة Firebase Auth حقيقية (anonymous) قبل أي
+            // كتابة في Firestore، عشان الـ Rules تقدر تتحقق من request.auth.
+            const user = await ensureAuthenticated();
+
+            // بنستخدم الإيميل كمعرّف فريد للمستخدم في Firestore،
+            // وبنسجل الـ uid بتاع Firebase Auth معاه عشان الـ Rules
+            // تقدر تربط المستند بصاحبه الحقيقي.
             const userDocRef = doc(db, 'users', verifiedEmail);
 
             await setDoc(userDocRef, {
                 name: name,
                 email: verifiedEmail,
+                uid: user.uid,
                 createdAt: serverTimestamp()
             }, { merge: true });
 
             localStorage.setItem('cz_user_name', name);
+            localStorage.setItem('cz_uid', user.uid);
 
             showToast('تم حفظ اسمك بنجاح');
 

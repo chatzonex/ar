@@ -1,3 +1,5 @@
+import { ensureAuthenticated } from "./firebase-init.js";
+
 (function() {
     emailjs.init({ publicKey: 'idu5gyORWMQOOai2X' });
 
@@ -61,7 +63,7 @@
         }, 400);
     }
 
-    function checkCode() {
+    async function checkCode() {
         const entered = otpBoxes.map(box => box.value).join('');
         if (entered.length < 6) return;
 
@@ -74,6 +76,22 @@
         }
 
         if (entered === code) {
+            // الكود صح محليًا. دلوقتي نربط الجلسة بـ Firebase Auth حقيقي
+            // (anonymous) عشان يبقى عند المستخدم request.auth.uid حقيقي
+            // تعتمد عليه Firestore Rules، مش مجرد قيمة في localStorage.
+            otpBoxes.forEach(box => box.disabled = true);
+            verifyStatus.innerHTML = '<span class="dot"></span> جاري تسجيل الدخول...';
+
+            try {
+                await ensureAuthenticated();
+            } catch (err) {
+                console.error('فشل تسجيل الدخول في Firebase Auth:', err);
+                showToast('حصل خطأ أثناء تسجيل الدخول، حاول تاني', true);
+                otpBoxes.forEach(box => box.disabled = false);
+                verifyStatus.innerHTML = '';
+                return;
+            }
+
             markVerified();
             localStorage.setItem('cz_verified_email', pendingEmail);
             localStorage.removeItem('cz_pending_code');
