@@ -1,22 +1,4 @@
 (function () {
-    // ===== التنقل بين شاشة "أنت" وشاشة "الإعدادات" =====
-    const screens = document.querySelectorAll('.screen');
-    const openSettingsBtn = document.getElementById('openSettingsBtn');
-    const settingsBackBtn = document.getElementById('settingsBackBtn');
-
-    function goToScreen(targetId) {
-        screens.forEach(screen => {
-            screen.classList.toggle('hidden', screen.id !== targetId);
-        });
-    }
-
-    if (openSettingsBtn) {
-        openSettingsBtn.addEventListener('click', () => goToScreen('screen-settings'));
-    }
-    if (settingsBackBtn) {
-        settingsBackBtn.addEventListener('click', () => goToScreen('screen-profile'));
-    }
-
     // ===== فتح/قفل الـ Sheets =====
     function openSheet(id) {
         const overlay = document.getElementById(id);
@@ -107,6 +89,17 @@
         if (picker) picker.value = hex;
     }
 
+    // Applies the CSS vars that everything else in the app (buttons, badges,
+    // active states, gradients) reads from — this is what makes theme
+    // changes show up everywhere, not just inside the settings sheet.
+    function applyAccentVars(hex) {
+        const dark = shadeColor(hex, -25);
+        const { r, g, b } = hexToRgb(hex);
+        document.documentElement.style.setProperty('--accent', hex);
+        document.documentElement.style.setProperty('--accent-dim', `rgba(${r},${g},${b},0.35)`);
+        document.documentElement.style.setProperty('--grad', `linear-gradient(120deg, ${hex}, var(--violet))`);
+    }
+
     function applyTheme(theme) {
         currentTheme = theme;
         localStorage.setItem('cz_theme', theme);
@@ -114,42 +107,62 @@
         if (theme === 'white') document.body.classList.add('theme-white');
         if (theme === 'custom') document.body.classList.add('theme-custom');
 
-        document.getElementById('theme-opt-dark').classList.toggle('selected', theme === 'dark');
-        document.getElementById('theme-opt-white').classList.toggle('selected', theme === 'white');
-        document.getElementById('themeColorRow').classList.toggle('selected', theme === 'custom');
+        if (theme === 'custom') {
+            applyAccentVars(customColor);
+        } else {
+            document.documentElement.style.removeProperty('--accent');
+            document.documentElement.style.removeProperty('--accent-dim');
+            document.documentElement.style.removeProperty('--grad');
+        }
+
+        const darkOpt = document.getElementById('theme-opt-dark');
+        const whiteOpt = document.getElementById('theme-opt-white');
+        const colorRow = document.getElementById('themeColorRow');
+        if (darkOpt) darkOpt.classList.toggle('selected', theme === 'dark');
+        if (whiteOpt) whiteOpt.classList.toggle('selected', theme === 'white');
+        if (colorRow) colorRow.classList.toggle('selected', theme === 'custom');
     }
 
     function applyCustomColor(hex) {
         customColor = hex;
         localStorage.setItem('cz_theme_color', hex);
-        const dark = shadeColor(hex, -25);
-        const { r, g, b } = hexToRgb(hex);
-        document.documentElement.style.setProperty('--accent', hex);
-        document.documentElement.style.setProperty('--accent-dim', `rgba(${r},${g},${b},0.35)`);
         updateColorSwatch(hex);
         applyTheme('custom');
         if (navigator.vibrate) { try { navigator.vibrate([6, 30, 6]); } catch (e) {} }
     }
 
-    document.getElementById('theme-opt-dark').addEventListener('click', () => applyTheme('dark'));
-    document.getElementById('theme-opt-white').addEventListener('click', () => applyTheme('white'));
+    const themeDarkOpt = document.getElementById('theme-opt-dark');
+    const themeWhiteOpt = document.getElementById('theme-opt-white');
+    if (themeDarkOpt) themeDarkOpt.addEventListener('click', () => applyTheme('dark'));
+    if (themeWhiteOpt) themeWhiteOpt.addEventListener('click', () => applyTheme('white'));
 
     const colorPicker = document.getElementById('themeColorPicker');
-    document.getElementById('themeColorRow').addEventListener('click', () => colorPicker.click());
-    colorPicker.addEventListener('input', (e) => applyCustomColor(e.target.value));
+    const colorRowEl = document.getElementById('themeColorRow');
+    if (colorRowEl && colorPicker) {
+        colorRowEl.addEventListener('click', () => colorPicker.click());
+        colorPicker.addEventListener('input', (e) => applyCustomColor(e.target.value));
+    }
 
     // تطبيق الثيم المحفوظ عند التحميل
     updateColorSwatch(customColor);
-    if (currentTheme === 'custom') {
-        document.documentElement.style.setProperty('--accent', customColor);
-        const { r, g, b } = hexToRgb(customColor);
-        document.documentElement.style.setProperty('--accent-dim', `rgba(${r},${g},${b},0.35)`);
-    }
     applyTheme(currentTheme);
 
-    // ===== Language (عربي / إنجليزي) =====
+    // ===== Language (عربي / إنجليزي) — يغطي كل شاشات التطبيق =====
     const AR_TEXT = {
         settings: 'الإعدادات',
+        chats_title: 'الدردشات',
+        search_placeholder: 'ابحث عن الشتات',
+        empty_title: 'مفيش شتات لسه',
+        empty_sub: 'دوس على علامة + وابدأ أول محادثة',
+        nav_chats: 'الدردشات',
+        nav_settings: 'الإعدادات',
+        sidebar_restart: 'إعادة تشغيل التطبيق',
+        sidebar_restart_sub: 'إعادة تحميل ChatZone',
+        sidebar_settings: 'الإعدادات',
+        sidebar_settings_sub: 'تخصيص التطبيق',
+        modal_new_chat_sub: 'اكتب الإيميل اللي هتكلمه',
+        btn_cancel: 'إلغاء',
+        btn_start_chat: 'ابدأ المحادثة',
         lg_title: 'الزجاج السائل',
         lg_sub: 'فعّل تأثير Liquid Glass في الأبب',
         lg_body: 'فعّل أو ألغِ كل تأثير Liquid Glass على حدة. كل شيء متوقف افتراضياً.',
@@ -178,6 +191,19 @@
 
     const EN_TEXT = {
         settings: 'Settings',
+        chats_title: 'Chats',
+        search_placeholder: 'Search chats',
+        empty_title: 'No chats yet',
+        empty_sub: 'Tap the + button to start your first chat',
+        nav_chats: 'Chats',
+        nav_settings: 'Settings',
+        sidebar_restart: 'Restart App',
+        sidebar_restart_sub: 'Reload ChatZone',
+        sidebar_settings: 'Settings',
+        sidebar_settings_sub: 'Customize the app',
+        modal_new_chat_sub: 'Type the email you want to chat with',
+        btn_cancel: 'Cancel',
+        btn_start_chat: 'Start Chat',
         lg_title: 'Liquid Glass',
         lg_sub: 'Enable the Liquid Glass effect across the app',
         lg_body: 'Turn each Liquid Glass effect on or off individually. Everything is off by default.',
@@ -218,13 +244,109 @@
             const key = el.getAttribute('data-i18n');
             if (dict[key] !== undefined) el.textContent = dict[key];
         });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+        });
 
-        document.getElementById('lang-opt-ar').classList.toggle('selected', lang === 'ar');
-        document.getElementById('lang-opt-en').classList.toggle('selected', lang === 'en');
+        const langAr = document.getElementById('lang-opt-ar');
+        const langEn = document.getElementById('lang-opt-en');
+        if (langAr) langAr.classList.toggle('selected', lang === 'ar');
+        if (langEn) langEn.classList.toggle('selected', lang === 'en');
     }
 
-    document.getElementById('lang-opt-ar').addEventListener('click', () => applyLang('ar'));
-    document.getElementById('lang-opt-en').addEventListener('click', () => applyLang('en'));
+    const langArOpt = document.getElementById('lang-opt-ar');
+    const langEnOpt = document.getElementById('lang-opt-en');
+    if (langArOpt) langArOpt.addEventListener('click', () => applyLang('ar'));
+    if (langEnOpt) langEnOpt.addEventListener('click', () => applyLang('en'));
 
     applyLang(currentLang);
+
+    // ===== شاشات: تنقل بين الدردشات والإعدادات =====
+    const screens = document.querySelectorAll('.screen');
+    const navButtons = document.querySelectorAll('.nav-btn');
+
+    function switchTab(targetId) {
+        screens.forEach(screen => {
+            screen.classList.toggle('hidden', screen.id !== targetId);
+        });
+        navButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.target === targetId);
+        });
+        closeSidebarMenu();
+    }
+
+    navButtons.forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.target));
+    });
+
+    // ===== بيانات البروفايل (اسم + إيميل + أفاتار) فوق شاشة الإعدادات =====
+    const profileName = document.getElementById('profileName');
+    const profileEmail = document.getElementById('profileEmail');
+    const profileAvatar = document.getElementById('profileAvatar');
+
+    const savedName = localStorage.getItem('cz_user_name');
+    const savedEmail = localStorage.getItem('cz_verified_email');
+
+    if (savedName && profileName && profileAvatar) {
+        profileName.textContent = savedName;
+        profileAvatar.textContent = savedName.trim().charAt(0).toUpperCase();
+    }
+    if (savedEmail && profileEmail) {
+        profileEmail.textContent = savedEmail;
+    }
+
+    // ===== قائمة التلت نقط (Dropdown Menu) =====
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebarMenu = document.getElementById('sidebarMenu');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarRestart = document.getElementById('sidebarRestart');
+    const sidebarSettingsShortcut = document.getElementById('sidebarSettingsShortcut');
+
+    function openSidebarMenu() {
+        if (!sidebarMenu || !sidebarOverlay || !menuBtn) return;
+        // نحط القائمة تحت زرار التلت نقط مباشرة (يمين في RTL، شمال في LTR)
+        const isRtl = document.documentElement.dir === 'rtl';
+        const btnRect = menuBtn.getBoundingClientRect();
+        sidebarMenu.style.top = (btnRect.bottom + 8) + 'px';
+        if (isRtl) {
+            sidebarMenu.style.right = (window.innerWidth - btnRect.right) + 'px';
+            sidebarMenu.style.left = 'auto';
+        } else {
+            sidebarMenu.style.left = btnRect.left + 'px';
+            sidebarMenu.style.right = 'auto';
+        }
+        sidebarMenu.classList.add('open');
+        sidebarOverlay.classList.add('open');
+    }
+
+    function closeSidebarMenu() {
+        if (!sidebarMenu || !sidebarOverlay) return;
+        sidebarMenu.classList.remove('open');
+        sidebarOverlay.classList.remove('open');
+    }
+
+    if (menuBtn) {
+        menuBtn.addEventListener('click', () => {
+            if (sidebarMenu && sidebarMenu.classList.contains('open')) {
+                closeSidebarMenu();
+            } else {
+                openSidebarMenu();
+            }
+        });
+    }
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebarMenu);
+    }
+    if (sidebarSettingsShortcut) {
+        sidebarSettingsShortcut.addEventListener('click', () => {
+            switchTab('screen-settings');
+        });
+    }
+    if (sidebarRestart) {
+        sidebarRestart.addEventListener('click', () => {
+            closeSidebarMenu();
+            window.location.reload();
+        });
+    }
 })();
