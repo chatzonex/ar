@@ -246,6 +246,42 @@ async function verifyOwnership(email, uid) {
     let myUid = null;
     let unsubscribeMessages = null;
 
+    // بتستنى لحد ما مستند الشات على السيرفر فعليًا يحتوي على uid بتاعي
+    // جوه participants، مع محاولات محدودة عشان منعلقش لو حصل مشكلة
+    // تانية غير متوقعة.
+    async function waitUntilIAmParticipant(chatDocRef, uid, maxTries) {
+        maxTries = maxTries || 10;
+        for (let i = 0; i < maxTries; i++) {
+            try {
+                const snap = await getDoc(chatDocRef);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (data.participants && data.participants.includes(uid)) {
+                        return true;
+                    }
+                }
+            } catch (e) {
+                // لسه مرفوضة، هنكمل نحاول
+            }
+            await new Promise(res => setTimeout(res, 300));
+        }
+        console.error('لم يتم التأكد من انضمامي إلى participants بعد عدة محاولات.');
+        return false;
+    }
+
+    // بتحاول تحدّث حالة رسالة لـ read مع إعادة محاولة لو فشلت لأول مرة
+    // (بسبب توقيت الـ Security Rules)، بدل ما تفشل بصمت للأبد.
+    function updateStatusWithRetry(docRef, tries) {
+        tries = tries || 3;
+        updateDoc(docRef, { status: 'read' }).catch((err) => {
+            if (tries > 1) {
+                setTimeout(() => updateStatusWithRetry(docRef, tries - 1), 500);
+            } else {
+                console.error('فشل تحديث حالة الرسالة إلى مقروءة نهائيًا:', err);
+            }
+        });
+    }
+
     async function initChat() {
         // لازم جلسة Firebase Auth حقيقية قبل أي قراءة/كتابة، وإلا
         // الـ Firestore Rules هترفض الطلب.
@@ -305,6 +341,18 @@ async function verifyOwnership(email, uid) {
             });
         }
 
+        // =====================================================
+        // تأكيد فعلي إن الـ uid بتاعي بقى موجود في participants على
+        // السيرفر (مش بس إن الـ Promise فوق خلص من غير error) قبل ما
+        // نبدأ نستمع للرسايل. ده بيمنع المشكلة اللي كانت بتحصل:
+        // markIncomingMessagesAsRead بيتنفذ بسرعة جدًا بعد الانضمام،
+        // والـ Security Rules بترفض تحديث status لأن الانضمام لسه ما
+        // اتأكدش فعليًا في نسخة السيرفر من المستند (خصوصًا مع اتصال
+        // بطيء)، فرسايل الطرف التاني تفضل "صح واحدة" للأبد عند
+        // المرسل حتى لو أنا فاتح الشات وشايفها فعليًا.
+        // =====================================================
+        await waitUntilIAmParticipant(chatDocRef, myUid);
+
         // حالة الأونلاين: نسجّل وقت آخر ظهور بتاعي في مستند المحادثة،
         // ونقرا حالة الطرف التاني من نفس المستند لحظيًا.
         markMyPresence(chatDocRef);
@@ -346,9 +394,7 @@ async function verifyOwnership(email, uid) {
             const isFromOther = (data.senderEmail || '').toLowerCase() !== myEmailLower;
             const needsUpdate = data.status === 'unread' || data.status === 'offline';
             if (isFromOther && needsUpdate) {
-                updateDoc(d.ref, { status: 'read' }).catch((err) => {
-                    console.error('فشل تحديث حالة الرسالة إلى مقروءة:', err);
-                });
+                updateStatusWithRetry(d.ref);
             }
         });
     }
