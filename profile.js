@@ -111,4 +111,19 @@ import { db, doc, getDoc, setDoc, serverTimestamp, ensureAuthenticated } from ".
     });
 
     nameInput.focus();
+
+    // ===== تواصل مع المطور عبر واتساب =====
+    // لما المستخدم يدوس على الزرار، بنفتحله واتساب فيه رسالة جاهزة
+    // بالإيميل بتاعه عشان أقدر أساعده بسرعة من غير ما يكتب حاجة إضافية.
+    const contactDevBtn = document.getElementById('contactDevBtn');
+    const DEV_WHATSAPP_NUMBER = '201550425843'; // 01550425843 بصيغة دولية (مصر)
+
+    if (contactDevBtn) {
+        contactDevBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const message = `${verifiedEmailLower}\n\nبعد إذنك، المشكلة هي:`;
+            const waLink = `https://wa.me/${DEV_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+            window.open(waLink, '_blank');
+        });
+    }
 })();
