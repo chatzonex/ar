@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="main.css">
 <link rel="stylesheet" href="settings.css">
 <link rel="stylesheet" href="conversation.css">
+<link rel="stylesheet" href="chatzone-extra.css">
 </head>
 <body>
 
@@ -47,6 +48,15 @@
 
         <!-- ===== بار الكتابة السفلي: عادي أو عايم (Liquid Glass) ===== -->
         <div class="conv-input-area" id="convInputArea">
+            <div class="conv-reply-bar" id="convReplyBar">
+                <div class="conv-reply-bar-text">
+                    <div class="conv-reply-bar-name" id="convReplyBarName">—</div>
+                    <div class="conv-reply-bar-preview" id="convReplyBarPreview">—</div>
+                </div>
+                <div class="conv-reply-bar-close" id="convReplyBarClose" aria-label="إلغاء الرد">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </div>
+            </div>
             <div class="conv-input-bar" id="convInputBar">
                 <textarea
                     class="conv-textarea"
@@ -275,6 +285,39 @@
         </div>
     </div>
 
+    <!-- ===== Message long-press context menu (reply/delete) ===== -->
+    <div class="ctx-menu-overlay" id="msgCtxOverlay"></div>
+    <div class="ctx-menu" id="msgCtxMenu">
+        <div class="ctx-menu-item" id="msgCtxReply">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>
+            <span data-i18n="ctx_reply">رد</span>
+        </div>
+        <div class="ctx-menu-item danger" id="msgCtxDelete">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+            <span data-i18n="ctx_delete_msg">حذف الرسالة</span>
+        </div>
+    </div>
+
+    <!-- ===== Delete message confirm sheet ===== -->
+    <div class="sheet-overlay" id="sheet-delete-msg">
+        <div class="sheet-box">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-close" data-close-sheet="sheet-delete-msg">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div class="sheet-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+            </div>
+            <div class="sheet-title" data-i18n="delete_msg_title">حذف الرسالة؟</div>
+            <div class="sheet-sub" id="deleteMsgSheetBody" data-i18n="delete_msg_body_mine">تقدر تحذفها من عندك بس، أو من عند الطرفين.</div>
+            <div class="confirm-sheet-actions">
+                <button class="confirm-sheet-btn danger" id="deleteMsgForEveryoneBtn" data-i18n="ctx_delete_everyone">حذف من عند الطرفين</button>
+                <button class="confirm-sheet-btn neutral" id="deleteMsgForMeBtn" data-i18n="ctx_delete_me">حذف من عندي بس</button>
+                <button class="confirm-sheet-btn cancel" data-close-sheet="sheet-delete-msg" data-i18n="btn_cancel">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== Account Info Sheet ===== -->
     <div class="sheet-overlay" id="sheet-account-info">
         <div class="sheet-box">
@@ -293,6 +336,14 @@
             <div class="account-info-row">
                 <span class="account-info-row-label" data-i18n="info_email_label">البريد الإلكتروني</span>
                 <span class="account-info-row-value" id="accountInfoEmailValue">—</span>
+            </div>
+
+            <div class="account-info-row" style="align-items:flex-start; flex-direction:column; gap:8px;">
+                <span class="account-info-row-label" data-i18n="info_rename_label">تغيير الاسم</span>
+                <div class="account-info-rename-row">
+                    <input type="text" class="account-info-rename-input" id="accountInfoRenameInput" data-i18n-placeholder="info_rename_placeholder" placeholder="اكتب اسم جديد">
+                    <button class="account-info-rename-save" id="accountInfoRenameSave" data-i18n="info_rename_save">حفظ</button>
+                </div>
             </div>
         </div>
     </div>

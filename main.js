@@ -2,6 +2,8 @@ import {
     db,
     doc,
     getDoc,
+    updateDoc,
+    deleteField,
     collection,
     query,
     where,
@@ -151,9 +153,13 @@ import {
     // بنخزّن آخر بيانات معروفة لكل شات عشان نعيد الرسم كله مرة واحدة
     // وبترتيب صحيح كل ما يوصل تحديث (سواء تحديث الشات نفسه، أو رسالة
     // جديدة جاية من listener تاني).
-    const chatsState = new Map(); // chatId -> { otherEmail, lastMessage, lastAt, unread }
+    // pinned: تثبيت الشات (خاص بيا أنا بس) — pinnedFor.{myUid} == true
+    // deletedAt: وقت "حذف الشات من عندي" (خاص بيا أنا بس) — أي رسالة
+    // جاية بعد الوقت ده بترجّع الشات يظهر تاني تلقائيًا.
+    const chatsState = new Map(); // chatId -> { otherEmail, lastMessage, lastAt, unread, pinned, deletedAt }
     let messageUnsubscribers = new Map(); // chatId -> unsubscribe fn
     let unreadUnsubscribers = new Map(); // chatId -> unsubscribe fn
+    let myUidGlobal = null;
 
     // إجمالي عدد الرسائل غير المقروءة في كل الشاتات مجتمعة، بيتحدّث
     // فورًا مع أي تغيير وبيتعرض كـ badge على تاب "الدردشات" في شريط
@@ -179,14 +185,27 @@ import {
     }
 
     async function renderChatsList() {
-        const entries = Array.from(chatsState.values());
+        // الشات اللي اتحذف "من عندي" بيتخفي من القائمة، إلا لو وصلت
+        // رسالة جديدة بعد وقت الحذف (يعني لسه في محادثة فعلية شغالة).
+        const entries = Array.from(chatsState.entries())
+            .filter(([, entry]) => !entry.deletedAt || (entry.lastAt || 0) > entry.deletedAt)
+            .map(([chatId, entry]) => ({ chatId, ...entry }));
+
         if (!entries.length) {
             renderEmptyChatsState();
             updateGlobalUnreadBadge();
             return;
         }
 
-        entries.sort((a, b) => (b.lastAt || 0) - (a.lastAt || 0));
+        // المثبّت الأول، وبعدين ترتيب حسب آخر رسالة
+        entries.sort((a, b) => {
+            const ap = a.pinned ? 1 : 0;
+            const bp = b.pinned ? 1 : 0;
+            if (ap !== bp) return bp - ap;
+            return (b.lastAt || 0) - (a.lastAt || 0);
+        });
+
+        const pinIconSvg = `<svg class="chat-row-pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>`;
 
         const rows = await Promise.all(entries.map(async (entry) => {
             const name = await getRealName(entry.otherEmail);
@@ -201,14 +220,17 @@ import {
                 : '';
 
             return `
-                <div class="chat-row${unreadCount > 0 ? ' chat-row-unread' : ''}" data-email="${entry.otherEmail}">
+                <div class="chat-row${unreadCount > 0 ? ' chat-row-unread' : ''}${entry.pinned ? ' chat-row-pinned' : ''}" data-email="${entry.otherEmail}" data-chat-id="${entry.chatId}" data-pinned="${entry.pinned ? '1' : '0'}">
                     <div class="chat-row-avatar">${initial}</div>
                     <div class="chat-row-text">
                         <h4 class="chat-row-name">${name}</h4>
                         <p class="chat-row-preview">${preview}</p>
                     </div>
                     <div class="chat-row-meta">
-                        <span class="chat-row-time">${timeStr}</span>
+                        <div class="chat-row-meta-top">
+                            ${entry.pinned ? pinIconSvg : ''}
+                            <span class="chat-row-time">${timeStr}</span>
+                        </div>
                         ${unreadBadge}
                     </div>
                 </div>`;
@@ -217,13 +239,195 @@ import {
         chatsListEl.innerHTML = rows.join('');
 
         chatsListEl.querySelectorAll('.chat-row').forEach(row => {
-            row.addEventListener('click', () => {
-                goToConversation(row.getAttribute('data-email'));
-            });
+            attachChatRowInteractions(row);
         });
 
         updateGlobalUnreadBadge();
     }
+
+    // =====================================================
+    // ضغطة مطولة على كارت الشات -> قايمة (تثبيت / حذف)
+    // =====================================================
+    const LONG_PRESS_MS = 450;
+
+    function attachChatRowInteractions(row) {
+        row.addEventListener('click', () => {
+            goToConversation(row.getAttribute('data-email'));
+        });
+
+        let pressTimer = null;
+        let longPressed = false;
+        let startX = 0, startY = 0;
+
+        function cancelPress() {
+            if (pressTimer) clearTimeout(pressTimer);
+            pressTimer = null;
+        }
+
+        function startPress(x, y) {
+            longPressed = false;
+            startX = x; startY = y;
+            pressTimer = setTimeout(() => {
+                longPressed = true;
+                if (navigator.vibrate) { try { navigator.vibrate(15); } catch (e) {} }
+                openChatCtxMenu(row);
+            }, LONG_PRESS_MS);
+        }
+
+        row.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            startPress(touch.clientX, touch.clientY);
+        }, { passive: true });
+
+        row.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) {
+                cancelPress();
+            }
+        }, { passive: true });
+
+        row.addEventListener('touchend', () => {
+            cancelPress();
+        });
+
+        row.addEventListener('mousedown', (e) => {
+            startPress(e.clientX, e.clientY);
+        });
+        row.addEventListener('mouseup', cancelPress);
+        row.addEventListener('mouseleave', cancelPress);
+
+        row.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            openChatCtxMenu(row);
+        });
+
+        // بنمنع الـ click العادي (فتح الشات) لو كانت الضغطة طويلة فعلاً
+        row.addEventListener('click', (e) => {
+            if (longPressed) {
+                e.stopImmediatePropagation();
+                e.preventDefault();
+                longPressed = false;
+            }
+        }, true);
+    }
+
+    // ===== Context menu: تثبيت / حذف =====
+    const chatCtxOverlay = document.getElementById('chatCtxOverlay');
+    const chatCtxMenu = document.getElementById('chatCtxMenu');
+    const chatCtxPin = document.getElementById('chatCtxPin');
+    const chatCtxPinLabel = document.getElementById('chatCtxPinLabel');
+    const chatCtxDelete = document.getElementById('chatCtxDelete');
+    let ctxTargetChatId = null;
+    let ctxTargetEmail = null;
+
+    function openChatCtxMenu(row) {
+        ctxTargetChatId = row.getAttribute('data-chat-id');
+        ctxTargetEmail = row.getAttribute('data-email');
+        const isPinned = row.getAttribute('data-pinned') === '1';
+        if (chatCtxPinLabel) {
+            chatCtxPinLabel.textContent = isPinned
+                ? t('إلغاء تثبيت المحادثة', 'Unpin chat')
+                : t('تثبيت المحادثة', 'Pin chat');
+        }
+
+        if (!chatCtxMenu || !chatCtxOverlay) return;
+        const rect = row.getBoundingClientRect();
+        const isRtl = document.documentElement.dir === 'rtl';
+        let top = rect.bottom + 6;
+        const menuHeightEstimate = 110;
+        if (top + menuHeightEstimate > window.innerHeight) {
+            top = Math.max(10, rect.top - menuHeightEstimate - 6);
+        }
+        chatCtxMenu.style.top = top + 'px';
+        if (isRtl) {
+            chatCtxMenu.style.right = Math.max(10, window.innerWidth - rect.right) + 'px';
+            chatCtxMenu.style.left = 'auto';
+        } else {
+            chatCtxMenu.style.left = Math.max(10, rect.left) + 'px';
+            chatCtxMenu.style.right = 'auto';
+        }
+        chatCtxMenu.classList.add('open');
+        chatCtxOverlay.classList.add('open');
+    }
+
+    function closeChatCtxMenu() {
+        if (chatCtxMenu) chatCtxMenu.classList.remove('open');
+        if (chatCtxOverlay) chatCtxOverlay.classList.remove('open');
+    }
+
+    if (chatCtxOverlay) chatCtxOverlay.addEventListener('click', closeChatCtxMenu);
+
+    if (chatCtxPin) {
+        chatCtxPin.addEventListener('click', async () => {
+            const chatId = ctxTargetChatId;
+            closeChatCtxMenu();
+            if (!chatId || !myUidGlobal) return;
+            const entry = chatsState.get(chatId);
+            const willPin = !(entry && entry.pinned);
+            try {
+                await updateDoc(doc(db, 'chats', chatId), {
+                    ['pinnedFor.' + myUidGlobal]: willPin ? true : deleteField()
+                });
+                if (entry) {
+                    entry.pinned = willPin;
+                    chatsState.set(chatId, entry);
+                    renderChatsList();
+                }
+            } catch (e) {
+                console.error('فشل تحديث تثبيت المحادثة:', e);
+            }
+        });
+    }
+
+    // ===== حذف الشات (من عندي بس) =====
+    if (chatCtxDelete) {
+        chatCtxDelete.addEventListener('click', () => {
+            closeChatCtxMenu();
+            openSheet('sheet-delete-chat');
+        });
+    }
+
+    const deleteChatConfirmBtn = document.getElementById('deleteChatConfirmBtn');
+    if (deleteChatConfirmBtn) {
+        deleteChatConfirmBtn.addEventListener('click', async () => {
+            const chatId = ctxTargetChatId;
+            closeSheet('sheet-delete-chat');
+            if (!chatId || !myUidGlobal) return;
+            try {
+                await updateDoc(doc(db, 'chats', chatId), {
+                    ['deletedFor.' + myUidGlobal]: Date.now(),
+                    ['pinnedFor.' + myUidGlobal]: deleteField()
+                });
+                const entry = chatsState.get(chatId);
+                if (entry) {
+                    entry.deletedAt = Date.now();
+                    entry.pinned = false;
+                    chatsState.set(chatId, entry);
+                    renderChatsList();
+                }
+            } catch (e) {
+                console.error('فشل حذف المحادثة:', e);
+            }
+        });
+    }
+
+    // ===== Sheet helpers (نفس منطق باقي الأبب) =====
+    function openSheet(id) {
+        const overlay = document.getElementById(id);
+        if (overlay) overlay.classList.add('open');
+    }
+    function closeSheet(id) {
+        const overlay = document.getElementById(id);
+        if (overlay) overlay.classList.remove('open');
+    }
+    document.querySelectorAll('[data-close-sheet]').forEach(el => {
+        el.addEventListener('click', () => closeSheet(el.dataset.closeSheet));
+    });
+    document.querySelectorAll('.sheet-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeSheet(overlay.id);
+        });
+    });
 
     function listenToChatMessages(chatId, otherEmail) {
         if (messageUnsubscribers.has(chatId)) return;
@@ -245,26 +449,38 @@ import {
     }
 
     // بيستمع لعدد الرسائل غير المقروءة الجاية من الطرف التاني في شات
-    // معيّن (status == 'unread' و senderUid مش أنا)، وبيحدّث الرقم على
-    // كارت الشات وعلى تاب الدردشات فورًا — ده بيشتغل حتى لو المستخدم
-    // خارج شاشة الشات نفسها، طول ما main.js فاتح (الصفحة الرئيسية).
+    // معيّن، وبيحدّث الرقم على كارت الشات وعلى تاب الدردشات فورًا —
+    // ده بيشتغل حتى لو المستخدم خارج شاشة الشات نفسها، طول ما
+    // main.js فاتح (الصفحة الرئيسية).
+    //
+    // ملحوظة مهمة: الاستعلام هنا بيفلتر بـ status == 'unread' بس (فلتر
+    // واحد)، وبنستبعد رسايلي أنا نفسي (senderUid == myUid) على مستوى
+    // الكود مش داخل الاستعلام. ليه؟ لأن الفلتر المركّب اللي كان موجود
+    // قبل كده (status == 'unread' AND senderUid != myUid) بيحتاج
+    // composite index في Firestore غير موجود أصلاً في المشروع ده، فكل
+    // مرة كان بيحصل فيها تحديث كان onSnapshot بيرجّع خطأ "failed-
+    // precondition / index required" بدل الداتا، والكود القديم كان
+    // بيكتفي بطباعة الخطأ في الكونسول من غير ما يحدّث entry.unread —
+    // فالعدد كان بيفضل واقف على آخر قيمة نجحت تتحسب قبل كده بالصدفة
+    // (غالبًا 1)، وده بالظبط سبب المشكلة اللي كانت بتظهر أحيانًا وأحيانًا
+    // لأ، وبتجيب رسالة واحدة بس مش مقروءة مع إن فيه أكتر من واحدة.
+    // الحل: استعلام بفلتر واحد بس (مش محتاج index)، والفلترة التانية
+    // (استبعاد رسايلي أنا) بتتعمل على النتيجة نفسها بعد وصولها.
     function listenToUnreadCount(chatId, otherEmail, myUid) {
         if (unreadUnsubscribers.has(chatId)) return;
         const messagesRef = collection(db, 'chats', chatId, 'messages');
-        const q = query(
-            messagesRef,
-            where('status', '==', 'unread'),
-            where('senderUid', '!=', myUid)
-        );
+        const q = query(messagesRef, where('status', '==', 'unread'));
         const unsub = onSnapshot(q, (snap) => {
+            let count = 0;
+            snap.forEach(d => {
+                const data = d.data();
+                if (data.senderUid !== myUid) count++;
+            });
             const entry = chatsState.get(chatId) || { otherEmail };
-            entry.unread = snap.size;
+            entry.unread = count;
             chatsState.set(chatId, entry);
             renderChatsList();
         }, (err) => {
-            // بعض الاستعلامات المركّبة زي دي محتاجة composite index في
-            // Firestore، فلو حصل فشل هنا (مثلاً "index required")،
-            // بنطبعه بوضوح عشان يظهر لينك إنشاء الـ index في الكونسول.
             console.error('فشل الاستماع لعدد الرسائل غير المقروءة:', err);
         });
         unreadUnsubscribers.set(chatId, unsub);
@@ -275,6 +491,7 @@ import {
         try {
             const user = await ensureAuthenticated();
             myUid = user.uid;
+            myUidGlobal = user.uid;
         } catch (e) {
             console.error('فشل تسجيل الدخول في Firebase Auth:', e);
             return;
@@ -296,9 +513,16 @@ import {
                 const otherEmail = emails.find(e => e.toLowerCase() !== savedEmailLower) || '';
                 if (!otherEmail) return;
 
-                if (!chatsState.has(chatDoc.id)) {
-                    chatsState.set(chatDoc.id, { otherEmail, lastMessage: '', lastAt: 0, unread: 0 });
-                }
+                const pinnedFor = data.pinnedFor || {};
+                const deletedFor = data.deletedFor || {};
+                const pinned = !!pinnedFor[myUid];
+                const deletedAt = typeof deletedFor[myUid] === 'number' ? deletedFor[myUid] : null;
+
+                const entry = chatsState.get(chatDoc.id) || { otherEmail, lastMessage: '', lastAt: 0, unread: 0 };
+                entry.pinned = pinned;
+                entry.deletedAt = deletedAt;
+                chatsState.set(chatDoc.id, entry);
+
                 listenToChatMessages(chatDoc.id, otherEmail);
                 listenToUnreadCount(chatDoc.id, otherEmail, myUid);
             });

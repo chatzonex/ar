@@ -298,7 +298,11 @@
         privacy_pin_lastseen_title: 'تثبيت آخر ظهور',
         privacy_pin_lastseen_sub: 'آخر ظهورك يفضل ثابت، حتى لو كنت أونلاين',
         privacy_hide_readreceipts_title: 'منع الصح الزرقاء',
-        privacy_hide_readreceipts_sub: 'علامات القراءة الزرقاء مش هتظهر في الشات'
+        privacy_hide_readreceipts_sub: 'علامات القراءة الزرقاء مش هتظهر في الشات',
+        ctx_pin: 'تثبيت المحادثة',
+        ctx_delete_chat: 'حذف المحادثة',
+        delete_chat_title: 'حذف المحادثة؟',
+        delete_chat_body: 'هتتحذف من عندك أنت بس، ولو الطرف التاني بعت رسالة جديدة هتظهر تاني.'
     };
 
     const EN_TEXT = {
@@ -359,7 +363,11 @@
         privacy_pin_lastseen_title: 'Pin last seen',
         privacy_pin_lastseen_sub: 'Your last seen stays fixed, even while you\'re online',
         privacy_hide_readreceipts_title: 'Hide read receipts',
-        privacy_hide_readreceipts_sub: 'Blue read receipts won\'t appear in chat'
+        privacy_hide_readreceipts_sub: 'Blue read receipts won\'t appear in chat',
+        ctx_pin: 'Pin chat',
+        ctx_delete_chat: 'Delete chat',
+        delete_chat_title: 'Delete this chat?',
+        delete_chat_body: 'It will be deleted for you only. If the other person sends a new message, it will reappear.'
     };
 
     let currentLang = localStorage.getItem('cz_lang') || 'ar';

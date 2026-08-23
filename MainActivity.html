@@ -12,6 +12,7 @@
 </script>
 <link rel="stylesheet" href="main.css">
 <link rel="stylesheet" href="settings.css">
+<link rel="stylesheet" href="chatzone-extra.css">
 </head>
 <body>
 
@@ -69,6 +70,38 @@
                 <div class="sidebar-item-text">
                     <h4 data-i18n="sidebar_settings">الإعدادات</h4>
                     <p data-i18n="sidebar_settings_sub">تخصيص التطبيق</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Chat row long-press context menu (delete/pin) ===== -->
+        <div class="ctx-menu-overlay" id="chatCtxOverlay"></div>
+        <div class="ctx-menu" id="chatCtxMenu">
+            <div class="ctx-menu-item" id="chatCtxPin">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>
+                <span id="chatCtxPinLabel" data-i18n="ctx_pin">تثبيت المحادثة</span>
+            </div>
+            <div class="ctx-menu-item danger" id="chatCtxDelete">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                <span data-i18n="ctx_delete_chat">حذف المحادثة</span>
+            </div>
+        </div>
+
+        <!-- ===== Delete chat confirm sheet ===== -->
+        <div class="sheet-overlay" id="sheet-delete-chat">
+            <div class="sheet-box">
+                <div class="sheet-grabber"></div>
+                <div class="sheet-close" data-close-sheet="sheet-delete-chat">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </div>
+                <div class="sheet-icon">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+                </div>
+                <div class="sheet-title" data-i18n="delete_chat_title">حذف المحادثة؟</div>
+                <div class="sheet-sub" data-i18n="delete_chat_body">هتتحذف من عندك أنت بس، ولو الطرف التاني بعت رسالة جديدة هتظهر تاني.</div>
+                <div class="confirm-sheet-actions">
+                    <button class="confirm-sheet-btn danger" id="deleteChatConfirmBtn" data-i18n="ctx_delete_chat">حذف المحادثة</button>
+                    <button class="confirm-sheet-btn cancel" data-close-sheet="sheet-delete-chat" data-i18n="btn_cancel">إلغاء</button>
                 </div>
             </div>
         </div>

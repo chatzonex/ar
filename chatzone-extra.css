@@ -1,0 +1,365 @@
+/* =====================================================
+   ChatZone — إضافات: تثبيت/حذف الشات، ريبلاي وحذف الرسايل،
+   قايمة التلت نقط في الشات نفسها بشكل الـ dropdown القياسي،
+   وتغيير اسم جهة الاتصال
+   ===================================================== */
+
+/* ===== Pinned chat row indicator ===== */
+.chat-row-pinned {
+    order: -1;
+}
+
+.chat-row-pin-icon {
+    width: 13px;
+    height: 13px;
+    color: var(--text-faint);
+    flex-shrink: 0;
+    margin-inline-end: 2px;
+}
+
+.chat-row-meta-top {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+/* ===== Long-press context menu (chat row + message) =====
+   نفس شكل الـ .sidebar الموجود بالظبط (زجاجي، تحت الإصبع)، بس
+   بيتفتح في مكان الضغطة الطويلة مش تحت زرار التلت نقط */
+.ctx-menu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    background: rgba(0, 0, 0, 0);
+    pointer-events: none;
+    transition: background 0.28s ease;
+}
+
+.ctx-menu-overlay.open {
+    background: rgba(0, 0, 0, 0.32);
+    pointer-events: all;
+}
+
+.ctx-menu {
+    position: fixed;
+    width: 230px;
+    max-width: calc(100vw - 28px);
+    z-index: 410;
+    border-radius: 18px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.85);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.16s ease;
+    background: rgba(20, 26, 32, 0.86);
+    backdrop-filter: blur(18px) saturate(1.5);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.ctx-menu.open {
+    transform: scale(1);
+    opacity: 1;
+    pointer-events: all;
+}
+
+.ctx-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.ctx-menu-item:active,
+.ctx-menu-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.ctx-menu-item svg {
+    width: 19px;
+    height: 19px;
+    flex-shrink: 0;
+}
+
+.ctx-menu-item.danger {
+    color: #F87171;
+}
+
+/* ===== Confirm sheet (delete chat / delete message) =====
+   نفس بار الـ .sheet-box بتاع باقي الأبب، بس أصغر ومخصص
+   لتأكيد إجراء بس (مش قايمة اختيارات طويلة) */
+.confirm-sheet-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.confirm-sheet-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    border: none;
+    font-family: inherit;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    text-align: center;
+}
+
+.confirm-sheet-btn:active {
+    transform: scale(0.97);
+}
+
+.confirm-sheet-btn.danger {
+    background: rgba(248, 113, 113, 0.14);
+    color: #F87171;
+    border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+.confirm-sheet-btn.neutral {
+    background: var(--glass-strong);
+    color: var(--text);
+    border: 1px solid var(--glass-border);
+}
+
+.confirm-sheet-btn.cancel {
+    background: transparent;
+    color: var(--text-dim);
+}
+
+/* ===== Reply preview (swipe-to-reply, WhatsApp-style) ===== */
+.msg-row {
+    position: relative;
+    touch-action: pan-y;
+}
+
+.msg-row-inner {
+    display: flex;
+    width: 100%;
+    transition: transform 0.18s ease;
+}
+
+.msg-row.from-me .msg-row-inner {
+    justify-content: flex-end;
+}
+
+.msg-row.from-them .msg-row-inner {
+    justify-content: flex-start;
+}
+
+.msg-row-reply-icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%) scale(0.6);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--glass-strong);
+    border: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    opacity: 0;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    pointer-events: none;
+}
+
+.msg-row.swiping .msg-row-reply-icon {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+}
+
+html[dir="ltr"] .msg-row-reply-icon,
+.msg-row-reply-icon {
+    left: 8px;
+}
+
+.msg-row-reply-icon svg {
+    width: 15px;
+    height: 15px;
+}
+
+/* الرسالة المختارة (بعد الضغطة الطويلة) بتتظلل شوية */
+.msg-row.selected .bubble {
+    box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* ===== Quoted / replied-to snippet inside a bubble ===== */
+.bubble-reply-quote {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.06);
+    border-inline-start: 3px solid var(--accent);
+    max-width: 100%;
+}
+
+.bubble-reply-quote-name {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.bubble-reply-quote-text {
+    font-size: 12px;
+    color: rgba(16, 22, 26, 0.65);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ===== Reply composer bar (above the textarea, before sending) ===== */
+.conv-reply-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    margin: 0 10px 6px;
+    border-radius: 14px;
+    background: var(--glass-strong);
+    border: 1px solid var(--glass-border);
+    border-inline-start: 3px solid var(--accent);
+}
+
+.conv-reply-bar.open {
+    display: flex;
+}
+
+.conv-reply-bar-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.conv-reply-bar-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 1px;
+}
+
+.conv-reply-bar-preview {
+    font-size: 12.5px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.conv-reply-bar-close {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.conv-reply-bar-close:active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ===== Deleted message placeholder ===== */
+.bubble-text.deleted {
+    color: rgba(16, 22, 26, 0.45);
+    font-style: italic;
+}
+
+.bubble.bubble-left .bubble-text.deleted {
+    color: rgba(16, 22, 26, 0.45);
+}
+
+/* ===== Rename contact row inside Account Info sheet ===== */
+.account-info-rename-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.account-info-rename-input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: var(--glass-strong);
+    border: 1px solid var(--glass-border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.account-info-rename-input:focus {
+    border-color: var(--accent);
+}
+
+.account-info-rename-save {
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: var(--grad);
+    color: #06110C;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.account-info-rename-save:active {
+    transform: scale(0.95);
+}
+
+.account-info-rename-save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ===== Small toast (used for "renamed", "message deleted", etc) ===== */
+.cz-toast {
+    position: fixed;
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(20, 26, 32, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--text);
+    padding: 11px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    backdrop-filter: blur(12px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    z-index: 500;
+    white-space: nowrap;
+    max-width: calc(100vw - 40px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cz-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
