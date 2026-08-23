@@ -97,12 +97,41 @@ html[dir="rtl"] .conv-back-btn svg {
     color: var(--accent);
 }
 
-/* عنصر فارغ بنفس عرض زرار الرجوع عشان الاسم يفضل في المنتصف بالظبط */
-.conv-topbar-spacer {
+/* زرار التلت نقط (خيارات الشات) — نفس عرض زرار الرجوع عشان الاسم يفضل
+   في المنتصف بالظبط، وبيفتح قايمة زي اللي في الصفحة الرئيسية */
+.conv-menu-btn {
     width: 40px;
+    height: 40px;
     min-width: 40px;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 50%;
+    color: var(--text);
+    transition: background 0.2s ease, transform 0.15s ease;
     flex-shrink: 0;
     order: 3;
+}
+
+.conv-menu-btn:active {
+    transform: scale(0.92);
+    background: var(--glass-strong);
+}
+
+.conv-menu-btn .dots {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.conv-menu-btn .dots span {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
 }
 
 /* ===== Messages Area ===== */
@@ -413,4 +442,309 @@ body.theme-white.lg-bottombar-on .conv-input-bar {
     background: rgba(255, 255, 255, 0.55);
     border-color: rgba(0, 0, 0, 0.08);
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* ===================================================
+   LIQUID GLASS IN CHAT — back button + topbar + menu btn
+   بيتفعّل بنفس الـ toggle بتاع بار الكتابة (lg-bottombar-on)
+   عشان يبقى إحساس واحد متناسق في شاشة الشات كلها
+=================================================== */
+body.lg-bottombar-on .conv-back-btn,
+body.lg-bottombar-on .conv-menu-btn {
+    background: rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(14px) saturate(1.6) brightness(1.1);
+    -webkit-backdrop-filter: blur(14px) saturate(1.6) brightness(1.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+body.lg-bottombar-on .conv-topbar {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px) saturate(1.6) brightness(1.08);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6) brightness(1.08);
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+body.theme-white.lg-bottombar-on .conv-back-btn,
+body.theme-white.lg-bottombar-on .conv-menu-btn {
+    background: rgba(255, 255, 255, 0.55);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+body.theme-white.lg-bottombar-on .conv-topbar {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(20px) saturate(1.5) brightness(1.03);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5) brightness(1.03);
+    border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+/* ===================================================
+   CUSTOM BUBBLE COLORS — خاص بكل شات (chatId) لوحده،
+   بيتطبق عن طريق CSS variables بتتحط على .conv-shell
+   من الجافاسكريبت. الافتراضي بيفضل أبيض زي ما هو.
+=================================================== */
+.conv-shell {
+    --bubble-mine-bg: #FFFFFF;
+    --bubble-mine-text: #10161A;
+    --bubble-mine-time: rgba(16, 22, 26, 0.55);
+    --bubble-mine-tick: rgba(16, 22, 26, 0.45);
+    --bubble-theirs-bg: #FFFFFF;
+    --bubble-theirs-text: #10161A;
+    --bubble-theirs-time: rgba(16, 22, 26, 0.55);
+}
+
+.bubble.bubble-right {
+    background: var(--bubble-mine-bg);
+}
+.bubble.bubble-right::after {
+    background: var(--bubble-mine-bg);
+}
+.bubble.bubble-right .bubble-text {
+    color: var(--bubble-mine-text);
+}
+.bubble.bubble-right .bubble-time {
+    color: var(--bubble-mine-time);
+}
+.bubble.bubble-right .bubble-tick.tick-offline::before,
+.bubble.bubble-right .bubble-tick.tick-unread::before {
+    color: var(--bubble-mine-tick);
+}
+
+.bubble.bubble-left {
+    background: var(--bubble-theirs-bg);
+}
+.bubble.bubble-left::after {
+    background: var(--bubble-theirs-bg);
+}
+.bubble.bubble-left .bubble-text {
+    color: var(--bubble-theirs-text);
+}
+.bubble.bubble-left .bubble-time {
+    color: var(--bubble-theirs-time);
+}
+
+/* ===================================================
+   CUSTOM CHAT FONT — بيتطبق على نص الفقاعات وبار الكتابة
+   بس (مش على واجهة التطبيق كلها)، وبيتحفظ عشان يفضل شغال
+   في كل المحادثات لحد ما يتغيّر تاني
+=================================================== */
+.conv-shell.font-cairo .bubble-text,
+.conv-shell.font-cairo .conv-textarea { font-family: 'Cairo', sans-serif; }
+
+.conv-shell.font-tajawal .bubble-text,
+.conv-shell.font-tajawal .conv-textarea { font-family: 'Tajawal', sans-serif; }
+
+.conv-shell.font-amiri .bubble-text,
+.conv-shell.font-amiri .conv-textarea { font-family: 'Amiri', serif; }
+
+.conv-shell.font-reem .bubble-text,
+.conv-shell.font-reem .conv-textarea { font-family: 'Reem Kufi', sans-serif; }
+
+.conv-shell.font-lobster .bubble-text,
+.conv-shell.font-lobster .conv-textarea { font-family: 'Lobster', cursive; }
+
+.conv-shell.font-pacifico .bubble-text,
+.conv-shell.font-pacifico .conv-textarea { font-family: 'Pacifico', cursive; }
+
+.conv-shell.font-dancing .bubble-text,
+.conv-shell.font-dancing .conv-textarea { font-family: 'Dancing Script', cursive; }
+
+/* معاينات الخطوط جوه شيت اختيار الخط */
+.font-preview-default { font-family: inherit; }
+.font-preview-cairo { font-family: 'Cairo', sans-serif; }
+.font-preview-tajawal { font-family: 'Tajawal', sans-serif; }
+.font-preview-amiri { font-family: 'Amiri', serif; }
+.font-preview-reem { font-family: 'Reem Kufi', sans-serif; }
+.font-preview-lobster { font-family: 'Lobster', cursive; }
+.font-preview-pacifico { font-family: 'Pacifico', cursive; }
+.font-preview-dancing { font-family: 'Dancing Script', cursive; }
+
+/* ===================================================
+   Conversation menu sheets: bubble colors, fonts, info
+=================================================== */
+.bubble-color-section {
+    margin-bottom: 20px;
+}
+
+.bubble-color-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+    text-align: start;
+}
+
+.bubble-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.bubble-swatch-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 6px;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--glass-border);
+    background: var(--glass);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.bubble-swatch-option.selected {
+    border-color: var(--accent);
+    background: rgba(37, 217, 160, 0.08);
+}
+
+.bubble-swatch-option span {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-align: center;
+}
+
+.bubble-swatch-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+.bubble-reset-btn {
+    width: 100%;
+    padding: 13px;
+    border-radius: 999px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass);
+    color: var(--text-dim);
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: background 0.2s ease;
+}
+
+.bubble-reset-btn:active {
+    background: var(--glass-strong);
+}
+
+.font-option-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.font-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--glass-border);
+    background: var(--glass);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.font-option.selected {
+    border-color: var(--accent);
+    background: rgba(37, 217, 160, 0.08);
+}
+
+.font-option-preview {
+    font-size: 17px;
+    min-width: 44px;
+    text-align: center;
+    color: var(--text);
+}
+
+.font-option-label {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.font-option-label span {
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--text-faint);
+}
+
+.font-option-check {
+    position: absolute;
+    left: 14px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.font-option.selected .font-option-check {
+    display: flex;
+}
+
+html[dir="ltr"] .font-option-check,
+html[dir="ltr"] .bubble-color-section-title {
+    left: auto;
+    right: 14px;
+}
+
+/* Account info sheet */
+.account-info-avatar {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: var(--grad, linear-gradient(135deg, #25D9A0, #5B7FFF));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 700;
+    color: #06110C;
+    margin: 0 auto 12px;
+}
+
+.account-info-email {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 22px;
+}
+
+.account-info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 2px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.account-info-row:last-child {
+    border-bottom: none;
+}
+
+.account-info-row-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+}
+
+.account-info-row-value {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: end;
+    word-break: break-all;
 }

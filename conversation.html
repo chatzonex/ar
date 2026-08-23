@@ -9,6 +9,9 @@
         window.location.replace('index.html');
     }
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&family=Reem+Kufi:wght@400;600&family=Lobster&family=Pacifico&family=Dancing+Script:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="main.css">
 <link rel="stylesheet" href="settings.css">
 <link rel="stylesheet" href="conversation.css">
@@ -30,7 +33,11 @@
                 <p class="conv-status" id="convStatus"></p>
             </div>
 
-            <div class="conv-topbar-spacer"></div>
+            <button class="conv-menu-btn" id="convMenuBtn" aria-label="خيارات">
+                <span class="dots">
+                    <span></span><span></span><span></span>
+                </span>
+            </button>
         </header>
 
         <!-- ===== منطقة الرسائل ===== -->
@@ -57,6 +64,237 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- ===== Conversation 3-dot Dropdown Menu ===== -->
+    <div class="sidebar-overlay" id="convSidebarOverlay"></div>
+    <div class="sidebar" id="convSidebarMenu">
+        <div class="sidebar-item" id="convOpenBubbleColors">
+            <div class="sidebar-item-icon">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 21c-4.97 0-9-3.5-9-8a8 8 0 0 1 16 0c0 1.5-1 2.5-2.5 2.5H15a1.5 1.5 0 0 0-1 2.6c.4.4.6.9.6 1.4 0 1.4-1.2 1.5-2.6 1.5z" stroke="#25D9A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="7.5" cy="11" r="1.2" fill="#5B7FFF"/>
+                    <circle cx="12" cy="8" r="1.2" fill="#ec4899"/>
+                    <circle cx="16" cy="11" r="1.2" fill="#f59e0b"/>
+                </svg>
+            </div>
+            <div class="sidebar-item-text">
+                <h4 data-i18n="conv_menu_bubbles">تخصيص لون الفقاعات</h4>
+                <p data-i18n="conv_menu_bubbles_sub">غيّر لون فقاعات الرسائل في الشات ده بس</p>
+            </div>
+        </div>
+        <div class="sidebar-item" id="convOpenFont">
+            <div class="sidebar-item-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+            </div>
+            <div class="sidebar-item-text">
+                <h4 data-i18n="conv_menu_font">تخصيص الخط</h4>
+                <p data-i18n="conv_menu_font_sub">اختر خط الكتابة في الشات</p>
+            </div>
+        </div>
+        <div class="sidebar-item" id="convOpenInfo">
+            <div class="sidebar-item-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="16" x2="12" y2="11"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </div>
+            <div class="sidebar-item-text">
+                <h4 data-i18n="conv_menu_info">معلومات الحساب</h4>
+                <p data-i18n="conv_menu_info_sub">اسم وإيميل الشخص اللي بتكلمه</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Bubble Colors Sheet ===== -->
+    <div class="sheet-overlay" id="sheet-bubble-colors">
+        <div class="sheet-box">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-close" data-close-sheet="sheet-bubble-colors">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div class="sheet-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 21c-4.97 0-9-3.5-9-8a8 8 0 0 1 16 0c0 1.5-1 2.5-2.5 2.5H15a1.5 1.5 0 0 0-1 2.6c.4.4.6.9.6 1.4 0 1.4-1.2 1.5-2.6 1.5z" stroke="#25D9A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="7.5" cy="11" r="1.2" fill="#5B7FFF"/>
+                    <circle cx="12" cy="8" r="1.2" fill="#ec4899"/>
+                    <circle cx="16" cy="11" r="1.2" fill="#f59e0b"/>
+                </svg>
+            </div>
+            <div class="sheet-title" data-i18n="bubbles_title">تخصيص لون الفقاعات</div>
+            <div class="sheet-sub" data-i18n="bubbles_body">الألوان دي هتتطبق في الشات ده بس. لو دخلت شات تاني هتلاقي الفقاعات البيضاء العادية.</div>
+
+            <div class="bubble-color-section">
+                <h5 class="bubble-color-section-title" data-i18n="bubbles_mine_title">فقاعتي أنا</h5>
+                <div class="bubble-swatch-grid" id="bubbleSwatchGridMine">
+                    <div class="bubble-swatch-option selected" data-color="#FFFFFF" data-text-dark="1">
+                        <div class="bubble-swatch-circle" style="background:#FFFFFF; border-color: rgba(0,0,0,0.15);"></div>
+                        <span data-i18n="bubbles_default">افتراضي</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#C9CDD3" data-text-dark="1">
+                        <div class="bubble-swatch-circle" style="background:#C9CDD3;"></div>
+                        <span data-i18n="bubbles_silver">فضي</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#25D9A0" data-text-dark="1">
+                        <div class="bubble-swatch-circle" style="background:#25D9A0;"></div>
+                        <span data-i18n="bubbles_green">أخضر</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#5B7FFF" data-text-dark="0">
+                        <div class="bubble-swatch-circle" style="background:#5B7FFF;"></div>
+                        <span data-i18n="bubbles_blue">أزرق</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#ec4899" data-text-dark="0">
+                        <div class="bubble-swatch-circle" style="background:#ec4899;"></div>
+                        <span data-i18n="bubbles_pink">وردي</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#a78bfa" data-text-dark="0">
+                        <div class="bubble-swatch-circle" style="background:#a78bfa;"></div>
+                        <span data-i18n="bubbles_purple">بنفسجي</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#f59e0b" data-text-dark="1">
+                        <div class="bubble-swatch-circle" style="background:#f59e0b;"></div>
+                        <span data-i18n="bubbles_orange">برتقالي</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#06b6d4" data-text-dark="0">
+                        <div class="bubble-swatch-circle" style="background:#06b6d4;"></div>
+                        <span data-i18n="bubbles_cyan">سماوي</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#ef4444" data-text-dark="0">
+                        <div class="bubble-swatch-circle" style="background:#ef4444;"></div>
+                        <span data-i18n="bubbles_red">أحمر</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#1a1a2e" data-text-dark="0">
+                        <div class="bubble-swatch-circle" style="background:#1a1a2e; border-color: rgba(255,255,255,0.2);"></div>
+                        <span data-i18n="bubbles_dark">داكن</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bubble-color-section">
+                <h5 class="bubble-color-section-title" data-i18n="bubbles_theirs_title">فقاعة الطرف التاني</h5>
+                <div class="bubble-swatch-grid" id="bubbleSwatchGridTheirs">
+                    <div class="bubble-swatch-option selected" data-color="#FFFFFF" data-text-dark="1">
+                        <div class="bubble-swatch-circle" style="background:#FFFFFF; border-color: rgba(0,0,0,0.15);"></div>
+                        <span data-i18n="bubbles_default">افتراضي</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#C9CDD3" data-text-dark="1">
+                        <div class="bubble-swatch-circle" style="background:#C9CDD3;"></div>
+                        <span data-i18n="bubbles_silver">فضي</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#25D9A0" data-text-dark="1">
+                        <div class="bubble-swatch-circle" style="background:#25D9A0;"></div>
+                        <span data-i18n="bubbles_green">أخضر</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#5B7FFF" data-text-dark="0">
+                        <div class="bubble-swatch-circle" style="background:#5B7FFF;"></div>
+                        <span data-i18n="bubbles_blue">أزرق</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#ec4899" data-text-dark="0">
+                        <div class="bubble-swatch-circle" style="background:#ec4899;"></div>
+                        <span data-i18n="bubbles_pink">وردي</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#a78bfa" data-text-dark="0">
+                        <div class="bubble-swatch-circle" style="background:#a78bfa;"></div>
+                        <span data-i18n="bubbles_purple">بنفسجي</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#f59e0b" data-text-dark="1">
+                        <div class="bubble-swatch-circle" style="background:#f59e0b;"></div>
+                        <span data-i18n="bubbles_orange">برتقالي</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#06b6d4" data-text-dark="0">
+                        <div class="bubble-swatch-circle" style="background:#06b6d4;"></div>
+                        <span data-i18n="bubbles_cyan">سماوي</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#ef4444" data-text-dark="0">
+                        <div class="bubble-swatch-circle" style="background:#ef4444;"></div>
+                        <span data-i18n="bubbles_red">أحمر</span>
+                    </div>
+                    <div class="bubble-swatch-option" data-color="#1a1a2e" data-text-dark="0">
+                        <div class="bubble-swatch-circle" style="background:#1a1a2e; border-color: rgba(255,255,255,0.2);"></div>
+                        <span data-i18n="bubbles_dark">داكن</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="bubble-reset-btn" id="bubbleResetBtn" data-i18n="bubbles_reset">إرجاع الافتراضي</button>
+        </div>
+    </div>
+
+    <!-- ===== Font Sheet ===== -->
+    <div class="sheet-overlay" id="sheet-font">
+        <div class="sheet-box">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-close" data-close-sheet="sheet-font">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div class="sheet-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+            </div>
+            <div class="sheet-title" data-i18n="font_title">تخصيص الخط</div>
+            <div class="sheet-sub" data-i18n="font_body">اختر خط الكتابة في الشات، وسيتم حفظه واستخدامه دايمًا في كل المحادثات.</div>
+
+            <div class="font-option-list" id="fontOptionList">
+                <div class="font-option selected" data-font="default">
+                    <span class="font-option-preview font-preview-default">Aa أب</span>
+                    <span class="font-option-label" data-i18n="font_default">الافتراضي</span>
+                    <div class="font-option-check"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                </div>
+                <div class="font-option" data-font="cairo">
+                    <span class="font-option-preview font-preview-cairo">Aa أب</span>
+                    <span class="font-option-label">Cairo</span>
+                    <div class="font-option-check"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                </div>
+                <div class="font-option" data-font="tajawal">
+                    <span class="font-option-preview font-preview-tajawal">Aa أب</span>
+                    <span class="font-option-label">Tajawal</span>
+                    <div class="font-option-check"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                </div>
+                <div class="font-option" data-font="amiri">
+                    <span class="font-option-preview font-preview-amiri">Aa أب</span>
+                    <span class="font-option-label">Amiri <span data-i18n="font_deco_ar">(خط زخرفي عربي)</span></span>
+                    <div class="font-option-check"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                </div>
+                <div class="font-option" data-font="reem">
+                    <span class="font-option-preview font-preview-reem">Aa أب</span>
+                    <span class="font-option-label">Reem Kufi <span data-i18n="font_deco_ar">(خط زخرفي عربي)</span></span>
+                    <div class="font-option-check"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                </div>
+                <div class="font-option" data-font="lobster">
+                    <span class="font-option-preview font-preview-lobster">Aa</span>
+                    <span class="font-option-label">Lobster <span data-i18n="font_deco_en">(خط زخرفي إنجليزي)</span></span>
+                    <div class="font-option-check"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                </div>
+                <div class="font-option" data-font="pacifico">
+                    <span class="font-option-preview font-preview-pacifico">Aa</span>
+                    <span class="font-option-label">Pacifico <span data-i18n="font_deco_en">(خط زخرفي إنجليزي)</span></span>
+                    <div class="font-option-check"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                </div>
+                <div class="font-option" data-font="dancing">
+                    <span class="font-option-preview font-preview-dancing">Aa</span>
+                    <span class="font-option-label">Dancing Script <span data-i18n="font_deco_en">(خط زخرفي إنجليزي)</span></span>
+                    <div class="font-option-check"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Account Info Sheet ===== -->
+    <div class="sheet-overlay" id="sheet-account-info">
+        <div class="sheet-box">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-close" data-close-sheet="sheet-account-info">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div class="account-info-avatar" id="accountInfoAvatar">؟</div>
+            <div class="sheet-title" id="accountInfoName">—</div>
+            <div class="account-info-email" id="accountInfoEmail">—</div>
+
+            <div class="account-info-row">
+                <span class="account-info-row-label" data-i18n="info_name_label">الاسم</span>
+                <span class="account-info-row-value" id="accountInfoNameValue">—</span>
+            </div>
+            <div class="account-info-row">
+                <span class="account-info-row-label" data-i18n="info_email_label">البريد الإلكتروني</span>
+                <span class="account-info-row-value" id="accountInfoEmailValue">—</span>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="conversation.js"></script>

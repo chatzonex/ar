@@ -72,15 +72,76 @@ async function verifyOwnership(email, uid) {
         ar: {
             type_message: 'اكتب رسالة...',
             back: 'رجوع',
-            unknown_contact: 'مستخدم'
+            unknown_contact: 'مستخدم',
+            conv_menu_bubbles: 'تخصيص لون الفقاعات',
+            conv_menu_bubbles_sub: 'غيّر لون فقاعات الرسائل في الشات ده بس',
+            conv_menu_font: 'تخصيص الخط',
+            conv_menu_font_sub: 'اختر خط الكتابة في الشات',
+            conv_menu_info: 'معلومات الحساب',
+            conv_menu_info_sub: 'اسم وإيميل الشخص اللي بتكلمه',
+            bubbles_title: 'تخصيص لون الفقاعات',
+            bubbles_body: 'الألوان دي هتتطبق في الشات ده بس. لو دخلت شات تاني هتلاقي الفقاعات البيضاء العادية.',
+            bubbles_mine_title: 'فقاعتي أنا',
+            bubbles_theirs_title: 'فقاعة الطرف التاني',
+            bubbles_default: 'افتراضي',
+            bubbles_silver: 'فضي',
+            bubbles_green: 'أخضر',
+            bubbles_blue: 'أزرق',
+            bubbles_pink: 'وردي',
+            bubbles_purple: 'بنفسجي',
+            bubbles_orange: 'برتقالي',
+            bubbles_cyan: 'سماوي',
+            bubbles_red: 'أحمر',
+            bubbles_dark: 'داكن',
+            bubbles_reset: 'إرجاع الافتراضي',
+            font_title: 'تخصيص الخط',
+            font_body: 'اختر خط الكتابة في الشات، وسيتم حفظه واستخدامه دايمًا في كل المحادثات.',
+            font_default: 'الافتراضي',
+            font_deco_ar: '(خط زخرفي عربي)',
+            font_deco_en: '(خط زخرفي إنجليزي)',
+            info_name_label: 'الاسم',
+            info_email_label: 'البريد الإلكتروني'
         },
         en: {
             type_message: 'Type a message...',
             back: 'Back',
-            unknown_contact: 'User'
+            unknown_contact: 'User',
+            conv_menu_bubbles: 'Customize bubble colors',
+            conv_menu_bubbles_sub: 'Change message bubble colors for this chat only',
+            conv_menu_font: 'Customize font',
+            conv_menu_font_sub: 'Choose the chat font',
+            conv_menu_info: 'Account info',
+            conv_menu_info_sub: 'Name and email of the person you\'re chatting with',
+            bubbles_title: 'Customize bubble colors',
+            bubbles_body: 'These colors apply to this chat only. Other chats will still show the default white bubbles.',
+            bubbles_mine_title: 'My bubble',
+            bubbles_theirs_title: 'Their bubble',
+            bubbles_default: 'Default',
+            bubbles_silver: 'Silver',
+            bubbles_green: 'Green',
+            bubbles_blue: 'Blue',
+            bubbles_pink: 'Pink',
+            bubbles_purple: 'Purple',
+            bubbles_orange: 'Orange',
+            bubbles_cyan: 'Cyan',
+            bubbles_red: 'Red',
+            bubbles_dark: 'Dark',
+            bubbles_reset: 'Reset to default',
+            font_title: 'Customize font',
+            font_body: 'Choose the chat font. It will be saved and used across all conversations.',
+            font_default: 'Default',
+            font_deco_ar: '(Arabic decorative font)',
+            font_deco_en: '(English decorative font)',
+            info_name_label: 'Name',
+            info_email_label: 'Email'
         }
     };
     const T = I18N[isAr ? 'ar' : 'en'];
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (T[key] !== undefined) el.textContent = T[key];
+    });
 
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
         const key = el.getAttribute('data-i18n-placeholder');
@@ -115,6 +176,8 @@ async function verifyOwnership(email, uid) {
     convNameEl.textContent = displayNameFromEmail(otherEmail);
     convStatusEl.textContent = '';
 
+    let otherRealName = displayNameFromEmail(otherEmail);
+
     async function loadOtherRealName() {
         try {
             const otherUserRef = doc(db, 'users', otherEmail.toLowerCase());
@@ -122,15 +185,37 @@ async function verifyOwnership(email, uid) {
             if (snap.exists()) {
                 const data = snap.data();
                 if (data.name) {
+                    otherRealName = data.name;
                     convNameEl.textContent = data.name;
                 }
             }
         } catch (e) {
             // لو فشل الجلب لأي سبب، بيفضل الاسم المشتق من الإيميل كبديل
             console.error('فشل جلب الاسم الحقيقي للطرف التاني:', e);
+        } finally {
+            populateAccountInfo();
         }
     }
 
+    // =====================================================
+    // معلومات الحساب (اسم + إيميل الطرف التاني) — بتتحط في
+    // شيت "معلومات الحساب" اللي بيتفتح من قايمة التلت نقط
+    // =====================================================
+    function populateAccountInfo() {
+        const avatarEl = document.getElementById('accountInfoAvatar');
+        const nameEl = document.getElementById('accountInfoName');
+        const emailEl = document.getElementById('accountInfoEmail');
+        const nameValEl = document.getElementById('accountInfoNameValue');
+        const emailValEl = document.getElementById('accountInfoEmailValue');
+
+        if (avatarEl) avatarEl.textContent = otherRealName.trim().charAt(0).toUpperCase() || '؟';
+        if (nameEl) nameEl.textContent = otherRealName;
+        if (emailEl) emailEl.textContent = otherEmail;
+        if (nameValEl) nameValEl.textContent = otherRealName;
+        if (emailValEl) emailValEl.textContent = otherEmail;
+    }
+
+    populateAccountInfo();
     loadOtherRealName();
 
     // =====================================================
@@ -152,6 +237,251 @@ async function verifyOwnership(email, uid) {
     }
 
     const chatId = makeChatId(myEmail, otherEmail);
+
+    // =====================================================
+    // 4.1) قايمة التلت نقط الخاصة بشاشة الشات (زي اللي في
+    //      الصفحة الرئيسية بالظبط، بس بخيارات مختلفة)
+    // =====================================================
+    const convMenuBtn = document.getElementById('convMenuBtn');
+    const convSidebarMenu = document.getElementById('convSidebarMenu');
+    const convSidebarOverlay = document.getElementById('convSidebarOverlay');
+
+    function openConvMenu() {
+        if (!convSidebarMenu || !convSidebarOverlay || !convMenuBtn) return;
+        const isRtl = document.documentElement.dir === 'rtl';
+        const btnRect = convMenuBtn.getBoundingClientRect();
+        convSidebarMenu.style.top = (btnRect.bottom + 8) + 'px';
+        if (isRtl) {
+            convSidebarMenu.style.right = (window.innerWidth - btnRect.right) + 'px';
+            convSidebarMenu.style.left = 'auto';
+        } else {
+            convSidebarMenu.style.left = btnRect.left + 'px';
+            convSidebarMenu.style.right = 'auto';
+        }
+        convSidebarMenu.classList.add('open');
+        convSidebarOverlay.classList.add('open');
+    }
+
+    function closeConvMenu() {
+        if (!convSidebarMenu || !convSidebarOverlay) return;
+        convSidebarMenu.classList.remove('open');
+        convSidebarOverlay.classList.remove('open');
+    }
+
+    if (convMenuBtn) {
+        convMenuBtn.addEventListener('click', () => {
+            if (convSidebarMenu && convSidebarMenu.classList.contains('open')) {
+                closeConvMenu();
+            } else {
+                openConvMenu();
+            }
+        });
+    }
+    if (convSidebarOverlay) {
+        convSidebarOverlay.addEventListener('click', closeConvMenu);
+    }
+
+    function openSheet(id) {
+        const overlay = document.getElementById(id);
+        if (overlay) overlay.classList.add('open');
+    }
+    function closeSheet(id) {
+        const overlay = document.getElementById(id);
+        if (overlay) overlay.classList.remove('open');
+    }
+
+    document.querySelectorAll('[data-close-sheet]').forEach(el => {
+        el.addEventListener('click', () => closeSheet(el.dataset.closeSheet));
+    });
+    document.querySelectorAll('.sheet-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeSheet(overlay.id);
+        });
+    });
+
+    const convOpenBubbleColors = document.getElementById('convOpenBubbleColors');
+    const convOpenFont = document.getElementById('convOpenFont');
+    const convOpenInfo = document.getElementById('convOpenInfo');
+
+    if (convOpenBubbleColors) {
+        convOpenBubbleColors.addEventListener('click', () => {
+            closeConvMenu();
+            openSheet('sheet-bubble-colors');
+        });
+    }
+    if (convOpenFont) {
+        convOpenFont.addEventListener('click', () => {
+            closeConvMenu();
+            openSheet('sheet-font');
+        });
+    }
+    if (convOpenInfo) {
+        convOpenInfo.addEventListener('click', () => {
+            closeConvMenu();
+            openSheet('sheet-account-info');
+        });
+    }
+
+    // =====================================================
+    // 4.2) تخصيص لون الفقاعات — خاص بكل شات لوحده (بيتحفظ
+    //      باستخدام chatId كجزء من المفتاح)، وبيتطبق فورًا
+    //      عن طريق CSS variables على .conv-shell
+    // =====================================================
+    const convShellEl = document.querySelector('.conv-shell');
+    const BUBBLE_MINE_KEY = 'cz_bubble_mine_' + chatId;
+    const BUBBLE_THEIRS_KEY = 'cz_bubble_theirs_' + chatId;
+
+    function textColorFor(hex, isDark) {
+        if (isDark === '1') return '#10161A';
+        return '#FFFFFF';
+    }
+
+    function timeColorFor(hex, isDark) {
+        return isDark === '1' ? 'rgba(16, 22, 26, 0.55)' : 'rgba(255, 255, 255, 0.7)';
+    }
+
+    function tickColorFor(isDark) {
+        return isDark === '1' ? 'rgba(16, 22, 26, 0.45)' : 'rgba(255, 255, 255, 0.6)';
+    }
+
+    function applyBubbleColors() {
+        const mineColor = localStorage.getItem(BUBBLE_MINE_KEY);
+        const theirsColor = localStorage.getItem(BUBBLE_THEIRS_KEY);
+        const mineDark = localStorage.getItem(BUBBLE_MINE_KEY + '_dark') || '1';
+        const theirsDark = localStorage.getItem(BUBBLE_THEIRS_KEY + '_dark') || '1';
+
+        if (convShellEl) {
+            if (mineColor) {
+                convShellEl.style.setProperty('--bubble-mine-bg', mineColor);
+                convShellEl.style.setProperty('--bubble-mine-text', textColorFor(mineColor, mineDark));
+                convShellEl.style.setProperty('--bubble-mine-time', timeColorFor(mineColor, mineDark));
+                convShellEl.style.setProperty('--bubble-mine-tick', tickColorFor(mineDark));
+            } else {
+                convShellEl.style.removeProperty('--bubble-mine-bg');
+                convShellEl.style.removeProperty('--bubble-mine-text');
+                convShellEl.style.removeProperty('--bubble-mine-time');
+                convShellEl.style.removeProperty('--bubble-mine-tick');
+            }
+            if (theirsColor) {
+                convShellEl.style.setProperty('--bubble-theirs-bg', theirsColor);
+                convShellEl.style.setProperty('--bubble-theirs-text', textColorFor(theirsColor, theirsDark));
+                convShellEl.style.setProperty('--bubble-theirs-time', timeColorFor(theirsColor, theirsDark));
+            } else {
+                convShellEl.style.removeProperty('--bubble-theirs-bg');
+                convShellEl.style.removeProperty('--bubble-theirs-text');
+                convShellEl.style.removeProperty('--bubble-theirs-time');
+            }
+        }
+    }
+
+    function markSelectedSwatch(gridEl, savedColor) {
+        if (!gridEl) return;
+        const options = gridEl.querySelectorAll('.bubble-swatch-option');
+        options.forEach(opt => {
+            const isDefault = opt.dataset.color === '#FFFFFF' && !savedColor;
+            const isMatch = savedColor && opt.dataset.color.toLowerCase() === savedColor.toLowerCase();
+            opt.classList.toggle('selected', isDefault || isMatch);
+        });
+    }
+
+    const gridMine = document.getElementById('bubbleSwatchGridMine');
+    const gridTheirs = document.getElementById('bubbleSwatchGridTheirs');
+    const bubbleResetBtn = document.getElementById('bubbleResetBtn');
+
+    function initBubbleColorUI() {
+        markSelectedSwatch(gridMine, localStorage.getItem(BUBBLE_MINE_KEY));
+        markSelectedSwatch(gridTheirs, localStorage.getItem(BUBBLE_THEIRS_KEY));
+    }
+
+    if (gridMine) {
+        gridMine.querySelectorAll('.bubble-swatch-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                const color = opt.dataset.color;
+                const isDark = opt.dataset.textDark;
+                if (color === '#FFFFFF') {
+                    localStorage.removeItem(BUBBLE_MINE_KEY);
+                    localStorage.removeItem(BUBBLE_MINE_KEY + '_dark');
+                } else {
+                    localStorage.setItem(BUBBLE_MINE_KEY, color);
+                    localStorage.setItem(BUBBLE_MINE_KEY + '_dark', isDark);
+                }
+                markSelectedSwatch(gridMine, localStorage.getItem(BUBBLE_MINE_KEY));
+                applyBubbleColors();
+                if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
+            });
+        });
+    }
+
+    if (gridTheirs) {
+        gridTheirs.querySelectorAll('.bubble-swatch-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                const color = opt.dataset.color;
+                const isDark = opt.dataset.textDark;
+                if (color === '#FFFFFF') {
+                    localStorage.removeItem(BUBBLE_THEIRS_KEY);
+                    localStorage.removeItem(BUBBLE_THEIRS_KEY + '_dark');
+                } else {
+                    localStorage.setItem(BUBBLE_THEIRS_KEY, color);
+                    localStorage.setItem(BUBBLE_THEIRS_KEY + '_dark', isDark);
+                }
+                markSelectedSwatch(gridTheirs, localStorage.getItem(BUBBLE_THEIRS_KEY));
+                applyBubbleColors();
+                if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
+            });
+        });
+    }
+
+    if (bubbleResetBtn) {
+        bubbleResetBtn.addEventListener('click', () => {
+            localStorage.removeItem(BUBBLE_MINE_KEY);
+            localStorage.removeItem(BUBBLE_MINE_KEY + '_dark');
+            localStorage.removeItem(BUBBLE_THEIRS_KEY);
+            localStorage.removeItem(BUBBLE_THEIRS_KEY + '_dark');
+            initBubbleColorUI();
+            applyBubbleColors();
+            if (navigator.vibrate) { try { navigator.vibrate([6, 30, 6]); } catch (e) {} }
+        });
+    }
+
+    initBubbleColorUI();
+    applyBubbleColors();
+
+    // =====================================================
+    // 4.3) تخصيص الخط — عام لكل الشاتات (مش خاص بشات واحد
+    //      زي الفقاعات)، بيتحفظ ويفضل شغال دايمًا لحد ما
+    //      يتغيّر تاني من نفس الشيت
+    // =====================================================
+    const FONT_KEY = 'cz_chat_font';
+    const FONT_CLASS_PREFIX = 'font-';
+    const FONT_IDS = ['default', 'cairo', 'tajawal', 'amiri', 'reem', 'lobster', 'pacifico', 'dancing'];
+
+    function applyChatFont(fontId) {
+        if (!convShellEl) return;
+        FONT_IDS.forEach(id => convShellEl.classList.remove(FONT_CLASS_PREFIX + id));
+        if (fontId && fontId !== 'default') {
+            convShellEl.classList.add(FONT_CLASS_PREFIX + fontId);
+        }
+    }
+
+    function markSelectedFont(fontId) {
+        document.querySelectorAll('.font-option').forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.font === fontId);
+        });
+    }
+
+    const savedFont = localStorage.getItem(FONT_KEY) || 'default';
+    applyChatFont(savedFont);
+    markSelectedFont(savedFont);
+
+    document.querySelectorAll('.font-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            const fontId = opt.dataset.font;
+            localStorage.setItem(FONT_KEY, fontId);
+            applyChatFont(fontId);
+            markSelectedFont(fontId);
+            if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
+        });
+    });
 
     const TICK_ICON = {
         unsent: 'tick-unsent',

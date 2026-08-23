@@ -35,6 +35,8 @@
     });
 
     // ===== Liquid Glass Toggles =====
+    // ملحوظة: cz_lg_bottombar هو نفسه اللي بيتحكم في الزجاج السائل جوه
+    // شاشة الشات (زرار الرجوع + بار الكتابة)، عشان يبقى إحساس واحد متسق.
     const LG_OPTIONS = ['bottombar', 'icons'];
     const lgState = {};
     LG_OPTIONS.forEach(opt => {
@@ -54,9 +56,29 @@
             lgState[opt] = input.checked;
             localStorage.setItem('cz_lg_' + opt, input.checked ? 'on' : 'off');
             applyLgState();
+            syncLgTwins();
             if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
         });
     });
+
+    // شيت "الزجاج السائل في الدردشة" بيستخدم نفس مفتاح bottombar (نفس
+    // الإحساس البصري لما تفتح الشات)، فلازم نخليه متزامن مع السويتش
+    // الأصلي في شيت الرئيسية بدل ما يبقى حالة منفصلة.
+    const chatBottombarInput = document.getElementById('lgSwitch-bottombar-chat');
+    function syncLgTwins() {
+        if (chatBottombarInput) chatBottombarInput.checked = !!lgState.bottombar;
+    }
+    if (chatBottombarInput) {
+        chatBottombarInput.checked = !!lgState.bottombar;
+        chatBottombarInput.addEventListener('change', () => {
+            lgState.bottombar = chatBottombarInput.checked;
+            localStorage.setItem('cz_lg_bottombar', chatBottombarInput.checked ? 'on' : 'off');
+            applyLgState();
+            const mainInput = document.getElementById('lgSwitch-bottombar');
+            if (mainInput) mainInput.checked = !!lgState.bottombar;
+            if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
+        });
+    }
 
     applyLgState();
 
@@ -245,6 +267,7 @@
         lg_home_toggle_title: 'الزجاج السائل في الرئيسية',
         lg_icons_home_title: 'الزجاج السائل في الأيقونة',
         lg_chat_title: 'الزجاج السائل في الدردشة',
+        lg_chat_body: 'فعّل الزجاج السائل على زرار الرجوع وبار الكتابة في شاشة الدردشة.',
         lg_chat_toggle_title: 'الزجاج السائل في الدردشة',
         lg_icons_chat_title: 'الزجاج السائل في الأيقونة',
         lg_chat_soon_body: 'هذه الميزة قيد التطوير حالياً وستكون متاحة قريباً.',
@@ -305,6 +328,7 @@
         lg_home_toggle_title: 'Liquid Glass in Home',
         lg_icons_home_title: 'Liquid Glass in icon',
         lg_chat_title: 'Liquid Glass in Chat',
+        lg_chat_body: 'Enable Liquid Glass on the back button and the input bar in the chat screen.',
         lg_chat_toggle_title: 'Liquid Glass in Chat',
         lg_icons_chat_title: 'Liquid Glass in icon',
         lg_chat_soon_body: 'This feature is currently in development and will be available soon.',
