@@ -649,6 +649,31 @@ async function verifyOwnership(email, uid) {
         const chatDocRef = doc(db, 'chats', chatId);
 
         // =====================================================
+        // الحل الجديد للمشكلة: "الطرف التاني مش شايف الشات في قائمة
+        // الدردشات عنده لحد ما هو بنفسه يفتح المحادثة الأول". قبل
+        // إنشاء الشات، بنجرب نجيب uid بتاع الطرف التاني من
+        // users/{otherEmail} — لو هو مسجّل بالفعل في الأبب (حتى لو
+        // معندوش شات مفتوح معايا لسه)، بنحط uid بتاعه هو كمان جوه
+        // participants من الأول، فيظهر عنده الشات فورًا في قائمته
+        // الرئيسية من غير ما يحتاج يفتح المحادثة بنفسه الأول.
+        //
+        // لو لسه مش مسجّل خالص (users/{email} مش موجود)، بنكمل عادي
+        // بـ uid بتاعي أنا بس، وهيتضاف هو تلقائيًا أول ما يفتح
+        // المحادثة أو يسجّل بعدين (نفس السلوك القديم كـ fallback).
+        // =====================================================
+        let otherUid = null;
+        try {
+            const otherUserSnap = await getDoc(doc(db, 'users', otherEmail.toLowerCase()));
+            if (otherUserSnap.exists() && otherUserSnap.data().uid) {
+                otherUid = otherUserSnap.data().uid;
+            }
+        } catch (e) {
+            // لو فشل الجلب لأي سبب، هنكمل من غير uid بتاع الطرف التاني
+            // (fallback القديم: هيتضاف هو بنفسه أول ما يفتح الشات)
+            console.error('تعذّر جلب uid الطرف التاني وقت إنشاء المحادثة:', e);
+        }
+
+        // =====================================================
         // ليه غيّرنا الطريقة بالكامل:
         // مع الـ Rules الحالية، لو المستند مش موجود خالص، أي محاولة
         // لقراءته (getDoc) بترمي "permission-denied" (مش "not found")
@@ -659,7 +684,8 @@ async function verifyOwnership(email, uid) {
         //
         // الحل: منعتمدش على القراءة خالص لتحديد الحالة. بدل كده:
         //   1) نجرب ننشئ المستند (setDoc بدون merge) — لو نجح، معناه
-        //      كان فعلاً أول مرة، وخلاص إحنا الطرف الوحيد لحد دلوقتي.
+        //      كان فعلاً أول مرة، وخلاص إحنا الطرف الوحيد (أو إحنا +
+        //      الطرف التاني لو كان مسجّل ولقينا uid بتاعه فوق).
         //   2) لو فشل بـ "already-exists" أو "permission-denied"
         //      (لأن create مسموحة بس لو المستند مش موجود أصلاً حسب
         //      قواعد Firestore الداخلية)، معناه إن حد تاني سبقنا
@@ -668,9 +694,11 @@ async function verifyOwnership(email, uid) {
         // =====================================================
         let joined = false;
 
+        const initialParticipants = otherUid ? [myUid, otherUid] : [myUid];
+
         try {
             await setDoc(chatDocRef, {
-                participants: [myUid],
+                participants: initialParticipants,
                 participantsEmails: [myEmail.toLowerCase(), otherEmail.toLowerCase()],
                 createdAt: serverTimestamp()
             });
