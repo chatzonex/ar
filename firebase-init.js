@@ -15,6 +15,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   onSnapshot,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
@@ -90,6 +91,7 @@ export {
   query,
   where,
   orderBy,
+  limit,
   onSnapshot,
   serverTimestamp,
   signInAnonymously,

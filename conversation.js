@@ -72,18 +72,12 @@ async function verifyOwnership(email, uid) {
         ar: {
             type_message: 'اكتب رسالة...',
             back: 'رجوع',
-            online: 'أونلاين',
-            offline: 'غير متصل',
-            unknown_contact: 'مستخدم',
-            connecting: 'جاري الاتصال...'
+            unknown_contact: 'مستخدم'
         },
         en: {
             type_message: 'Type a message...',
             back: 'Back',
-            online: 'Online',
-            offline: 'Offline',
-            unknown_contact: 'User',
-            connecting: 'Connecting...'
+            unknown_contact: 'User'
         }
     };
     const T = I18N[isAr ? 'ar' : 'en'];
@@ -114,8 +108,30 @@ async function verifyOwnership(email, uid) {
         return namePart.charAt(0).toUpperCase() + namePart.slice(1);
     }
 
+    // بنحط اسم مبدئي مشتق من الإيميل فورًا (عشان الشاشة متفضلش فاضية)،
+    // وبعدين نستبدله بالاسم الحقيقي المحفوظ في users/{email}.name أول
+    // ما نجيبه من Firestore. مفيش حالة أونلاين/أوفلاين خالص دلوقتي —
+    // شاشة الحالة اتشالت نهائيًا بناءً على طلب المستخدم.
     convNameEl.textContent = displayNameFromEmail(otherEmail);
-    convStatusEl.textContent = T.connecting;
+    convStatusEl.textContent = '';
+
+    async function loadOtherRealName() {
+        try {
+            const otherUserRef = doc(db, 'users', otherEmail.toLowerCase());
+            const snap = await getDoc(otherUserRef);
+            if (snap.exists()) {
+                const data = snap.data();
+                if (data.name) {
+                    convNameEl.textContent = data.name;
+                }
+            }
+        } catch (e) {
+            // لو فشل الجلب لأي سبب، بيفضل الاسم المشتق من الإيميل كبديل
+            console.error('فشل جلب الاسم الحقيقي للطرف التاني:', e);
+        }
+    }
+
+    loadOtherRealName();
 
     // =====================================================
     // 3) زرار الرجوع
@@ -139,7 +155,6 @@ async function verifyOwnership(email, uid) {
 
     const TICK_ICON = {
         unsent: 'tick-unsent',
-        offline: 'tick-offline',
         unread: 'tick-unread',
         read: 'tick-read'
     };
@@ -353,16 +368,6 @@ async function verifyOwnership(email, uid) {
         // =====================================================
         await waitUntilIAmParticipant(chatDocRef, myUid);
 
-        // حالة الأونلاين: نسجّل وقت آخر ظهور بتاعي في مستند المحادثة،
-        // ونقرا حالة الطرف التاني من نفس المستند لحظيًا.
-        markMyPresence(chatDocRef);
-        window.addEventListener('beforeunload', () => markMyPresence(chatDocRef, true));
-
-        onSnapshot(chatDocRef, (snap) => {
-            if (!snap.exists()) return;
-            updateOtherPresence(snap.data());
-        });
-
         // الاستماع اللحظي للرسايل
         const messagesRef = collection(db, 'chats', chatId, 'messages');
         const q = query(messagesRef, orderBy('createdAt', 'asc'));
@@ -377,7 +382,7 @@ async function verifyOwnership(email, uid) {
             docs.forEach(d => appendMessage(d.data(), myEmail.toLowerCase()));
             scrollToBottom(false);
 
-            // أي رسالة وصلتلي من الطرف التاني ولسه حالتها unread/offline،
+            // أي رسالة وصلتلي من الطرف التاني ولسه حالتها unread،
             // معناه إني دلوقتي فاتح الشات وشايفها فعليًا، فنعلّمها read
             // عشان الطرف اللي بعتها يشوف الصح الزرقة عنده.
             markIncomingMessagesAsRead(docs);
@@ -392,56 +397,11 @@ async function verifyOwnership(email, uid) {
         docs.forEach(d => {
             const data = d.data();
             const isFromOther = (data.senderEmail || '').toLowerCase() !== myEmailLower;
-            const needsUpdate = data.status === 'unread' || data.status === 'offline';
+            const needsUpdate = data.status === 'unread';
             if (isFromOther && needsUpdate) {
                 updateStatusWithRetry(d.ref);
             }
         });
-    }
-
-    // نعتبر المستخدم أونلاين لو آخر تحديث لحضوره كان خلال آخر 25 ثانية.
-    // مفتاح الحضور مبني على الإيميل (بعد تنظيفه من نقطة/@ لأن مفاتيح
-    // Firestore الحقول مينفعش تحتوي على نقطة) بدل الـ uid، لأن uid
-    // الـ Anonymous Auth ممكن يتغيّر بين جلسة وتانية، لكن الإيميل ثابت.
-    const PRESENCE_HEARTBEAT_MS = 15000;
-    const PRESENCE_ONLINE_THRESHOLD_MS = 25000;
-    let presenceInterval = null;
-
-    function presenceKeyFor(email) {
-        return 'presence_' + email.toLowerCase().replace(/[.@]/g, '_');
-    }
-
-    const myPresenceKey = presenceKeyFor(myEmail);
-    const otherPresenceKey = presenceKeyFor(otherEmail);
-
-    async function markMyPresence(chatDocRef, isLeaving) {
-        try {
-            await updateDoc(chatDocRef, {
-                [myPresenceKey]: isLeaving ? null : serverTimestamp()
-            });
-        } catch (e) {
-            // مينفعش نستنى رد وقت إغلاق الصفحة، فبنتجاهل الخطأ بهدوء
-        }
-    }
-
-    let otherIsOnline = false;
-
-    function updateOtherPresence(chatData) {
-        const lastSeenTs = chatData[otherPresenceKey];
-
-        let isOnline = false;
-        if (lastSeenTs && lastSeenTs.toDate) {
-            isOnline = (Date.now() - lastSeenTs.toDate().getTime()) < PRESENCE_ONLINE_THRESHOLD_MS;
-        }
-        otherIsOnline = isOnline;
-
-        if (isOnline) {
-            convStatusEl.textContent = T.online;
-            convStatusEl.classList.add('is-online');
-        } else {
-            convStatusEl.textContent = T.offline;
-            convStatusEl.classList.remove('is-online');
-        }
     }
 
     function sendMessage() {
@@ -458,10 +418,10 @@ async function verifyOwnership(email, uid) {
             senderEmail: myEmail,
             text,
             createdAt: serverTimestamp(),
-            // لو الطرف التاني أونلاين وقت الإرسال، الرسالة هتوصله فورًا
-            // (صح رمادية مزدوجة، لحد ما يفتح الشات فعلاً وتتحول زرقاء).
-            // لو أوفلاين، صح رمادية مفردة لحد ما يتصل ونحدّثها بعدين.
-            status: otherIsOnline ? 'unread' : 'offline'
+            // كل رسالة بتتبعت بحالة "unread" (صح رمادية)، وتتحول "read"
+            // (صح زرقاء) لما الطرف التاني يفتح الشات فعليًا ويشوفها —
+            // مفيش تفرقة أونلاين/أوفلاين خالص دلوقتي.
+            status: 'unread'
         }).then(() => {
             if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
         }).catch((err) => {
@@ -471,18 +431,11 @@ async function verifyOwnership(email, uid) {
 
     sendBtn.addEventListener('click', sendMessage);
 
-    initChat().then(() => {
-        presenceInterval = setInterval(() => {
-            const chatDocRef = doc(db, 'chats', chatId);
-            markMyPresence(chatDocRef);
-        }, PRESENCE_HEARTBEAT_MS);
-    }).catch((err) => {
+    initChat().catch((err) => {
         console.error('فشل تهيئة المحادثة:', err);
-        convStatusEl.textContent = isAr ? 'تعذر الاتصال' : 'Connection failed';
     });
 
     window.addEventListener('unload', () => {
         if (unsubscribeMessages) unsubscribeMessages();
-        if (presenceInterval) clearInterval(presenceInterval);
     });
 })();

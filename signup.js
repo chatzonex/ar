@@ -35,7 +35,7 @@
     emailInput.addEventListener('input', clearError);
 
     async function handleSend() {
-        const email = emailInput.value.trim();
+        const email = emailInput.value.trim().toLowerCase();
 
         if (!email) {
             showError('من فضلك اكتب إيميلك');
