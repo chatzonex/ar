@@ -318,66 +318,48 @@ async function verifyOwnership(email, uid) {
 
         const chatDocRef = doc(db, 'chats', chatId);
 
-        // بنفرّق هنا بين 3 حالات مختلفة تمامًا (المحاولة القديمة كانت
-        // بتفترض غلط إن أي خطأ في getDoc معناه "المستند موجود ومرفوض"،
-        // بينما فعليًا ممكن يكون المستند مش موجود خالص، والفحص هنا
-        // بيبني عليه updateDoc غلط على مستند مش موجود، فيرجع Firestore
-        // خطأ صلاحيات مضلل):
-        //   1) المستند غير موجود فعلاً (أول مرة يتفتح فيها الشات ده) → ننشئه بـ setDoc.
-        //   2) المستند موجود وأنا already participant → متعملش حاجة.
-        //   3) المستند موجود وأنا مش participant لسه (الطرف التاني بدأ
-        //      الشات وأنا بفتحه أول مرة) → نضيف نفسي بـ updateDoc.
-        let chatExists = false;
-        let iAmAlreadyParticipant = false;
-        let readFailedWithPermissionError = false;
+        // =====================================================
+        // ليه غيّرنا الطريقة بالكامل:
+        // مع الـ Rules الحالية، لو المستند مش موجود خالص، أي محاولة
+        // لقراءته (getDoc) بترمي "permission-denied" (مش "not found")
+        // لأن الـ rule بتحاول توصل resource.data.participants على
+        // مستند مالوش data أصلاً. يعني مستحيل نفرّق من نتيجة القراءة
+        // بس هل المستند "مش موجود" أو "موجود ومرفوض" — الاتنين شكلهم
+        // نفس الخطأ بالظبط.
+        //
+        // الحل: منعتمدش على القراءة خالص لتحديد الحالة. بدل كده:
+        //   1) نجرب ننشئ المستند (setDoc بدون merge) — لو نجح، معناه
+        //      كان فعلاً أول مرة، وخلاص إحنا الطرف الوحيد لحد دلوقتي.
+        //   2) لو فشل بـ "already-exists" أو "permission-denied"
+        //      (لأن create مسموحة بس لو المستند مش موجود أصلاً حسب
+        //      قواعد Firestore الداخلية)، معناه إن حد تاني سبقنا
+        //      وعمل المستند، فنحاول بعدها updateDoc (arrayUnion)
+        //      اللي مسموح بيه حتى لو أنا مش participant لسه.
+        // =====================================================
+        let joined = false;
 
         try {
-            const chatSnap = await getDoc(chatDocRef);
-            chatExists = chatSnap.exists();
-            if (chatExists) {
-                const data = chatSnap.data();
-                iAmAlreadyParticipant = !!(data.participants && data.participants.includes(myUid));
-            }
-        } catch (err) {
-            // لو الخطأ فعلاً permission-denied، فده معناه إن المستند
-            // موجود لكن الـ Rules رفضت القراءة لأني لسه مش participant.
-            // أي نوع خطأ تاني (شبكة، إلخ) لازم يترمي زي ما هو بدل ما
-            // نكمل بافتراض غلط.
-            if (err && err.code === 'permission-denied') {
-                chatExists = true;
-                iAmAlreadyParticipant = false;
-                readFailedWithPermissionError = true;
-            } else {
-                throw err;
-            }
-        }
-
-        if (!chatExists) {
-            // أول مرة يتفتح فيها الشات ده على الإطلاق.
             await setDoc(chatDocRef, {
                 participants: [myUid],
                 participantsEmails: [myEmail.toLowerCase(), otherEmail.toLowerCase()],
                 createdAt: serverTimestamp()
             });
-        } else if (!iAmAlreadyParticipant) {
-            // المحادثة موجودة أصلاً (أنشأها الطرف التاني)، وأنا بفتحها
-            // لأول مرة، فلازم أضيف uid بتاعي لمصفوفة participants.
-            // الـ Rules بتسمح بده لأني بضيف نفسي بس من غير ما أشيل حد.
-            //
-            // ملحوظة: لو وصلنا هنا وإحنا جايين من فرع readFailedWithPermissionError
-            // (يعني getDoc رفض لأني مش participant)، الـ update ده هو
-            // بالظبط اللي المفروض يعدي حسب الـ Rules — لكن لو فشل هنا
-            // كمان، نطبع الخطأ الحقيقي بدل ما نبلعه.
+            joined = true;
+        } catch (createErr) {
+            // فشل الإنشاء = غالبًا المستند موجود بالفعل (الطرف التاني
+            // بدأ المحادثة قبلي). نحاول أضيف نفسي بدل ما أنشئه.
+        }
+
+        if (!joined) {
             try {
                 await updateDoc(chatDocRef, {
                     participants: arrayUnion(myUid)
                 });
+                joined = true;
             } catch (updateErr) {
                 console.error(
                     'فشل الانضمام كـ participant للمحادثة. كود الخطأ:',
-                    updateErr.code,
-                    '— هل كان القراءة السابقة مرفوضة؟',
-                    readFailedWithPermissionError
+                    updateErr.code, updateErr.message
                 );
                 throw updateErr;
             }
