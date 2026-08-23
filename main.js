@@ -153,11 +153,36 @@ import {
     // جديدة جاية من listener تاني).
     const chatsState = new Map(); // chatId -> { otherEmail, lastMessage, lastAt, unread }
     let messageUnsubscribers = new Map(); // chatId -> unsubscribe fn
+    let unreadUnsubscribers = new Map(); // chatId -> unsubscribe fn
+
+    // إجمالي عدد الرسائل غير المقروءة في كل الشاتات مجتمعة، بيتحدّث
+    // فورًا مع أي تغيير وبيتعرض كـ badge على تاب "الدردشات" في شريط
+    // التنقل السفلي، حتى لو المستخدم مش فاتح شاشة الدردشات دلوقتي.
+    function updateGlobalUnreadBadge() {
+        let total = 0;
+        chatsState.forEach(entry => { total += (entry.unread || 0); });
+        const navChatsBtn = document.getElementById('navChats');
+        if (!navChatsBtn) return;
+        let badge = navChatsBtn.querySelector('.nav-unread-badge');
+        if (total > 0) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'nav-unread-badge';
+                navChatsBtn.appendChild(badge);
+            }
+            badge.textContent = total > 99 ? '99+' : String(total);
+        } else if (badge) {
+            badge.remove();
+        }
+        // تحديث عنوان التاب (favicon/title) اختياري لاحقًا لو احتجنا
+        document.title = total > 0 ? `(${total > 99 ? '99+' : total}) ChatZone` : 'ChatZone';
+    }
 
     async function renderChatsList() {
         const entries = Array.from(chatsState.values());
         if (!entries.length) {
             renderEmptyChatsState();
+            updateGlobalUnreadBadge();
             return;
         }
 
@@ -170,15 +195,22 @@ import {
             const preview = entry.lastMessage
                 ? entry.lastMessage.replace(/</g, '&lt;').replace(/>/g, '&gt;')
                 : t('ابدأ المحادثة', 'Start the conversation');
+            const unreadCount = entry.unread || 0;
+            const unreadBadge = unreadCount > 0
+                ? `<span class="chat-row-unread-badge">${unreadCount > 99 ? '99+' : unreadCount}</span>`
+                : '';
 
             return `
-                <div class="chat-row" data-email="${entry.otherEmail}">
+                <div class="chat-row${unreadCount > 0 ? ' chat-row-unread' : ''}" data-email="${entry.otherEmail}">
                     <div class="chat-row-avatar">${initial}</div>
                     <div class="chat-row-text">
                         <h4 class="chat-row-name">${name}</h4>
                         <p class="chat-row-preview">${preview}</p>
                     </div>
-                    <span class="chat-row-time">${timeStr}</span>
+                    <div class="chat-row-meta">
+                        <span class="chat-row-time">${timeStr}</span>
+                        ${unreadBadge}
+                    </div>
                 </div>`;
         }));
 
@@ -189,6 +221,8 @@ import {
                 goToConversation(row.getAttribute('data-email'));
             });
         });
+
+        updateGlobalUnreadBadge();
     }
 
     function listenToChatMessages(chatId, otherEmail) {
@@ -208,6 +242,32 @@ import {
             console.error('فشل الاستماع لآخر رسالة في المحادثة:', err);
         });
         messageUnsubscribers.set(chatId, unsub);
+    }
+
+    // بيستمع لعدد الرسائل غير المقروءة الجاية من الطرف التاني في شات
+    // معيّن (status == 'unread' و senderUid مش أنا)، وبيحدّث الرقم على
+    // كارت الشات وعلى تاب الدردشات فورًا — ده بيشتغل حتى لو المستخدم
+    // خارج شاشة الشات نفسها، طول ما main.js فاتح (الصفحة الرئيسية).
+    function listenToUnreadCount(chatId, otherEmail, myUid) {
+        if (unreadUnsubscribers.has(chatId)) return;
+        const messagesRef = collection(db, 'chats', chatId, 'messages');
+        const q = query(
+            messagesRef,
+            where('status', '==', 'unread'),
+            where('senderUid', '!=', myUid)
+        );
+        const unsub = onSnapshot(q, (snap) => {
+            const entry = chatsState.get(chatId) || { otherEmail };
+            entry.unread = snap.size;
+            chatsState.set(chatId, entry);
+            renderChatsList();
+        }, (err) => {
+            // بعض الاستعلامات المركّبة زي دي محتاجة composite index في
+            // Firestore، فلو حصل فشل هنا (مثلاً "index required")،
+            // بنطبعه بوضوح عشان يظهر لينك إنشاء الـ index في الكونسول.
+            console.error('فشل الاستماع لعدد الرسائل غير المقروءة:', err);
+        });
+        unreadUnsubscribers.set(chatId, unsub);
     }
 
     async function initChatsList() {
@@ -237,9 +297,10 @@ import {
                 if (!otherEmail) return;
 
                 if (!chatsState.has(chatDoc.id)) {
-                    chatsState.set(chatDoc.id, { otherEmail, lastMessage: '', lastAt: 0 });
+                    chatsState.set(chatDoc.id, { otherEmail, lastMessage: '', lastAt: 0, unread: 0 });
                 }
                 listenToChatMessages(chatDoc.id, otherEmail);
+                listenToUnreadCount(chatDoc.id, otherEmail, myUid);
             });
 
             if (!snapshot.size) {
@@ -253,4 +314,9 @@ import {
     }
 
     initChatsList();
+
+    window.addEventListener('unload', () => {
+        messageUnsubscribers.forEach(unsub => unsub());
+        unreadUnsubscribers.forEach(unsub => unsub());
+    });
 })();
