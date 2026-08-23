@@ -211,15 +211,23 @@ import {
     }
 
     async function initChatsList() {
+        let myUid = null;
         try {
-            await ensureAuthenticated();
+            const user = await ensureAuthenticated();
+            myUid = user.uid;
         } catch (e) {
             console.error('فشل تسجيل الدخول في Firebase Auth:', e);
             return;
         }
 
+        // بنستعلم بالـ uid بتاعي على حقل participants (مش الإيميل على
+        // participantsEmails)، لأن الـ Security Rules بتاعة قراءة
+        // chats بتتحقق بالـ uid فقط (request.auth.uid in
+        // resource.data.participants). لو استعلمنا بحقل تاني غير
+        // اللي الـ rule بتتحقق منه، Firestore بيرفض الـ query كله
+        // بمجرد إنه مش قادر يضمن إن كل نتيجة محتملة هتعدي الـ rule.
         const chatsRef = collection(db, 'chats');
-        const q = query(chatsRef, where('participantsEmails', 'array-contains', savedEmailLower));
+        const q = query(chatsRef, where('participants', 'array-contains', myUid));
 
         onSnapshot(q, (snapshot) => {
             snapshot.forEach(chatDoc => {
