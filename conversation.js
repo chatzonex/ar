@@ -318,13 +318,18 @@ async function verifyOwnership(email, uid) {
 
         const chatDocRef = doc(db, 'chats', chatId);
 
-        // بنفرّق هنا بين حالتين مختلفتين تمامًا:
-        //   - المستند مش موجود خالص (أول مرة يتفتح فيها الشات ده) → ننشئه.
-        //   - المستند موجود، لكن الـ Rules رفضت القراءة لأن uid بتاعي
-        //     لسه مش مسجل ضمن participants (أنا الطرف التاني وبفتح
-        //     المحادثة أول مرة) → نضيف نفسي بـ updateDoc.
+        // بنفرّق هنا بين 3 حالات مختلفة تمامًا (المحاولة القديمة كانت
+        // بتفترض غلط إن أي خطأ في getDoc معناه "المستند موجود ومرفوض"،
+        // بينما فعليًا ممكن يكون المستند مش موجود خالص، والفحص هنا
+        // بيبني عليه updateDoc غلط على مستند مش موجود، فيرجع Firestore
+        // خطأ صلاحيات مضلل):
+        //   1) المستند غير موجود فعلاً (أول مرة يتفتح فيها الشات ده) → ننشئه بـ setDoc.
+        //   2) المستند موجود وأنا already participant → متعملش حاجة.
+        //   3) المستند موجود وأنا مش participant لسه (الطرف التاني بدأ
+        //      الشات وأنا بفتحه أول مرة) → نضيف نفسي بـ updateDoc.
         let chatExists = false;
         let iAmAlreadyParticipant = false;
+        let readFailedWithPermissionError = false;
 
         try {
             const chatSnap = await getDoc(chatDocRef);
@@ -334,10 +339,17 @@ async function verifyOwnership(email, uid) {
                 iAmAlreadyParticipant = !!(data.participants && data.participants.includes(myUid));
             }
         } catch (err) {
-            // permission-denied هنا معناها الأرجح: المستند موجود بالفعل
-            // لكن أنا لسه مش طرف مسجل فيه، فالـ Rules رفضت القراءة.
-            chatExists = true;
-            iAmAlreadyParticipant = false;
+            // لو الخطأ فعلاً permission-denied، فده معناه إن المستند
+            // موجود لكن الـ Rules رفضت القراءة لأني لسه مش participant.
+            // أي نوع خطأ تاني (شبكة، إلخ) لازم يترمي زي ما هو بدل ما
+            // نكمل بافتراض غلط.
+            if (err && err.code === 'permission-denied') {
+                chatExists = true;
+                iAmAlreadyParticipant = false;
+                readFailedWithPermissionError = true;
+            } else {
+                throw err;
+            }
         }
 
         if (!chatExists) {
@@ -351,9 +363,24 @@ async function verifyOwnership(email, uid) {
             // المحادثة موجودة أصلاً (أنشأها الطرف التاني)، وأنا بفتحها
             // لأول مرة، فلازم أضيف uid بتاعي لمصفوفة participants.
             // الـ Rules بتسمح بده لأني بضيف نفسي بس من غير ما أشيل حد.
-            await updateDoc(chatDocRef, {
-                participants: arrayUnion(myUid)
-            });
+            //
+            // ملحوظة: لو وصلنا هنا وإحنا جايين من فرع readFailedWithPermissionError
+            // (يعني getDoc رفض لأني مش participant)، الـ update ده هو
+            // بالظبط اللي المفروض يعدي حسب الـ Rules — لكن لو فشل هنا
+            // كمان، نطبع الخطأ الحقيقي بدل ما نبلعه.
+            try {
+                await updateDoc(chatDocRef, {
+                    participants: arrayUnion(myUid)
+                });
+            } catch (updateErr) {
+                console.error(
+                    'فشل الانضمام كـ participant للمحادثة. كود الخطأ:',
+                    updateErr.code,
+                    '— هل كان القراءة السابقة مرفوضة؟',
+                    readFailedWithPermissionError
+                );
+                throw updateErr;
+            }
         }
 
         // =====================================================
@@ -432,7 +459,7 @@ async function verifyOwnership(email, uid) {
     sendBtn.addEventListener('click', sendMessage);
 
     initChat().catch((err) => {
-        console.error('فشل تهيئة المحادثة:', err);
+        console.error('فشل تهيئة المحادثة. الكود:', err && err.code, '— الرسالة:', err && err.message, err);
     });
 
     window.addEventListener('unload', () => {
