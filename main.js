@@ -127,6 +127,15 @@ import {
         }
     }
 
+    // الاسم اللي بيظهر فعليًا في كارت الشات لازم ياخد بالِه من الاسم
+    // المخصص اللي المستخدم غيّره لجهة الاتصال دي (contactNames.{myUid}
+    // جوه مستند الشات نفسه)، مش بس الاسم الحقيقي — وإلا الاسم المخصص
+    // هيفضل ظاهر جوه شاشة المحادثة بس، ويرجع الاسم الحقيقي تاني في
+    // قائمة الدردشات الرئيسية، وهي بالظبط المشكلة اللي كانت موجودة.
+    function displayNameForChat(entry) {
+        return entry.myContactName || entry.realName || '';
+    }
+
     function renderEmptyChatsState() {
         chatsListEl.innerHTML = `
             <div class="empty-state">
@@ -156,10 +165,22 @@ import {
     // pinned: تثبيت الشات (خاص بيا أنا بس) — pinnedFor.{myUid} == true
     // deletedAt: وقت "حذف الشات من عندي" (خاص بيا أنا بس) — أي رسالة
     // جاية بعد الوقت ده بترجّع الشات يظهر تاني تلقائيًا.
-    const chatsState = new Map(); // chatId -> { otherEmail, lastMessage, lastAt, unread, pinned, deletedAt }
+    // lastMessageStatus/lastMessageIsMine: عشان نعرض صح (رمادي/أزرق)
+    // جنب آخر رسالة في القايمة الرئيسية بالظبط زي جوه الشات، بس لو
+    // آخر رسالة كانت مبعوتة مني أنا (مش لو هي اللي بعتتها).
+    // isOtherTyping: بيتفعّل لحظيًا من مستند الشات (typing.{otherUid})
+    // ويطغى على المعاينة النصية العادية طول ما هو شغال.
+    const chatsState = new Map(); // chatId -> { otherEmail, lastMessage, lastAt, unread, pinned, deletedAt, lastMessageStatus, lastMessageIsMine, isOtherTyping }
     let messageUnsubscribers = new Map(); // chatId -> unsubscribe fn
     let unreadUnsubscribers = new Map(); // chatId -> unsubscribe fn
+    let typingUnsubscribers = new Map(); // chatId -> unsubscribe fn
     let myUidGlobal = null;
+
+    const TICK_ICON = {
+        unsent: 'tick-unsent',
+        unread: 'tick-unread',
+        read: 'tick-read'
+    };
 
     // إجمالي عدد الرسائل غير المقروءة في كل الشاتات مجتمعة، بيتحدّث
     // فورًا مع أي تغيير وبيتعرض كـ badge على تاب "الدردشات" في شريط
@@ -208,23 +229,38 @@ import {
         const pinIconSvg = `<svg class="chat-row-pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>`;
 
         const rows = await Promise.all(entries.map(async (entry) => {
-            const name = await getRealName(entry.otherEmail);
+            const realName = await getRealName(entry.otherEmail);
+            entry.realName = realName;
+            const name = displayNameForChat(entry) || realName;
             const initial = name.charAt(0).toUpperCase();
             const timeStr = entry.lastAt ? formatChatTime(new Date(entry.lastAt)) : '';
-            const preview = entry.lastMessage
-                ? entry.lastMessage.replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                : t('ابدأ المحادثة', 'Start the conversation');
             const unreadCount = entry.unread || 0;
             const unreadBadge = unreadCount > 0
                 ? `<span class="chat-row-unread-badge">${unreadCount > 99 ? '99+' : unreadCount}</span>`
                 : '';
+
+            // لو آخر رسالة في المحادثة بعتها أنا، بنعرض نفس أيقونة الصح
+            // (رمادية = لسه ما اتقرتش، زرقاء = اتقرت) جنب المعاينة —
+            // بالظبط نفس منطق جوه شاشة الشات.
+            const tickHtml = (entry.lastMessageIsMine && entry.lastMessageStatus)
+                ? `<span class="chat-row-tick ${TICK_ICON[entry.lastMessageStatus] || TICK_ICON.unread}"></span>`
+                : '';
+
+            // "بيكتب الآن..." بيطغى على المعاينة النصية العادية طول ما
+            // الطرف التاني شغال بيكتب فعليًا، وبيرجع تلقائيًا للمعاينة
+            // العادية أول ما يوقف.
+            const previewHtml = entry.isOtherTyping
+                ? `<p class="chat-row-preview chat-row-preview-typing"><span class="chat-row-typing-dot"></span>${t('يكتب الآن...', 'typing...')}</p>`
+                : `<p class="chat-row-preview">${tickHtml}${entry.lastMessage
+                    ? entry.lastMessage.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    : t('ابدأ المحادثة', 'Start the conversation')}</p>`;
 
             return `
                 <div class="chat-row${unreadCount > 0 ? ' chat-row-unread' : ''}${entry.pinned ? ' chat-row-pinned' : ''}" data-email="${entry.otherEmail}" data-chat-id="${entry.chatId}" data-pinned="${entry.pinned ? '1' : '0'}">
                     <div class="chat-row-avatar">${initial}</div>
                     <div class="chat-row-text">
                         <h4 class="chat-row-name">${name}</h4>
-                        <p class="chat-row-preview">${preview}</p>
+                        ${previewHtml}
                     </div>
                     <div class="chat-row-meta">
                         <div class="chat-row-meta-top">
@@ -429,7 +465,7 @@ import {
         });
     });
 
-    function listenToChatMessages(chatId, otherEmail) {
+    function listenToChatMessages(chatId, otherEmail, myUid) {
         if (messageUnsubscribers.has(chatId)) return;
         const messagesRef = collection(db, 'chats', chatId, 'messages');
         const q = query(messagesRef, orderBy('createdAt', 'desc'), limit(1));
@@ -437,8 +473,10 @@ import {
             const entry = chatsState.get(chatId) || { otherEmail };
             if (!snap.empty) {
                 const data = snap.docs[0].data();
-                entry.lastMessage = data.text || '';
+                entry.lastMessage = data.deleted ? t('تم حذف هذه الرسالة', 'This message was deleted') : (data.text || '');
                 entry.lastAt = data.createdAt && data.createdAt.toDate ? data.createdAt.toDate().getTime() : Date.now();
+                entry.lastMessageIsMine = data.senderUid === myUid;
+                entry.lastMessageStatus = data.status || 'unread';
             }
             chatsState.set(chatId, entry);
             renderChatsList();
@@ -446,6 +484,28 @@ import {
             console.error('فشل الاستماع لآخر رسالة في المحادثة:', err);
         });
         messageUnsubscribers.set(chatId, unsub);
+    }
+
+    // بيستمع لحقل typing.{otherUid} جوه مستند الشات، وبيحدّث معاينة
+    // الكارت لحظيًا لما الطرف التاني يبدأ/يوقف الكتابة — حتى لو
+    // المستخدم مش فاتح شاشة الشات دي أصلاً، طول ما هو في الصفحة
+    // الرئيسية.
+    function listenToOtherTyping(chatId, otherEmail, myUid) {
+        if (typingUnsubscribers.has(chatId)) return;
+        const chatDocRef = doc(db, 'chats', chatId);
+        const unsub = onSnapshot(chatDocRef, (snap) => {
+            if (!snap.exists()) return;
+            const data = snap.data();
+            const typingMap = data.typing || {};
+            const otherIsTyping = Object.keys(typingMap).some(uid => uid !== myUid && typingMap[uid]);
+            const entry = chatsState.get(chatId) || { otherEmail };
+            entry.isOtherTyping = otherIsTyping;
+            chatsState.set(chatId, entry);
+            renderChatsList();
+        }, (err) => {
+            console.error('فشل الاستماع لحالة الكتابة في المحادثة:', err);
+        });
+        typingUnsubscribers.set(chatId, unsub);
     }
 
     // بيستمع لعدد الرسائل غير المقروءة الجاية من الطرف التاني في شات
@@ -515,16 +575,22 @@ import {
 
                 const pinnedFor = data.pinnedFor || {};
                 const deletedFor = data.deletedFor || {};
+                const contactNames = data.contactNames || {};
                 const pinned = !!pinnedFor[myUid];
                 const deletedAt = typeof deletedFor[myUid] === 'number' ? deletedFor[myUid] : null;
 
                 const entry = chatsState.get(chatDoc.id) || { otherEmail, lastMessage: '', lastAt: 0, unread: 0 };
                 entry.pinned = pinned;
                 entry.deletedAt = deletedAt;
+                // الاسم المخصص اللي أنا (بس أنا) حطيته لجهة الاتصال دي —
+                // نفس الحقل بالظبط اللي بيتحدّث من جوه شاشة المحادثة
+                // (contactNames.{myUid})، عشان يفضل ثابت في كل حتة.
+                entry.myContactName = contactNames[myUid] || '';
                 chatsState.set(chatDoc.id, entry);
 
-                listenToChatMessages(chatDoc.id, otherEmail);
+                listenToChatMessages(chatDoc.id, otherEmail, myUid);
                 listenToUnreadCount(chatDoc.id, otherEmail, myUid);
+                listenToOtherTyping(chatDoc.id, otherEmail, myUid);
             });
 
             if (!snapshot.size) {
@@ -542,5 +608,6 @@ import {
     window.addEventListener('unload', () => {
         messageUnsubscribers.forEach(unsub => unsub());
         unreadUnsubscribers.forEach(unsub => unsub());
+        typingUnsubscribers.forEach(unsub => unsub());
     });
 })();

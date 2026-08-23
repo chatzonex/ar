@@ -117,7 +117,8 @@ async function verifyOwnership(email, uid) {
             delete_msg_body_theirs: 'هتتحذف من عندك أنت بس، ولسه هتفضل ظاهرة عند الطرف التاني.',
             deleted_msg_text: 'تم حذف هذه الرسالة',
             reply_you: 'أنت',
-            msg_deleted_toast: 'اتحذفت الرسالة'
+            msg_deleted_toast: 'اتحذفت الرسالة',
+            typing_status: 'يكتب الآن...'
         },
         en: {
             type_message: 'Type a message...',
@@ -165,7 +166,8 @@ async function verifyOwnership(email, uid) {
             delete_msg_body_theirs: 'It will be deleted for you only. It will still show for the other person.',
             deleted_msg_text: 'This message was deleted',
             reply_you: 'You',
-            msg_deleted_toast: 'Message deleted'
+            msg_deleted_toast: 'Message deleted',
+            typing_status: 'typing...'
         }
     };
     const T = I18N[isAr ? 'ar' : 'en'];
@@ -706,6 +708,40 @@ async function verifyOwnership(email, uid) {
         }
     }
 
+    // ===== فقاعة "بيكتب الآن" المتحركة تحت آخر رسالة (زي واتساب) =====
+    // ملحوظة: messagesEl.innerHTML بيتصفر بالكامل مع كل تحديث رسايل
+    // (onSnapshot)، فمينفعش نعتمد على وجود العنصر في الـ DOM كعلامة
+    // حالة — بنحتفظ بمتغيّر منفصل (otherIsTypingNow) وبنعيد إضافة
+    // الفقاعة بعد أي إعادة رسم لو لسه محتاجة تظهر.
+    let otherIsTypingNow = false;
+
+    function renderTypingBubbleIfNeeded() {
+        if (!otherIsTypingNow) return;
+        const bubble = document.createElement('div');
+        bubble.className = 'msg-row from-them typing-row';
+        bubble.innerHTML = `
+            <div class="msg-row-inner">
+                <div class="bubble bubble-left bubble-typing">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </div>
+            </div>`;
+        messagesEl.appendChild(bubble);
+    }
+
+    function setOtherTyping(isTyping) {
+        if (otherIsTypingNow === isTyping) return;
+        otherIsTypingNow = isTyping;
+        const existing = messagesEl.querySelector('.typing-row');
+        if (isTyping) {
+            if (!existing) renderTypingBubbleIfNeeded();
+            scrollToBottom(true);
+        } else if (existing) {
+            existing.remove();
+        }
+    }
+
     function scrollToBottom(smooth) {
         messagesEl.scrollTo({
             top: messagesEl.scrollHeight,
@@ -719,6 +755,7 @@ async function verifyOwnership(email, uid) {
         empty.className = 'conv-empty';
         empty.textContent = isAr ? 'مفيش رسائل لسه، ابدأ المحادثة 👋' : 'No messages yet, say hi 👋';
         messagesEl.appendChild(empty);
+        renderTypingBubbleIfNeeded();
     }
 
     // =====================================================
@@ -969,9 +1006,47 @@ async function verifyOwnership(email, uid) {
         inputBar.classList.toggle('has-text', hasText);
     }
 
+    // =====================================================
+    // 5.1) بث حالة "بيكتب الآن" — بنكتب uid بتاعي جوه مستند الشات
+    //      نفسه تحت typing.{myUid} = true وقت الكتابة الفعلية، وبنمسحه
+    //      (typing.{myUid} = false) بعد فترة سكون أو عند الإرسال/مغادرة
+    //      الصفحة. الطرف التاني بيسمع نفس المستند ويعرض "يكتب الآن..."
+    //      تحت اسمه في شاشة المحادثة، ونقطة/أيقونة جنب اسمه في قايمة
+    //      الدردشات الرئيسية.
+    // =====================================================
+    const TYPING_IDLE_MS = 2500;
+    let typingIdleTimer = null;
+    let iAmMarkedTyping = false;
+
+    function setTypingState(isTyping) {
+        if (!myUid) return;
+        if (isTyping === iAmMarkedTyping) return;
+        iAmMarkedTyping = isTyping;
+        updateDoc(doc(db, 'chats', chatId), {
+            ['typing.' + myUid]: isTyping
+        }).catch(() => {
+            // لو فشل التحديث (مشكلة شبكة مؤقتة مثلاً)، منسيبش الحالة
+            // عالقة على "بيكتب" للأبد — نرجّعها false تاني عشان تتحاول
+            // تتحدث صح في المرة الجاية.
+            if (isTyping) iAmMarkedTyping = false;
+        });
+    }
+
+    function pingTyping() {
+        setTypingState(true);
+        if (typingIdleTimer) clearTimeout(typingIdleTimer);
+        typingIdleTimer = setTimeout(() => setTypingState(false), TYPING_IDLE_MS);
+    }
+
     textarea.addEventListener('input', () => {
         autoResize();
         updateSendVisibility();
+        if (textarea.value.trim().length > 0) {
+            pingTyping();
+        } else {
+            if (typingIdleTimer) clearTimeout(typingIdleTimer);
+            setTypingState(false);
+        }
     });
 
     textarea.addEventListener('keydown', (e) => {
@@ -1137,6 +1212,22 @@ async function verifyOwnership(email, uid) {
         // =====================================================
         await waitUntilIAmParticipant(chatDocRef, myUid);
 
+        // الاستماع اللحظي لحالة "بيكتب الآن" بتاعة الطرف التاني بس
+        // (مش بتاعتي أنا) — بنعرضها في مكان "الحالة" تحت الاسم في
+        // البار العلوي (convStatus)، وبتتشال تلقائيًا أول ما هو يوقف
+        // عن الكتابة أو يمسح النص.
+        onSnapshot(chatDocRef, (snap) => {
+            if (!snap.exists()) return;
+            const data = snap.data();
+            const typingMap = data.typing || {};
+            const otherIsTyping = Object.keys(typingMap).some(uid => uid !== myUid && typingMap[uid]);
+            convStatusEl.textContent = otherIsTyping ? T.typing_status : '';
+            convStatusEl.classList.toggle('conv-status-typing', otherIsTyping);
+            setOtherTyping(otherIsTyping);
+        }, (err) => {
+            console.error('فشل الاستماع لحالة الكتابة:', err);
+        });
+
         // الاستماع اللحظي للرسايل
         const messagesRef = collection(db, 'chats', chatId, 'messages');
         const q = query(messagesRef, orderBy('createdAt', 'asc'));
@@ -1174,6 +1265,7 @@ async function verifyOwnership(email, uid) {
                 }
                 appendMessage(d.id, data, myEmail.toLowerCase());
             });
+            renderTypingBubbleIfNeeded();
             scrollToBottom(false);
 
             // أي رسالة وصلتلي من الطرف التاني ولسه حالتها unread،
@@ -1205,6 +1297,8 @@ async function verifyOwnership(email, uid) {
         textarea.value = '';
         autoResize();
         updateSendVisibility();
+        if (typingIdleTimer) clearTimeout(typingIdleTimer);
+        setTypingState(false);
 
         const payload = {
             senderUid: myUid,
@@ -1244,5 +1338,6 @@ async function verifyOwnership(email, uid) {
 
     window.addEventListener('unload', () => {
         if (unsubscribeMessages) unsubscribeMessages();
+        setTypingState(false);
     });
 })();

@@ -258,8 +258,9 @@ html[dir="rtl"] .conv-back-btn svg {
     font-weight: 500;
 }
 
-/* علامات الصح مرسومة بـ CSS نضيف (بدون صور) — خط واحد أو اتنين
-   حسب حالة الرسالة، بألوان بتفرّق بين الحالات */
+/* علامات الصح — SVG حقيقي بخطوط رفيعة حادة (زي واتساب بالظبط)،
+   مش رمز يونيكود تخين. اللون بيتغيّر بمتغيّر CSS واحد (--tick-color)
+   عشان نفس الرسمة تتلوّن رمادي أو أزرق من غير ما نكرر الـ SVG. */
 .bubble-tick {
     width: 15px;
     height: 15px;
@@ -267,8 +268,6 @@ html[dir="rtl"] .conv-back-btn svg {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
-    line-height: 1;
 }
 
 .bubble-tick.tick-unsent::before {
@@ -277,26 +276,41 @@ html[dir="rtl"] .conv-back-btn svg {
     opacity: 0.6;
 }
 
-.bubble-tick.tick-offline::before {
-    content: '✓';
-    color: rgba(16, 22, 26, 0.45);
-    font-weight: 700;
+.bubble-tick.tick-offline {
+    --tick-color: rgba(16, 22, 26, 0.45);
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 15'><path d='M1 7.5L5.2 11.8L14 2.2' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 15'><path d='M1 7.5L5.2 11.8L14 2.2' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: 15px 14px;
+    mask-size: 15px 14px;
+    background-color: var(--tick-color);
+    width: 15px;
+    height: 14px;
 }
 
-.bubble-tick.tick-unread::before {
-    content: '✓✓';
-    color: rgba(16, 22, 26, 0.45);
-    font-weight: 700;
-    letter-spacing: -3px;
-    padding-left: 3px;
+.bubble-tick.tick-unread,
+.bubble-tick.tick-read {
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 15'><path d='M1 7.5L5.2 11.8L11 4.3' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/><path d='M7.2 7.5L11.4 11.8L19 2.2' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 15'><path d='M1 7.5L5.2 11.8L11 4.3' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/><path d='M7.2 7.5L11.4 11.8L19 2.2' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: 18px 14px;
+    mask-size: 18px 14px;
+    width: 18px;
+    height: 14px;
 }
 
-.bubble-tick.tick-read::before {
-    content: '✓✓';
-    color: #4FA3FF;
-    font-weight: 700;
-    letter-spacing: -3px;
-    padding-left: 3px;
+.bubble-tick.tick-unread {
+    background-color: rgba(16, 22, 26, 0.45);
+}
+
+.bubble-tick.tick-read {
+    background-color: #4FA3FF;
 }
 
 /* رسايل الطرف التاني معندهاش صح قراءة (الصح بتاعة رسايلي أنا بس) */
@@ -398,7 +412,7 @@ html[dir="rtl"] .conv-send-btn svg {
 }
 
 /* ===== Liquid Glass mode: bar عايم بدل ما يكون ثابت تحت ===== */
-body.lg-bottombar-on .conv-input-area {
+body.lg-chat-on .conv-input-area {
     position: fixed;
     left: 14px;
     right: 14px;
@@ -411,11 +425,11 @@ body.lg-bottombar-on .conv-input-area {
     z-index: 50;
 }
 
-body.lg-bottombar-on .conv-messages {
+body.lg-chat-on .conv-messages {
     padding-bottom: 90px;
 }
 
-body.lg-bottombar-on .conv-input-bar {
+body.lg-chat-on .conv-input-bar {
     background: rgba(27, 32, 39, 0.55);
     backdrop-filter: blur(26px) saturate(1.7) brightness(1.12);
     -webkit-backdrop-filter: blur(26px) saturate(1.7) brightness(1.12);
@@ -438,7 +452,7 @@ body.theme-white .bubble-time {
     color: rgba(16, 22, 26, 0.5);
 }
 
-body.theme-white.lg-bottombar-on .conv-input-bar {
+body.theme-white.lg-chat-on .conv-input-bar {
     background: rgba(255, 255, 255, 0.55);
     border-color: rgba(0, 0, 0, 0.08);
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -446,11 +460,11 @@ body.theme-white.lg-bottombar-on .conv-input-bar {
 
 /* ===================================================
    LIQUID GLASS IN CHAT — back button + topbar + menu btn
-   بيتفعّل بنفس الـ toggle بتاع بار الكتابة (lg-bottombar-on)
-   عشان يبقى إحساس واحد متناسق في شاشة الشات كلها
+   بيتفعّل بـ toggle مستقل تمامًا (lg-chat-on) خاص بشاشة الشات
+   بس، ومنفصل تمامًا عن زجاج الرئيسية (lg-bottombar-on)
 =================================================== */
-body.lg-bottombar-on .conv-back-btn,
-body.lg-bottombar-on .conv-menu-btn {
+body.lg-chat-on .conv-back-btn,
+body.lg-chat-on .conv-menu-btn {
     background: rgba(255, 255, 255, 0.10);
     backdrop-filter: blur(14px) saturate(1.6) brightness(1.1);
     -webkit-backdrop-filter: blur(14px) saturate(1.6) brightness(1.1);
@@ -458,21 +472,21 @@ body.lg-bottombar-on .conv-menu-btn {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
-body.lg-bottombar-on .conv-topbar {
+body.lg-chat-on .conv-topbar {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(20px) saturate(1.6) brightness(1.08);
     -webkit-backdrop-filter: blur(20px) saturate(1.6) brightness(1.08);
     border-bottom-color: rgba(255, 255, 255, 0.12);
 }
 
-body.theme-white.lg-bottombar-on .conv-back-btn,
-body.theme-white.lg-bottombar-on .conv-menu-btn {
+body.theme-white.lg-chat-on .conv-back-btn,
+body.theme-white.lg-chat-on .conv-menu-btn {
     background: rgba(255, 255, 255, 0.55);
     border-color: rgba(0, 0, 0, 0.08);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
-body.theme-white.lg-bottombar-on .conv-topbar {
+body.theme-white.lg-chat-on .conv-topbar {
     background: rgba(255, 255, 255, 0.5);
     backdrop-filter: blur(20px) saturate(1.5) brightness(1.03);
     -webkit-backdrop-filter: blur(20px) saturate(1.5) brightness(1.03);
@@ -506,9 +520,9 @@ body.theme-white.lg-bottombar-on .conv-topbar {
 .bubble.bubble-right .bubble-time {
     color: var(--bubble-mine-time);
 }
-.bubble.bubble-right .bubble-tick.tick-offline::before,
-.bubble.bubble-right .bubble-tick.tick-unread::before {
-    color: var(--bubble-mine-tick);
+.bubble.bubble-right .bubble-tick.tick-offline,
+.bubble.bubble-right .bubble-tick.tick-unread {
+    background-color: var(--bubble-mine-tick);
 }
 
 .bubble.bubble-left {
