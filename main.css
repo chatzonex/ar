@@ -311,6 +311,63 @@ body {
     margin-top: 2px;
 }
 
+/* ===== Unread badges: chat row + bottom nav tab ===== */
+.chat-row-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 2px;
+}
+
+.chat-row-meta .chat-row-time {
+    margin-top: 0;
+}
+
+.chat-row-unread .chat-row-name,
+.chat-row-unread .chat-row-preview {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.chat-row-unread-badge {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--whatsapp-green);
+    color: #06110C;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.nav-unread-badge {
+    position: absolute;
+    top: 2px;
+    inset-inline-end: 14px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #F87171;
+    color: #FFFFFF;
+    font-size: 9.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    z-index: 3;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+
 /* ===== Profile Row (inline inside the first Settings card) ===== */
 .settings-scroll {
     flex: 1;
