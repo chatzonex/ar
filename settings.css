@@ -680,3 +680,155 @@ body.theme-custom .search-input:focus,
 body.theme-custom .modal-box .field-group input:focus {
     border-color: var(--accent);
 }
+
+/* ===================================================
+   LOGOUT ROW (danger styling for the settings list)
+=================================================== */
+.settings-row-danger .settings-row-text h4 {
+    color: #F87171;
+}
+
+.settings-row-icon-danger {
+    color: #F87171;
+}
+
+.logout-status {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin: -8px 0 14px;
+}
+
+/* ===================================================
+   ADD-CHAT CHOICE MODAL (اكونت قديم / شخص جديد)
+=================================================== */
+.add-choice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.add-choice-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    background: var(--glass-strong);
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    text-align: start;
+    font-family: inherit;
+    color: var(--text);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.add-choice-item:active {
+    transform: scale(0.98);
+}
+
+.add-choice-item:hover {
+    background: var(--glass);
+}
+
+.add-choice-icon {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass);
+    color: var(--accent, #25D9A0);
+}
+
+.add-choice-icon svg {
+    width: 19px;
+    height: 19px;
+}
+
+.add-choice-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.add-choice-text h4 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.add-choice-text p {
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.add-choice-item .settings-card-chevron {
+    flex-shrink: 0;
+}
+
+/* ===================================================
+   PREVIOUS CONTACTS LIST
+=================================================== */
+.contacts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 320px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+}
+
+.contact-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 10px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.contact-row:hover,
+.contact-row:active {
+    background: var(--glass-strong);
+}
+
+.contact-row-avatar {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--grad);
+    color: #06110C;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.contact-row-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.contact-row-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.contacts-empty {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-dim);
+    padding: 20px 0;
+    margin-bottom: 16px;
+}
