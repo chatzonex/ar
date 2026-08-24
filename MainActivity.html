@@ -106,6 +106,56 @@
             </div>
         </div>
 
+        <!-- ===== Add Chat Choice Modal (اكونت قديم / شخص جديد) ===== -->
+        <div class="modal-overlay hidden" id="addChoiceOverlay">
+            <div class="modal-box">
+                <h2 class="modal-title">ChatZone</h2>
+                <p class="modal-sub" data-i18n="add_choice_sub">مين عاوز تتكلم معاه؟</p>
+
+                <div class="add-choice-list">
+                    <button class="add-choice-item" id="addChoiceExisting" type="button">
+                        <div class="add-choice-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </div>
+                        <div class="add-choice-text">
+                            <h4 data-i18n="add_choice_existing_title">تحدث مع اكونت تحدثت معه من قبل</h4>
+                            <p data-i18n="add_choice_existing_sub">اختر من قائمة جهات اتصالك</p>
+                        </div>
+                        <svg class="settings-card-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                    <button class="add-choice-item" id="addChoiceNew" type="button">
+                        <div class="add-choice-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+                        </div>
+                        <div class="add-choice-text">
+                            <h4 data-i18n="add_choice_new_title">تحدث مع شخص جديد</h4>
+                            <p data-i18n="add_choice_new_sub">ابدأ محادثة بإيميل جديد</p>
+                        </div>
+                        <svg class="settings-card-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="modal-btn-secondary" id="cancelAddChoice" style="flex:1" data-i18n="btn_cancel">إلغاء</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Contacts Modal (جهات الاتصال السابقة) ===== -->
+        <div class="modal-overlay hidden" id="contactsOverlay">
+            <div class="modal-box">
+                <h2 class="modal-title">ChatZone</h2>
+                <p class="modal-sub" data-i18n="contacts_sub">جهات الاتصال اللي اتكلمت معاها قبل كده</p>
+
+                <div class="contacts-list" id="contactsList"></div>
+                <p class="contacts-empty hidden" id="contactsEmpty" data-i18n="contacts_empty">لسه مفيش جهات اتصال سابقة</p>
+
+                <div class="modal-actions">
+                    <button class="modal-btn-secondary" id="cancelContacts" style="flex:1" data-i18n="btn_cancel">إلغاء</button>
+                </div>
+            </div>
+        </div>
+
         <!-- ===== New Chat Modal ===== -->
         <div class="modal-overlay hidden" id="newChatOverlay">
             <div class="modal-box">
@@ -219,11 +269,42 @@
                     </div>
                 </div>
 
+                <div class="settings-card">
+                    <div class="settings-row settings-row-danger" id="logoutBtn">
+                        <div class="settings-row-icon settings-row-icon-danger">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        </div>
+                        <div class="settings-row-text">
+                            <h4 data-i18n="logout_row">تسجيل خروج</h4>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             </div>
 
         </section>
+
+        <!-- ===== Logout / Delete Account Confirm Sheet ===== -->
+        <div class="sheet-overlay" id="sheet-logout">
+            <div class="sheet-box">
+                <div class="sheet-grabber"></div>
+                <div class="sheet-close" data-close-sheet="sheet-logout">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </div>
+                <div class="sheet-icon">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </div>
+                <div class="sheet-title" data-i18n="logout_title">تسجيل خروج؟</div>
+                <div class="sheet-sub" data-i18n="logout_body">عند تسجيل الخروج سيتم حذف اكونتك نهائيًا (شاتاتك ورسايلك كلها) وستقوم بتسجيل الدخول مرة أخرى.</div>
+                <p class="logout-status hidden" id="logoutStatus"></p>
+                <div class="confirm-sheet-actions">
+                    <button class="confirm-sheet-btn danger" id="logoutConfirmBtn" data-i18n="logout_row">تسجيل خروج</button>
+                    <button class="confirm-sheet-btn cancel" id="logoutCancelBtn" data-i18n="btn_cancel">إلغاء</button>
+                </div>
+            </div>
+        </div>
 
         <!-- ===== Liquid Glass Sheet — Home ===== -->
         <div class="sheet-overlay" id="sheet-lg-home">
