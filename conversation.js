@@ -51,6 +51,22 @@ async function verifyOwnership(email, uid) {
     }
 }
 
+// =====================================================
+// بيحفظ جهة اتصال في users/{myEmail}/contacts/{otherEmail} — قائمة
+// منفصلة تمامًا عن مجموعة chats، فبتفضل موجودة حتى لو الشات نفسه
+// اتحذف نهائيًا (زي ما بيحصل في deleteChatPermanently). بنستخدم
+// setDoc بـ merge عشان أول مرة تنشئ ومرة بعد كده تحدّث lastContactAt
+// بس من غير ما تكرر أي حاجة.
+// =====================================================
+async function saveContact(myEmail, otherEmail) {
+    if (!myEmail || !otherEmail) return;
+    const contactRef = doc(db, 'users', myEmail.toLowerCase(), 'contacts', otherEmail.toLowerCase());
+    await setDoc(contactRef, {
+        email: otherEmail.toLowerCase(),
+        lastContactAt: serverTimestamp()
+    }, { merge: true });
+}
+
 (function () {
     // =====================================================
     // 1) احترام الثيم واللغة والـ Liquid Glass المحفوظين
@@ -1707,6 +1723,14 @@ async function verifyOwnership(email, uid) {
         // المرسل حتى لو أنا فاتح الشات وشايفها فعليًا.
         // =====================================================
         await waitUntilIAmParticipant(chatDocRef, myUid);
+
+        // نسجّل جهة الاتصال دي في قائمتي الشخصية (users/{myEmail}/contacts/{otherEmail})
+        // عشان تفضل ظاهرة في "تحدث مع اكونت تحدثت معه من قبل" حتى لو
+        // اتحذف الشات نهائيًا بعد كده. بنعمل ده مرة واحدة كفاية (merge)
+        // وما بنستنهاش، عشان منأخرش فتح الشات لو فشلت لأي سبب.
+        saveContact(myEmail, otherEmail).catch((e) => {
+            console.error('فشل حفظ جهة الاتصال:', e);
+        });
 
         // الاستماع اللحظي لحالة "بيكتب الآن" بتاعة الطرف التاني بس
         // (مش بتاعتي أنا) — بنعرضها في مكان "الحالة" تحت الاسم في
