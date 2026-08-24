@@ -194,38 +194,18 @@ html[dir="rtl"] .conv-back-btn svg {
     to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* الفقاعة الخاصة برسائلي أنا (يمين) — ذيل في الركن السفلي اليمين */
+/* الفقاعة الخاصة برسائلي أنا (يمين) — شكل الذيل نفسه اتنقل بالكامل
+   لملف chatzone-extra.css (بيتحمّل بعد الملف ده)، عشان يبقى مكانه
+   الطبيعي مع باقي إضافات الشات */
 .bubble.bubble-right {
     margin-inline-start: 54px;
     border-bottom-right-radius: 4px;
 }
 
-.bubble.bubble-right::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: -7px;
-    width: 14px;
-    height: 14px;
-    background: #FFFFFF;
-    clip-path: polygon(0 0, 0% 100%, 100% 100%);
-}
-
-/* الفقاعة الخاصة برسائل الطرف التاني (شمال) — ذيل في الركن السفلي الشمال */
+/* الفقاعة الخاصة برسائل الطرف التاني (شمال) */
 .bubble.bubble-left {
     margin-inline-end: 54px;
     border-bottom-left-radius: 4px;
-}
-
-.bubble.bubble-left::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: -7px;
-    width: 14px;
-    height: 14px;
-    background: #FFFFFF;
-    clip-path: polygon(100% 0, 0% 100%, 100% 100%);
 }
 
 .bubble-text {
@@ -258,59 +238,72 @@ html[dir="rtl"] .conv-back-btn svg {
     font-weight: 500;
 }
 
-/* علامات الصح — SVG حقيقي بخطوط رفيعة حادة (زي واتساب بالظبط)،
-   مش رمز يونيكود تخين. اللون بيتغيّر بمتغيّر CSS واحد (--tick-color)
-   عشان نفس الرسمة تتلوّن رمادي أو أزرق من غير ما نكرر الـ SVG. */
+/* علامات الصح — نفس رسمة أيقونات iOS اللي وصلت من المستخدم بالظبط
+   (unsent / offline / unread / read_tick)، بدل الأشكال المرسومة يدويًا.
+   اللون بيتغيّر بـ background-color لأن العنصر شغال كـ mask. */
 .bubble-tick {
     width: 15px;
-    height: 15px;
+    height: 12px;
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
 }
 
-.bubble-tick.tick-unsent::before {
-    content: '🕒';
-    font-size: 10px;
-    opacity: 0.6;
+.bubble-tick.tick-unsent {
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 74 58'><path d='M 23.50 43.11 C18.79,41.06 17.50,38.22 17.50,29.92 C17.50,22.65 17.71,21.83 20.27,19.27 C22.84,16.71 23.64,16.50 31.00,16.50 C38.36,16.50 39.16,16.71 41.73,19.27 C44.29,21.84 44.50,22.64 44.50,30.00 C44.50,37.34 44.29,38.17 41.76,40.69 C39.39,43.06 38.10,43.47 32.26,43.71 C28.54,43.86 24.60,43.59 23.50,43.11 ZM 39.17 38.35 C41.67,36.09 41.79,24.53 39.35,21.83 C37.09,19.33 25.53,19.21 22.83,21.65 C20.33,23.91 20.21,35.47 22.65,38.17 C24.91,40.67 36.47,40.79 39.17,38.35 ZM 29.00 28.00 C29.00,24.22 29.37,23.00 30.50,23.00 C31.55,23.00 32.00,24.06 32.00,26.50 C32.00,29.57 32.31,30.00 34.50,30.00 C36.06,30.00 37.00,30.57 37.00,31.50 C37.00,32.58 35.89,33.00 33.00,33.00 L 29.00 33.00 L 29.00 28.00 Z' fill='black'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 74 58'><path d='M 23.50 43.11 C18.79,41.06 17.50,38.22 17.50,29.92 C17.50,22.65 17.71,21.83 20.27,19.27 C22.84,16.71 23.64,16.50 31.00,16.50 C38.36,16.50 39.16,16.71 41.73,19.27 C44.29,21.84 44.50,22.64 44.50,30.00 C44.50,37.34 44.29,38.17 41.76,40.69 C39.39,43.06 38.10,43.47 32.26,43.71 C28.54,43.86 24.60,43.59 23.50,43.11 ZM 39.17 38.35 C41.67,36.09 41.79,24.53 39.35,21.83 C37.09,19.33 25.53,19.21 22.83,21.65 C20.33,23.91 20.21,35.47 22.65,38.17 C24.91,40.67 36.47,40.79 39.17,38.35 ZM 29.00 28.00 C29.00,24.22 29.37,23.00 30.50,23.00 C31.55,23.00 32.00,24.06 32.00,26.50 C32.00,29.57 32.31,30.00 34.50,30.00 C36.06,30.00 37.00,30.57 37.00,31.50 C37.00,32.58 35.89,33.00 33.00,33.00 L 29.00 33.00 L 29.00 28.00 Z' fill='black'/></svg>");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    background-color: rgba(16, 22, 26, 0.45);
+    width: 13px;
+    height: 13px;
 }
 
 .bubble-tick.tick-offline {
-    --tick-color: rgba(16, 22, 26, 0.45);
-    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 15'><path d='M1 7.5L5.2 11.8L14 2.2' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
-    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 15'><path d='M1 7.5L5.2 11.8L14 2.2' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 74 58'><path d='M 19.40 38.70 C14.20,33.86 13.70,33.06 14.93,31.58 C16.20,30.05 16.63,30.21 19.95,33.45 C21.95,35.40 24.06,37.00 24.65,37.00 C25.23,37.00 29.38,32.30 33.87,26.55 C38.35,20.81 42.42,15.86 42.90,15.56 C43.38,15.27 44.29,15.64 44.91,16.39 C45.81,17.48 44.02,20.36 36.39,30.13 C31.07,36.93 26.39,42.87 25.99,43.32 C25.58,43.78 22.62,41.70 19.40,38.70 Z' fill='black'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 74 58'><path d='M 19.40 38.70 C14.20,33.86 13.70,33.06 14.93,31.58 C16.20,30.05 16.63,30.21 19.95,33.45 C21.95,35.40 24.06,37.00 24.65,37.00 C25.23,37.00 29.38,32.30 33.87,26.55 C38.35,20.81 42.42,15.86 42.90,15.56 C43.38,15.27 44.29,15.64 44.91,16.39 C45.81,17.48 44.02,20.36 36.39,30.13 C31.07,36.93 26.39,42.87 25.99,43.32 C25.58,43.78 22.62,41.70 19.40,38.70 Z' fill='black'/></svg>");
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
     -webkit-mask-position: center;
     mask-position: center;
-    -webkit-mask-size: 15px 14px;
-    mask-size: 15px 14px;
-    background-color: var(--tick-color);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    background-color: rgba(16, 22, 26, 0.45);
     width: 15px;
-    height: 14px;
+    height: 12px;
 }
 
-.bubble-tick.tick-unread,
-.bubble-tick.tick-read {
-    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 15'><path d='M1 7.5L5.2 11.8L11 4.3' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/><path d='M7.2 7.5L11.4 11.8L19 2.2' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
-    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 15'><path d='M1 7.5L5.2 11.8L11 4.3' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/><path d='M7.2 7.5L11.4 11.8L19 2.2' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+.bubble-tick.tick-unread {
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 74 58'><path d='M 19.40 38.70 C14.20,33.86 13.70,33.06 14.93,31.58 C16.20,30.05 16.63,30.21 19.95,33.45 C21.95,35.40 24.06,37.00 24.65,37.00 C25.23,37.00 29.38,32.30 33.87,26.55 C38.35,20.81 42.42,15.86 42.90,15.56 C43.38,15.27 44.29,15.64 44.92,16.40 C45.82,17.49 44.05,20.34 36.41,30.14 C31.10,36.94 26.42,42.87 26.01,43.32 C25.59,43.78 22.62,41.70 19.40,38.70 ZM 35.07 41.57 C32.23,38.55 32.89,35.68 36.23,36.52 C38.19,37.01 39.69,35.55 47.00,26.05 C51.68,19.98 55.78,15.00 56.13,15.00 C56.47,15.00 57.24,15.58 57.83,16.29 C58.64,17.27 56.46,20.73 48.87,30.54 C43.35,37.67 38.51,43.62 38.11,43.77 C37.71,43.92 36.34,42.93 35.07,41.57 Z' fill='black'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 74 58'><path d='M 19.40 38.70 C14.20,33.86 13.70,33.06 14.93,31.58 C16.20,30.05 16.63,30.21 19.95,33.45 C21.95,35.40 24.06,37.00 24.65,37.00 C25.23,37.00 29.38,32.30 33.87,26.55 C38.35,20.81 42.42,15.86 42.90,15.56 C43.38,15.27 44.29,15.64 44.92,16.40 C45.82,17.49 44.05,20.34 36.41,30.14 C31.10,36.94 26.42,42.87 26.01,43.32 C25.59,43.78 22.62,41.70 19.40,38.70 ZM 35.07 41.57 C32.23,38.55 32.89,35.68 36.23,36.52 C38.19,37.01 39.69,35.55 47.00,26.05 C51.68,19.98 55.78,15.00 56.13,15.00 C56.47,15.00 57.24,15.58 57.83,16.29 C58.64,17.27 56.46,20.73 48.87,30.54 C43.35,37.67 38.51,43.62 38.11,43.77 C37.71,43.92 36.34,42.93 35.07,41.57 Z' fill='black'/></svg>");
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
     -webkit-mask-position: center;
     mask-position: center;
-    -webkit-mask-size: 18px 14px;
-    mask-size: 18px 14px;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    background-color: rgba(16, 22, 26, 0.45);
     width: 18px;
     height: 14px;
 }
 
-.bubble-tick.tick-unread {
-    background-color: rgba(16, 22, 26, 0.45);
-}
-
 .bubble-tick.tick-read {
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 74 58'><path d='M 19.35 38.74 C14.27,33.86 13.75,33.01 14.95,31.55 C16.20,30.06 16.65,30.23 19.95,33.45 C21.95,35.40 24.05,37.00 24.62,37.00 C25.19,37.00 29.14,32.53 33.41,27.06 C42.73,15.10 43.35,14.51 44.88,16.35 C45.78,17.44 44.03,20.30 36.43,30.12 C31.16,36.93 26.46,42.90 25.98,43.39 C25.48,43.90 22.67,41.93 19.35,38.74 ZM 35.07 41.57 C32.23,38.56 32.89,35.69 36.23,36.50 C38.18,36.98 39.71,35.48 47.00,26.03 C51.67,19.97 55.78,15.01 56.13,15.00 C56.47,15.00 57.24,15.58 57.83,16.29 C58.64,17.27 56.46,20.73 48.87,30.54 C43.35,37.67 38.51,43.62 38.11,43.77 C37.71,43.92 36.34,42.93 35.07,41.57 Z' fill='black'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 74 58'><path d='M 19.35 38.74 C14.27,33.86 13.75,33.01 14.95,31.55 C16.20,30.06 16.65,30.23 19.95,33.45 C21.95,35.40 24.05,37.00 24.62,37.00 C25.19,37.00 29.14,32.53 33.41,27.06 C42.73,15.10 43.35,14.51 44.88,16.35 C45.78,17.44 44.03,20.30 36.43,30.12 C31.16,36.93 26.46,42.90 25.98,43.39 C25.48,43.90 22.67,41.93 19.35,38.74 ZM 35.07 41.57 C32.23,38.56 32.89,35.69 36.23,36.50 C38.18,36.98 39.71,35.48 47.00,26.03 C51.67,19.97 55.78,15.01 56.13,15.00 C56.47,15.00 57.24,15.58 57.83,16.29 C58.64,17.27 56.46,20.73 48.87,30.54 C43.35,37.67 38.51,43.62 38.11,43.77 C37.71,43.92 36.34,42.93 35.07,41.57 Z' fill='black'/></svg>");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
     background-color: #4FA3FF;
+    width: 18px;
+    height: 14px;
 }
 
 /* رسايل الطرف التاني معندهاش صح قراءة (الصح بتاعة رسايلي أنا بس) */
