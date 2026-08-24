@@ -134,6 +134,105 @@ html[dir="rtl"] .conv-back-btn svg {
     background: currentColor;
 }
 
+/* ===== شريط وضع التحديد المتعدد (بيحل محل الـ topbar العادي) ===== */
+.conv-topbar-select {
+    display: none;
+}
+
+body.select-mode-on .conv-topbar-select {
+    display: flex;
+}
+
+body.select-mode-on #convTopbarNormal {
+    display: none;
+}
+
+.conv-select-count {
+    flex: 1;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    order: 2;
+}
+
+.conv-select-delete-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 50%;
+    color: #F87171;
+    transition: background 0.2s ease, transform 0.15s ease;
+    flex-shrink: 0;
+    order: 3;
+}
+
+.conv-select-delete-btn:active {
+    transform: scale(0.92);
+    background: var(--glass-strong);
+}
+
+.conv-select-delete-btn:disabled {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+/* ===== دايرة اختيار صغيرة بتظهر على كل رسالة وإحنا في وضع التحديد ===== */
+.msg-row-select-dot {
+    display: none;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--glass-border);
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    margin: 0 8px;
+    flex-shrink: 0;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+body.select-mode-on .msg-row-select-dot {
+    display: flex;
+}
+
+.msg-row-select-dot svg {
+    width: 13px;
+    height: 13px;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    stroke: #fff;
+}
+
+.msg-row.multi-selected .msg-row-select-dot {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.msg-row.multi-selected .msg-row-select-dot svg {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* وإحنا في وضع التحديد، الصف بيتفرد أكتر عشان الدايرة تاخد مكانها
+   جنب الفقاعة، بدل ما تتراكب فوقها */
+body.select-mode-on .msg-row-inner {
+    display: flex;
+    align-items: flex-end;
+}
+
+body.select-mode-on .msg-row.from-me .msg-row-inner {
+    flex-direction: row-reverse;
+}
+
 /* ===== Messages Area ===== */
 .conv-messages {
     flex: 1;
