@@ -1,5 +1,6 @@
 import {
     db,
+    auth,
     doc,
     getDoc,
     getDocs,
@@ -13,7 +14,8 @@ import {
     limit,
     onSnapshot,
     writeBatch,
-    ensureAuthenticated
+    ensureAuthenticated,
+    deleteUser
 } from "./firebase-init.js";
 
 (function () {
@@ -34,6 +36,18 @@ import {
     const cancelNewChat = document.getElementById('cancelNewChat');
     const startNewChat = document.getElementById('startNewChat');
     const chatsListEl = document.getElementById('chatsList');
+
+    // ===== اختيار "تحدث مع اكونت قديم" / "شخص جديد" =====
+    const addChoiceOverlay = document.getElementById('addChoiceOverlay');
+    const addChoiceExisting = document.getElementById('addChoiceExisting');
+    const addChoiceNew = document.getElementById('addChoiceNew');
+    const cancelAddChoice = document.getElementById('cancelAddChoice');
+
+    // ===== قائمة "تحدث مع اكونت تحدثت معه من قبل" =====
+    const contactsOverlay = document.getElementById('contactsOverlay');
+    const contactsListEl = document.getElementById('contactsList');
+    const contactsEmptyEl = document.getElementById('contactsEmpty');
+    const cancelContacts = document.getElementById('cancelContacts');
 
     function isValidEmail(value) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -90,7 +104,113 @@ import {
         goToConversation(email);
     }
 
-    addChatBtn.addEventListener('click', openNewChatModal);
+    // ===== خطوة 1: زرار + بيفتح اختيار (اكونت قديم / شخص جديد) =====
+    function openAddChoiceModal() {
+        if (addChoiceOverlay) addChoiceOverlay.classList.remove('hidden');
+    }
+    function closeAddChoiceModal() {
+        if (addChoiceOverlay) addChoiceOverlay.classList.add('hidden');
+    }
+
+    if (addChatBtn) addChatBtn.addEventListener('click', openAddChoiceModal);
+    if (cancelAddChoice) cancelAddChoice.addEventListener('click', closeAddChoiceModal);
+    if (addChoiceOverlay) {
+        addChoiceOverlay.addEventListener('click', (e) => {
+            if (e.target === addChoiceOverlay) closeAddChoiceModal();
+        });
+    }
+    if (addChoiceNew) {
+        addChoiceNew.addEventListener('click', () => {
+            closeAddChoiceModal();
+            openNewChatModal();
+        });
+    }
+
+    // ===== خطوة 2أ: قائمة جهات الاتصال السابقة =====
+    // بتتقرا من users/{myEmail}/contacts، وده منفصل تمامًا عن مجموعة
+    // chats، فبيفضل فيها كل حد اتكلمنا معاه قبل كده حتى لو الشات
+    // بينا وبينه اتحذف نهائيًا بعد كده.
+    function renderContactsList(contacts) {
+        if (!contactsListEl) return;
+        contactsListEl.innerHTML = '';
+        if (!contacts.length) {
+            if (contactsEmptyEl) contactsEmptyEl.classList.remove('hidden');
+            return;
+        }
+        if (contactsEmptyEl) contactsEmptyEl.classList.add('hidden');
+
+        contacts.forEach(async (email) => {
+            const row = document.createElement('div');
+            row.className = 'contact-row';
+            const initial = email.trim().charAt(0).toUpperCase();
+            row.innerHTML = `
+                <div class="contact-row-avatar">${initial}</div>
+                <div class="contact-row-text">
+                    <h4 class="contact-row-name">${email}</h4>
+                </div>
+            `;
+            row.addEventListener('click', () => {
+                closeContactsModal();
+                goToConversation(email);
+            });
+            contactsListEl.appendChild(row);
+
+            // بنجيب الاسم الحقيقي (لو موجود) ونستبدل الإيميل بيه بعد
+            // ما الصف يظهر، من غير ما نأخر عرض القائمة كلها في انتظاره.
+            try {
+                const realName = await getRealName(email);
+                const nameEl = row.querySelector('.contact-row-name');
+                if (nameEl && realName) nameEl.textContent = realName;
+            } catch (e) {
+                // نسيبه بالإيميل لو فشل
+            }
+        });
+    }
+
+    async function loadContacts() {
+        if (contactsListEl) {
+            contactsListEl.innerHTML = '';
+        }
+        if (contactsEmptyEl) contactsEmptyEl.classList.add('hidden');
+        try {
+            const user = await ensureAuthenticated();
+            const contactsRef = collection(db, 'users', savedEmailLower, 'contacts');
+            const q = query(contactsRef, orderBy('lastContactAt', 'desc'));
+            const snap = await getDocs(q);
+            const emails = [];
+            snap.forEach(d => {
+                const data = d.data();
+                if (data && data.email) emails.push(data.email);
+            });
+            renderContactsList(emails);
+        } catch (e) {
+            console.error('فشل جلب جهات الاتصال:', e);
+            renderContactsList([]);
+        }
+    }
+
+    function openContactsModal() {
+        if (contactsOverlay) contactsOverlay.classList.remove('hidden');
+        loadContacts();
+    }
+    function closeContactsModal() {
+        if (contactsOverlay) contactsOverlay.classList.add('hidden');
+    }
+
+    if (addChoiceExisting) {
+        addChoiceExisting.addEventListener('click', () => {
+            closeAddChoiceModal();
+            openContactsModal();
+        });
+    }
+    if (cancelContacts) cancelContacts.addEventListener('click', closeContactsModal);
+    if (contactsOverlay) {
+        contactsOverlay.addEventListener('click', (e) => {
+            if (e.target === contactsOverlay) closeContactsModal();
+        });
+    }
+
+    // ===== خطوة 2ب: مودال الإيميل العادي (شخص جديد) =====
     cancelNewChat.addEventListener('click', closeNewChatModal);
     newChatOverlay.addEventListener('click', (e) => {
         if (e.target === newChatOverlay) closeNewChatModal();
@@ -455,6 +575,96 @@ import {
                 renderChatsList();
             } catch (e) {
                 console.error('فشل حذف المحادثة نهائيًا:', e);
+            }
+        });
+    }
+
+    // =====================================================
+    // ===== تسجيل خروج = حذف الحساب نهائيًا =====
+    // زرار "تسجيل خروج" في آخر صفحة الإعدادات: بعد تأكيد المستخدم،
+    // بيمسح كل شاتاته ورسايله نهائيًا (زي حذف الشات النهائي)، بعدين
+    // مستند users/{email} بتاعه، بعدين قائمة جهات الاتصال بتاعته،
+    // وأخيرًا مستخدم Firebase Auth نفسه (Authentication). في الآخر
+    // بيمسح بيانات الجلسة المحلية ويرجّعه لصفحة تسجيل الدخول، فلازم
+    // يسجل دخول تاني من الصفر زي ما هو متوقع.
+    // =====================================================
+    const logoutBtn = document.getElementById('logoutBtn');
+    const logoutConfirmBtn = document.getElementById('logoutConfirmBtn');
+    const logoutCancelBtn = document.getElementById('logoutCancelBtn');
+    const logoutStatusEl = document.getElementById('logoutStatus');
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            openSheet('sheet-logout');
+        });
+    }
+    if (logoutCancelBtn) {
+        logoutCancelBtn.addEventListener('click', () => {
+            closeSheet('sheet-logout');
+        });
+    }
+
+    async function deleteMyContacts(myUid) {
+        const contactsRef = collection(db, 'users', savedEmailLower, 'contacts');
+        let snap = await getDocs(contactsRef);
+        while (!snap.empty) {
+            const batch = writeBatch(db);
+            snap.docs.slice(0, 500).forEach((d) => batch.delete(d.ref));
+            await batch.commit();
+            if (snap.size <= 500) break;
+            snap = await getDocs(contactsRef);
+        }
+    }
+
+    async function deleteAllMyChats(myUid) {
+        const chatsRef = collection(db, 'chats');
+        const q = query(chatsRef, where('participants', 'array-contains', myUid));
+        const snap = await getDocs(q);
+        for (const chatDoc of snap.docs) {
+            await deleteChatPermanently(chatDoc.id);
+        }
+    }
+
+    async function deleteAccountPermanently() {
+        const user = await ensureAuthenticated();
+        const myUid = user.uid;
+
+        // 1) كل الشاتات والرسايل بتاعتي (زي الحذف النهائي بالظبط)
+        await deleteAllMyChats(myUid);
+
+        // 2) قائمة جهات الاتصال بتاعتي
+        await deleteMyContacts(myUid);
+
+        // 3) مستند users/{email} بتاعي
+        await deleteDoc(doc(db, 'users', savedEmailLower));
+
+        // 4) مستخدم Firebase Authentication نفسه
+        await deleteUser(user);
+    }
+
+    if (logoutConfirmBtn) {
+        logoutConfirmBtn.addEventListener('click', async () => {
+            logoutConfirmBtn.disabled = true;
+            if (logoutCancelBtn) logoutCancelBtn.disabled = true;
+            if (logoutStatusEl) {
+                logoutStatusEl.textContent = t('جاري حذف الحساب...', 'Deleting your account...');
+                logoutStatusEl.classList.remove('hidden');
+            }
+            try {
+                await deleteAccountPermanently();
+            } catch (e) {
+                console.error('فشل حذف الحساب نهائيًا أثناء تسجيل الخروج:', e);
+                // حتى لو فشلت خطوة معينة (مثلاً deleteUser بسبب جلسة
+                // anonymous قديمة)، منسيبش المستخدم عالق في المنتصف:
+                // بنكمل نمسح بياناته المحلية ونطلعه برا على أي حال،
+                // عشان الوعد اللي اتقاله ("هيتسجل خروج") يتحقق فعليًا.
+            } finally {
+                closeSheet('sheet-logout');
+                if (logoutStatusEl) logoutStatusEl.classList.add('hidden');
+                localStorage.removeItem('cz_verified_email');
+                localStorage.removeItem('cz_active_chat_email');
+                localStorage.removeItem('cz_user_name');
+                window.location.href = 'index.html';
             }
         });
     }
