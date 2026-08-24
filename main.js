@@ -2,7 +2,9 @@ import {
     db,
     doc,
     getDoc,
+    getDocs,
     updateDoc,
+    deleteDoc,
     deleteField,
     collection,
     query,
@@ -10,6 +12,7 @@ import {
     orderBy,
     limit,
     onSnapshot,
+    writeBatch,
     ensureAuthenticated
 } from "./firebase-init.js";
 
@@ -415,12 +418,29 @@ import {
         });
     }
 
-    // ===== حذف الشات (من عندي بس) =====
+    // ===== حذف الشات نهائيًا (من عند الطرفين) =====
     if (chatCtxDelete) {
         chatCtxDelete.addEventListener('click', () => {
             closeChatCtxMenu();
             openSheet('sheet-delete-chat');
         });
+    }
+
+    // بيمسح كل مستندات مجموعة الرسايل بتاعة الشات على دفعات (حد أقصى
+    // 500 عملية لكل batch في Firestore)، ثم يمسح مستند الشات نفسه.
+    // النتيجة: الشات والرسايل بيختفوا نهائيًا من فايرستور عند الطرفين
+    // مافيش أي رجوع.
+    async function deleteChatPermanently(chatId) {
+        const messagesRef = collection(db, 'chats', chatId, 'messages');
+        let snap = await getDocs(messagesRef);
+        while (!snap.empty) {
+            const batch = writeBatch(db);
+            snap.docs.slice(0, 500).forEach((d) => batch.delete(d.ref));
+            await batch.commit();
+            if (snap.size <= 500) break;
+            snap = await getDocs(messagesRef);
+        }
+        await deleteDoc(doc(db, 'chats', chatId));
     }
 
     const deleteChatConfirmBtn = document.getElementById('deleteChatConfirmBtn');
@@ -430,19 +450,11 @@ import {
             closeSheet('sheet-delete-chat');
             if (!chatId || !myUidGlobal) return;
             try {
-                await updateDoc(doc(db, 'chats', chatId), {
-                    ['deletedFor.' + myUidGlobal]: Date.now(),
-                    ['pinnedFor.' + myUidGlobal]: deleteField()
-                });
-                const entry = chatsState.get(chatId);
-                if (entry) {
-                    entry.deletedAt = Date.now();
-                    entry.pinned = false;
-                    chatsState.set(chatId, entry);
-                    renderChatsList();
-                }
+                await deleteChatPermanently(chatId);
+                chatsState.delete(chatId);
+                renderChatsList();
             } catch (e) {
-                console.error('فشل حذف المحادثة:', e);
+                console.error('فشل حذف المحادثة نهائيًا:', e);
             }
         });
     }
