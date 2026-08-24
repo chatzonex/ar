@@ -6,6 +6,7 @@ import {
     getDocs,
     addDoc,
     updateDoc,
+    deleteDoc,
     deleteField,
     arrayUnion,
     arrayRemove,
@@ -15,6 +16,7 @@ import {
     orderBy,
     onSnapshot,
     serverTimestamp,
+    writeBatch,
     ensureAuthenticated
 } from "./firebase-init.js";
 
@@ -116,12 +118,16 @@ async function verifyOwnership(email, uid) {
             ctx_reply: 'رد',
             ctx_copy: 'نسخ',
             ctx_forward: 'توجيه',
+            ctx_select: 'تحديد',
             ctx_delete_msg: 'حذف الرسالة',
             ctx_delete_everyone: 'حذف من عند الطرفين',
             ctx_delete_me: 'حذف من عندي بس',
             delete_msg_title: 'حذف الرسالة؟',
             delete_msg_body_mine: 'تقدر تحذفها من عندك بس، أو من عند الطرفين.',
             delete_msg_body_theirs: 'هتتحذف من عندك أنت بس، ولسه هتفضل ظاهرة عند الطرف التاني.',
+            delete_selected_title: 'حذف الرسائل المحددة؟',
+            delete_selected_body: 'رسائلك هتتحذف نهائيًا من عند الطرفين، ورسائل الطرف التاني هتتخفي من عندك بس.',
+            btn_delete: 'حذف',
             deleted_msg_text: 'تم حذف هذه الرسالة',
             reply_you: 'أنت',
             msg_deleted_toast: 'اتحذفت الرسالة',
@@ -178,12 +184,16 @@ async function verifyOwnership(email, uid) {
             ctx_reply: 'Reply',
             ctx_copy: 'Copy',
             ctx_forward: 'Forward',
+            ctx_select: 'Select',
             ctx_delete_msg: 'Delete message',
             ctx_delete_everyone: 'Delete for everyone',
             ctx_delete_me: 'Delete for me',
             delete_msg_title: 'Delete this message?',
             delete_msg_body_mine: 'You can delete it for you only, or for everyone.',
             delete_msg_body_theirs: 'It will be deleted for you only. It will still show for the other person.',
+            delete_selected_title: 'Delete selected messages?',
+            delete_selected_body: 'Your messages will be permanently deleted for everyone, and their messages will be hidden for you only.',
+            btn_delete: 'Delete',
             deleted_msg_text: 'This message was deleted',
             reply_you: 'You',
             msg_deleted_toast: 'Message deleted',
@@ -750,6 +760,11 @@ async function verifyOwnership(email, uid) {
         const inner = document.createElement('div');
         inner.className = 'msg-row-inner';
 
+        const selectDot = document.createElement('div');
+        selectDot.className = 'msg-row-select-dot';
+        selectDot.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        inner.appendChild(selectDot);
+
         const replyIcon = document.createElement('div');
         replyIcon.className = 'msg-row-reply-icon';
         replyIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>';
@@ -871,6 +886,127 @@ async function verifyOwnership(email, uid) {
     }
 
     // =====================================================
+    // وضع التحديد المتعدد (Select mode): بيتفعّل من زرار "تحديد"
+    // في منيو الرسالة. وإحنا فيه، الضغط العادي على أي رسالة بيضيفها/
+    // بيشيلها من مجموعة selectedMessages بدل ما يفتح منيو الرد/الحذف
+    // العادي. الحذف الجماعي بيفرّق بين رسايلي (حذف نهائي فعلي) ورسايل
+    // الطرف التاني (تخفي من عندي بس - نفس منطق "حذف من عندي" الفردي).
+    // =====================================================
+    let selectModeOn = false;
+    const selectedMessages = new Map(); // docId -> { isMine }
+
+    const convTopbarSelect = document.getElementById('convTopbarSelect');
+    const convSelectCancelBtn = document.getElementById('convSelectCancelBtn');
+    const convSelectCount = document.getElementById('convSelectCount');
+    const convSelectDeleteBtn = document.getElementById('convSelectDeleteBtn');
+
+    function updateSelectCountUI() {
+        const n = selectedMessages.size;
+        if (convSelectCount) convSelectCount.textContent = String(n);
+        if (convSelectDeleteBtn) convSelectDeleteBtn.disabled = n === 0;
+    }
+
+    function enterSelectMode(firstDocId, firstIsMine) {
+        selectModeOn = true;
+        selectedMessages.clear();
+        document.body.classList.add('select-mode-on');
+        if (firstDocId) {
+            selectedMessages.set(firstDocId, { isMine: firstIsMine });
+            const row = messagesEl.querySelector(`.msg-row[data-msg-id="${firstDocId}"]`);
+            if (row) row.classList.add('multi-selected');
+        }
+        updateSelectCountUI();
+    }
+
+    function exitSelectMode() {
+        selectModeOn = false;
+        selectedMessages.clear();
+        document.body.classList.remove('select-mode-on');
+        messagesEl.querySelectorAll('.msg-row.multi-selected').forEach(r => r.classList.remove('multi-selected'));
+    }
+
+    function toggleMessageSelection(row, docId, isMine) {
+        if (selectedMessages.has(docId)) {
+            selectedMessages.delete(docId);
+            row.classList.remove('multi-selected');
+        } else {
+            selectedMessages.set(docId, { isMine });
+            row.classList.add('multi-selected');
+        }
+        updateSelectCountUI();
+        // لو مسحنا آخر عنصر بالضغط عليه تاني، منقفلش وضع التحديد
+        // تلقائيًا — بنسيب المستخدم يقفله هو بزرار الإلغاء أو يكمّل يختار
+    }
+
+    if (convSelectCancelBtn) convSelectCancelBtn.addEventListener('click', exitSelectMode);
+
+    // ===== تنفيذ الحذف الجماعي: رسايلي تتمسح نهائيًا، رسايل التاني تتخفي عندي بس =====
+    async function deleteSelectedMessages() {
+        const mineIds = [];
+        const theirsIds = [];
+        selectedMessages.forEach((info, id) => {
+            if (info.isMine) mineIds.push(id); else theirsIds.push(id);
+        });
+        try {
+            if (mineIds.length) {
+                for (let i = 0; i < mineIds.length; i += 500) {
+                    const batch = writeBatch(db);
+                    mineIds.slice(i, i + 500).forEach((id) => {
+                        batch.delete(doc(db, 'chats', chatId, 'messages', id));
+                    });
+                    await batch.commit();
+                }
+            }
+            if (theirsIds.length && myUid) {
+                for (const id of theirsIds) {
+                    await updateDoc(doc(db, 'chats', chatId, 'messages', id), {
+                        deletedFor: arrayUnion(myUid)
+                    });
+                }
+            }
+            showToast(T.msg_deleted_toast);
+        } catch (e) {
+            console.error('فشل حذف الرسايل المحددة:', e);
+        } finally {
+            exitSelectMode();
+        }
+    }
+
+    const deleteSelectedConfirmBtn = document.getElementById('deleteSelectedConfirmBtn');
+    const deleteSelectedSheetBody = document.getElementById('deleteSelectedSheetBody');
+
+    if (convSelectDeleteBtn) {
+        convSelectDeleteBtn.addEventListener('click', () => {
+            if (selectedMessages.size === 0) return;
+            const hasMine = [...selectedMessages.values()].some(v => v.isMine);
+            const hasTheirs = [...selectedMessages.values()].some(v => !v.isMine);
+            if (deleteSelectedSheetBody) {
+                if (hasMine && hasTheirs) {
+                    deleteSelectedSheetBody.textContent = isAr
+                        ? 'رسايلك المحددة هتتحذف نهائيًا من عند الطرفين، ورسايل الطرف التاني المحددة هتتخفي من عندك بس.'
+                        : 'Your selected messages will be permanently deleted for everyone, and their selected messages will be hidden for you only.';
+                } else if (hasMine) {
+                    deleteSelectedSheetBody.textContent = isAr
+                        ? 'الرسايل المحددة هتتحذف نهائيًا من عند الطرفين.'
+                        : 'The selected messages will be permanently deleted for everyone.';
+                } else {
+                    deleteSelectedSheetBody.textContent = isAr
+                        ? 'الرسايل المحددة هتتخفي من عندك بس، وهتفضل ظاهرة عند الطرف التاني.'
+                        : 'The selected messages will be hidden for you only, and will still be visible to the other side.';
+                }
+            }
+            openSheet('sheet-delete-selected');
+        });
+    }
+
+    if (deleteSelectedConfirmBtn) {
+        deleteSelectedConfirmBtn.addEventListener('click', () => {
+            closeSheet('sheet-delete-selected');
+            deleteSelectedMessages();
+        });
+    }
+
+    // =====================================================
     // ريبلاي بالسحب لمنتصف الشاشة (زي واتساب) + ضغطة مطولة
     // لحذف الرسالة
     // =====================================================
@@ -880,10 +1016,20 @@ async function verifyOwnership(email, uid) {
     function attachMessageInteractions(row, docId, msg, isMine) {
         const inner = row.querySelector('.msg-row-inner');
 
+        // وإحنا في وضع التحديد، أي ضغطة عادية (tap/click) على الصف
+        // بتضيفه/بتشيله من التحديد بدل أي سلوك تاني (رد/منيو)
+        row.addEventListener('click', (e) => {
+            if (!selectModeOn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMessageSelection(row, docId, isMine);
+        });
+
         // ===== سحب لمنتصف الشاشة = ريبلاي =====
         let touchStartX = 0, touchStartY = 0, dragging = false, currentDx = 0;
 
         row.addEventListener('touchstart', (e) => {
+            if (selectModeOn) return;
             const t0 = e.touches[0];
             touchStartX = t0.clientX;
             touchStartY = t0.clientY;
@@ -911,7 +1057,7 @@ async function verifyOwnership(email, uid) {
         }, { passive: false });
 
         row.addEventListener('touchend', () => {
-            if (dragging && Math.abs(currentDx) >= SWIPE_REPLY_THRESHOLD) {
+            if (!selectModeOn && dragging && Math.abs(currentDx) >= SWIPE_REPLY_THRESHOLD) {
                 if (navigator.vibrate) { try { navigator.vibrate(10); } catch (e) {} }
                 startReply(docId, msg, isMine);
             }
@@ -935,6 +1081,7 @@ async function verifyOwnership(email, uid) {
             pressTimer = null;
         }
         row.addEventListener('touchstart', () => {
+            if (selectModeOn) return;
             pressTimer = setTimeout(() => {
                 if (navigator.vibrate) { try { navigator.vibrate(15); } catch (e) {} }
                 openMsgCtxMenu(row, docId, msg, isMine);
@@ -945,6 +1092,7 @@ async function verifyOwnership(email, uid) {
         row.addEventListener('touchcancel', cancelPress);
 
         row.addEventListener('contextmenu', (e) => {
+            if (selectModeOn) { e.preventDefault(); return; }
             e.preventDefault();
             openMsgCtxMenu(row, docId, msg, isMine);
         });
@@ -952,6 +1100,7 @@ async function verifyOwnership(email, uid) {
         // دعم الماوس (ديسكتوب/تجربة): ضغطة مطولة بالماوس تعمل نفس الحاجة
         let mouseTimer = null;
         row.addEventListener('mousedown', () => {
+            if (selectModeOn) return;
             mouseTimer = setTimeout(() => openMsgCtxMenu(row, docId, msg, isMine), LONG_PRESS_MSG_MS);
         });
         row.addEventListener('mouseup', () => { if (mouseTimer) clearTimeout(mouseTimer); });
@@ -964,6 +1113,7 @@ async function verifyOwnership(email, uid) {
     const msgCtxReply = document.getElementById('msgCtxReply');
     const msgCtxCopy = document.getElementById('msgCtxCopy');
     const msgCtxForward = document.getElementById('msgCtxForward');
+    const msgCtxSelect = document.getElementById('msgCtxSelect');
     const msgCtxDelete = document.getElementById('msgCtxDelete');
     let ctxMsgId = null, ctxMsgData = null, ctxMsgIsMine = false;
 
@@ -1026,6 +1176,14 @@ async function verifyOwnership(email, uid) {
             closeMsgCtxMenu();
             if (!msg || msg.deleted) return;
             openForwardSheet(msg);
+        });
+    }
+
+    if (msgCtxSelect) {
+        msgCtxSelect.addEventListener('click', () => {
+            const id = ctxMsgId, mine = ctxMsgIsMine;
+            closeMsgCtxMenu();
+            enterSelectMode(id, mine);
         });
     }
 
@@ -1475,19 +1633,7 @@ async function verifyOwnership(email, uid) {
 
         const chatDocRef = doc(db, 'chats', chatId);
 
-        // =====================================================
-        // الحل الجديد للمشكلة: "الطرف التاني مش شايف الشات في قائمة
-        // الدردشات عنده لحد ما هو بنفسه يفتح المحادثة الأول". قبل
-        // إنشاء الشات، بنجرب نجيب uid بتاع الطرف التاني من
-        // users/{otherEmail} — لو هو مسجّل بالفعل في الأبب (حتى لو
-        // معندوش شات مفتوح معايا لسه)، بنحط uid بتاعه هو كمان جوه
-        // participants من الأول، فيظهر عنده الشات فورًا في قائمته
-        // الرئيسية من غير ما يحتاج يفتح المحادثة بنفسه الأول.
-        //
-        // لو لسه مش مسجّل خالص (users/{email} مش موجود)، بنكمل عادي
-        // بـ uid بتاعي أنا بس، وهيتضاف هو تلقائيًا أول ما يفتح
-        // المحادثة أو يسجّل بعدين (نفس السلوك القديم كـ fallback).
-        // =====================================================
+
         let otherUid = null;
         try {
             const otherUserSnap = await getDoc(doc(db, 'users', otherEmail.toLowerCase()));
@@ -1628,6 +1774,24 @@ async function verifyOwnership(email, uid) {
             });
             renderTypingBubbleIfNeeded();
             scrollToBottom(false);
+
+            // لو إحنا في وضع التحديد المتعدد، الـ DOM اتبني من جديد
+            // بالكامل فوق، فلازم نرجّع نعلّم بصريًا على الرسايل اللي
+            // كانت متحددة قبل التحديث (باستخدام selectedMessages اللي
+            // فاضلة محفوظة في الذاكرة). أي رسالة اتحذفت فعليًا في الأثناء
+            // بتتشال تلقائيًا من المجموعة لأنها مش هتلاقي صف تحطها عليه.
+            if (selectModeOn) {
+                const stillPresent = new Set(visibleDocs.map(d => d.id));
+                [...selectedMessages.keys()].forEach((id) => {
+                    if (!stillPresent.has(id)) {
+                        selectedMessages.delete(id);
+                        return;
+                    }
+                    const row = messagesEl.querySelector(`.msg-row[data-msg-id="${id}"]`);
+                    if (row) row.classList.add('multi-selected');
+                });
+                updateSelectCountUI();
+            }
 
             // أي رسالة وصلتلي من الطرف التاني ولسه حالتها unread،
             // معناه إني دلوقتي فاتح الشات وشايفها فعليًا، فنعلّمها read
