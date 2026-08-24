@@ -66,8 +66,11 @@ async function verifyOwnership(email, uid) {
         if (color) document.documentElement.style.setProperty('--accent', color);
     }
 
-    if (localStorage.getItem('cz_lg_bottombar') === 'on') {
-        document.body.classList.add('lg-bottombar-on');
+    // الزجاج السائل في شاشة الشات بقى مفتاح مستقل تمامًا (cz_lg_chat)
+    // عن زجاج الرئيسية (cz_lg_bottombar) — كل واحد بيتفعّل لوحده من
+    // غير ما يأثر على التاني.
+    if (localStorage.getItem('cz_lg_chat') === 'on') {
+        document.body.classList.add('lg-chat-on');
     }
 
     const I18N = {
