@@ -1,21 +1,11 @@
-/* =====================================================
-   ChatZone — إضافات: تثبيت/حذف الشات، ريبلاي وحذف الرسايل،
-   قايمة التلت نقط في الشات نفسها بشكل الـ dropdown القياسي،
-   وتغيير اسم جهة الاتصال
-   ===================================================== */
-
-/* ===== Bubble tail (iOS-style curl) =====
-   شكل الذيل بتاع فقاعات الشات (نقلته هنا من conversation.css عشان
-   يبقى مع باقي إضافات الشات). الفقاعة نفسها (الخلفية + الزوايا)
-   لسه متعرّفة في conversation.css زي ما هي — هنا بس شكل الذيل. */
 .bubble.bubble-right::after {
     content: '';
     position: absolute;
     bottom: -1px;
-    right: -9px;
-    width: 20px;
-    height: 16px;
-    background: #FFFFFF;
+    right: -12px;
+    width: 26px;
+    height: 21px;
+    background: var(--bubble-mine-bg, #FFFFFF);
     -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 28'><path d='M 0 0 C 0 10, 2 16, 8 20 C 14 24, 22 25, 30 27 C 33 27.6, 34 26.5, 32 24.5 C 25 18, 22 12, 22 4 C 22 1.5, 20 0, 17 0 Z' fill='black'/></svg>");
     mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 28'><path d='M 0 0 C 0 10, 2 16, 8 20 C 14 24, 22 25, 30 27 C 33 27.6, 34 26.5, 32 24.5 C 25 18, 22 12, 22 4 C 22 1.5, 20 0, 17 0 Z' fill='black'/></svg>");
     -webkit-mask-repeat: no-repeat;
@@ -28,10 +18,10 @@
     content: '';
     position: absolute;
     bottom: -1px;
-    left: -9px;
-    width: 20px;
-    height: 16px;
-    background: #FFFFFF;
+    left: -12px;
+    width: 26px;
+    height: 21px;
+    background: var(--bubble-theirs-bg, #FFFFFF);
     -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 28'><path d='M 34 0 C 34 10, 32 16, 26 20 C 20 24, 12 25, 4 27 C 1 27.6, 0 26.5, 2 24.5 C 9 18, 12 12, 12 4 C 12 1.5, 14 0, 17 0 Z' fill='black'/></svg>");
     mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 28'><path d='M 34 0 C 34 10, 32 16, 26 20 C 20 24, 12 25, 4 27 C 1 27.6, 0 26.5, 2 24.5 C 9 18, 12 12, 12 4 C 12 1.5, 14 0, 17 0 Z' fill='black'/></svg>");
     -webkit-mask-repeat: no-repeat;
