@@ -4,7 +4,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
 import {
-  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   doc,
   setDoc,
   getDoc,
@@ -20,7 +22,9 @@ import {
   orderBy,
   limit,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
+  enableNetwork,
+  disableNetwork
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import {
   getAuth,
@@ -48,7 +52,29 @@ try {
   console.warn("Analytics غير متاح في البيئة الحالية:", e);
 }
 
-const db = getFirestore(app);
+// =====================================================
+// تفعيل التخزين المحلي (Offline Persistence) — بيخزن كل
+// الداتا (شاتات، رسايل، إلخ) في IndexedDB جوه المتصفح نفسه.
+// الفايدة: أول ما المستخدم يفتح الشات، الرسايل القديمة بتظهر
+// فورًا من الكاش المحلي من غير ما يستنى رد من السيرفر، وحتى
+// لو النت واقع تمامًا الرسايل الجديدة بتتبعت (تتخزن محليًا
+// كـ"pending" وتتبعت تلقائيًا أول ما النت يرجع من غير أي كود
+// إضافي — ده سلوك Firestore الافتراضي). persistentMultipleTabManager
+// بيخلي الكاش شغال صح حتى لو المستخدم فاتح أكتر من تاب لنفس الموقع.
+// لو المتصفح مش بيدعم IndexedDB (نادر جدًا)، بنرجع لـ Firestore
+// عادي أونلاين-بس من غير ما نوقف الموقع كله.
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  });
+} catch (e) {
+  console.warn("تعذّر تفعيل التخزين المحلي (IndexedDB)، هنكمل أونلاين بس:", e);
+  db = initializeFirestore(app, {});
+}
+
 const auth = getAuth(app);
 
 /**
@@ -100,6 +126,8 @@ export {
   limit,
   onSnapshot,
   serverTimestamp,
+  enableNetwork,
+  disableNetwork,
   signInAnonymously,
   onAuthStateChanged,
   signOut,
