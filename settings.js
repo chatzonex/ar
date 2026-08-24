@@ -299,7 +299,17 @@
         ctx_pin: 'تثبيت المحادثة',
         ctx_delete_chat: 'حذف المحادثة',
         delete_chat_title: 'حذف المحادثة؟',
-        delete_chat_body: 'هتتحذف من عندك أنت بس، ولو الطرف التاني بعت رسالة جديدة هتظهر تاني.'
+        delete_chat_body: 'هتتحذف من عندك أنت بس، ولو الطرف التاني بعت رسالة جديدة هتظهر تاني.',
+        logout_row: 'تسجيل خروج',
+        logout_title: 'تسجيل خروج؟',
+        logout_body: 'عند تسجيل الخروج سيتم حذف اكونتك نهائيًا (شاتاتك ورسايلك كلها) وستقوم بتسجيل الدخول مرة أخرى.',
+        add_choice_sub: 'مين عاوز تتكلم معاه؟',
+        add_choice_existing_title: 'تحدث مع اكونت تحدثت معه من قبل',
+        add_choice_existing_sub: 'اختر من قائمة جهات اتصالك',
+        add_choice_new_title: 'تحدث مع شخص جديد',
+        add_choice_new_sub: 'ابدأ محادثة بإيميل جديد',
+        contacts_sub: 'جهات الاتصال اللي اتكلمت معاها قبل كده',
+        contacts_empty: 'لسه مفيش جهات اتصال سابقة'
     };
 
     const EN_TEXT = {
@@ -365,7 +375,17 @@
         ctx_pin: 'Pin chat',
         ctx_delete_chat: 'Delete chat',
         delete_chat_title: 'Delete this chat?',
-        delete_chat_body: 'It will be deleted for you only. If the other person sends a new message, it will reappear.'
+        delete_chat_body: 'It will be deleted for you only. If the other person sends a new message, it will reappear.',
+        logout_row: 'Log out',
+        logout_title: 'Log out?',
+        logout_body: 'Logging out will permanently delete your account (all your chats and messages), and you will need to sign in again.',
+        add_choice_sub: 'Who do you want to talk to?',
+        add_choice_existing_title: 'Chat with someone you talked to before',
+        add_choice_existing_sub: 'Pick from your contacts list',
+        add_choice_new_title: 'Chat with someone new',
+        add_choice_new_sub: 'Start a chat with a new email',
+        contacts_sub: 'People you have previously chatted with',
+        contacts_empty: 'No previous contacts yet'
     };
 
     let currentLang = localStorage.getItem('cz_lang') || 'ar';
