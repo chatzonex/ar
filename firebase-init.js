@@ -32,7 +32,8 @@ import {
   getAuth,
   signInAnonymously,
   onAuthStateChanged,
-  signOut
+  signOut,
+  deleteUser
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -135,6 +136,7 @@ export {
   signInAnonymously,
   onAuthStateChanged,
   signOut,
+  deleteUser,
   waitForAuthUser,
   ensureAuthenticated
 };
