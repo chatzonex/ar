@@ -121,7 +121,8 @@ async function verifyOwnership(email, uid) {
             deleted_msg_text: 'تم حذف هذه الرسالة',
             reply_you: 'أنت',
             msg_deleted_toast: 'اتحذفت الرسالة',
-            typing_status: 'يكتب الآن...'
+            typing_status: 'يكتب الآن...',
+            weak_connection: 'نتك ضعيف'
         },
         en: {
             type_message: 'Type a message...',
@@ -170,7 +171,8 @@ async function verifyOwnership(email, uid) {
             deleted_msg_text: 'This message was deleted',
             reply_you: 'You',
             msg_deleted_toast: 'Message deleted',
-            typing_status: 'typing...'
+            typing_status: 'typing...',
+            weak_connection: 'Weak connection'
         }
     };
     const T = I18N[isAr ? 'ar' : 'en'];
@@ -199,6 +201,75 @@ async function verifyOwnership(email, uid) {
 
     const convNameEl = document.getElementById('convName');
     const convStatusEl = document.getElementById('convStatus');
+
+    // =====================================================
+    // مراقبة جودة الاتصال — تنبيه "نتك ضعيف" في نص الشاشة
+    // =====================================================
+    // المنطق: أول ما الصفحة تتفتح، بنبدأ عداد 10 دقايق. بعد كل 10
+    // دقايق بنتشيك: هل النت واقع (navigator.onLine == false) أو لسه
+    // مستني رد من السيرفر من فترة طويلة (آخر إشارة وصلتنا من الكاش
+    // المحلي بس مش من السيرفر)؟ لو أيوه، بنورّي رسالة في نص الشاشة
+    // لمدة 5 ثواني وتختفي لوحدها، وبعدين نرجع نتشيك تاني بعد 10
+    // دقايق كمان — وهكذا لحد ما النت يرجع تمام.
+    const WEAK_CHECK_INTERVAL_MS = 10 * 60 * 1000; // 10 دقايق
+    const WEAK_ALERT_DURATION_MS = 5 * 1000; // 5 ثواني
+    let lastServerAckAt = Date.now();
+    let weakAlertEl = null;
+    let weakAlertHideTimer = null;
+
+    function markServerAck() {
+        lastServerAckAt = Date.now();
+    }
+
+    function isConnectionCurrentlyWeak() {
+        if (navigator.onLine === false) return true;
+        // لو عدى أكتر من دقيقتين من غير ما نستلم أي تأكيد حقيقي من
+        // السيرفر (مش من الكاش)، نعتبر النت ضعيف/متعثر
+        return (Date.now() - lastServerAckAt) > 2 * 60 * 1000;
+    }
+
+    function showWeakConnectionAlert() {
+        if (weakAlertEl) return;
+        weakAlertEl = document.createElement('div');
+        weakAlertEl.className = 'cz-weak-conn-overlay';
+        weakAlertEl.innerHTML = `
+            <div class="cz-weak-conn-box">
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9z"></path>
+                    <path d="M5 13l2 2a8.5 8.5 0 0 1 10 0l2-2C14.5 8.5 9.5 8.5 5 13z"></path>
+                    <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                </svg>
+                <span>${T.weak_connection}</span>
+            </div>`;
+        document.body.appendChild(weakAlertEl);
+        requestAnimationFrame(() => weakAlertEl.classList.add('show'));
+        weakAlertHideTimer = setTimeout(hideWeakConnectionAlert, WEAK_ALERT_DURATION_MS);
+    }
+
+    function hideWeakConnectionAlert() {
+        if (!weakAlertEl) return;
+        weakAlertEl.classList.remove('show');
+        const el = weakAlertEl;
+        weakAlertEl = null;
+        setTimeout(() => el.remove(), 300);
+    }
+
+    function scheduleWeakConnectionCheck() {
+        setTimeout(() => {
+            if (isConnectionCurrentlyWeak()) {
+                showWeakConnectionAlert();
+            }
+            scheduleWeakConnectionCheck();
+        }, WEAK_CHECK_INTERVAL_MS);
+    }
+
+    window.addEventListener('offline', () => {
+        // لو النت واقع فعلاً، مفيش داعي نستنى 10 دقايق — نورّي التنبيه
+        // على طول عشان المستخدم يعرف إن رسايله هتتأخر لحد ما يرجع
+        showWeakConnectionAlert();
+    });
+
+    scheduleWeakConnectionCheck();
 
     function displayNameFromEmail(email) {
         if (!email) return T.unknown_contact;
@@ -1221,6 +1292,10 @@ async function verifyOwnership(email, uid) {
         // عن الكتابة أو يمسح النص.
         onSnapshot(chatDocRef, (snap) => {
             if (!snap.exists()) return;
+            if (!snap.metadata.fromCache) {
+                markServerAck();
+                hideWeakConnectionAlert();
+            }
             const data = snap.data();
             const typingMap = data.typing || {};
             const otherIsTyping = Object.keys(typingMap).some(uid => uid !== myUid && typingMap[uid]);
@@ -1236,6 +1311,13 @@ async function verifyOwnership(email, uid) {
         const q = query(messagesRef, orderBy('createdAt', 'asc'));
 
         unsubscribeMessages = onSnapshot(q, (snapshot) => {
+            // لو الداتا دي وصلت فعليًا من السيرفر (مش بس من الكاش
+            // المحلي)، ده تأكيد إن الاتصال شغال وسليم دلوقتي
+            if (!snapshot.metadata.fromCache) {
+                markServerAck();
+                hideWeakConnectionAlert();
+            }
+
             const docs = snapshot.docs;
 
             // الرسايل اللي حذفتها "من عندي بس" (deletedFor بتحتوي على
