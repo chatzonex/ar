@@ -2,7 +2,7 @@
     content: '';
     position: absolute;
     bottom: -1px;
-    right: -12px;
+    right: -8px;
     width: 26px;
     height: 21px;
     background: var(--bubble-mine-bg, #FFFFFF);
@@ -18,7 +18,7 @@
     content: '';
     position: absolute;
     bottom: -1px;
-    left: -12px;
+    left: -8px;
     width: 26px;
     height: 21px;
     background: var(--bubble-theirs-bg, #FFFFFF);
