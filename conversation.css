@@ -242,8 +242,8 @@ html[dir="rtl"] .conv-back-btn svg {
    (unsent / offline / unread / read_tick)، بدل الأشكال المرسومة يدويًا.
    اللون بيتغيّر بـ background-color لأن العنصر شغال كـ mask. */
 .bubble-tick {
-    width: 15px;
-    height: 12px;
+    width: 17px;
+    height: 13.7px;
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
@@ -260,8 +260,8 @@ html[dir="rtl"] .conv-back-btn svg {
     -webkit-mask-size: contain;
     mask-size: contain;
     background-color: rgba(16, 22, 26, 0.45);
-    width: 13px;
-    height: 13px;
+    width: 14.8px;
+    height: 14.8px;
 }
 
 .bubble-tick.tick-offline {
@@ -274,8 +274,8 @@ html[dir="rtl"] .conv-back-btn svg {
     -webkit-mask-size: contain;
     mask-size: contain;
     background-color: rgba(16, 22, 26, 0.45);
-    width: 15px;
-    height: 12px;
+    width: 17px;
+    height: 13.7px;
 }
 
 .bubble-tick.tick-unread {
@@ -288,8 +288,8 @@ html[dir="rtl"] .conv-back-btn svg {
     -webkit-mask-size: contain;
     mask-size: contain;
     background-color: rgba(16, 22, 26, 0.45);
-    width: 18px;
-    height: 14px;
+    width: 20.5px;
+    height: 16px;
 }
 
 .bubble-tick.tick-read {
@@ -302,8 +302,8 @@ html[dir="rtl"] .conv-back-btn svg {
     -webkit-mask-size: contain;
     mask-size: contain;
     background-color: #4FA3FF;
-    width: 18px;
-    height: 14px;
+    width: 20.5px;
+    height: 16px;
 }
 
 /* رسايل الطرف التاني معندهاش صح قراءة (الصح بتاعة رسايلي أنا بس) */
