@@ -292,6 +292,14 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>
             <span data-i18n="ctx_reply">رد</span>
         </div>
+        <div class="ctx-menu-item" id="msgCtxCopy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span data-i18n="ctx_copy">نسخ</span>
+        </div>
+        <div class="ctx-menu-item" id="msgCtxForward">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 17 20 12 15 7"></polyline><path d="M4 18v-2a4 4 0 0 1 4-4h12"></path></svg>
+            <span data-i18n="ctx_forward">توجيه</span>
+        </div>
         <div class="ctx-menu-item danger" id="msgCtxDelete">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
             <span data-i18n="ctx_delete_msg">حذف الرسالة</span>
@@ -315,6 +323,29 @@
                 <button class="confirm-sheet-btn neutral" id="deleteMsgForMeBtn" data-i18n="ctx_delete_me">حذف من عندي بس</button>
                 <button class="confirm-sheet-btn cancel" data-close-sheet="sheet-delete-msg" data-i18n="btn_cancel">إلغاء</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ===== Forward message sheet ===== -->
+    <div class="sheet-overlay" id="sheet-forward">
+        <div class="sheet-box sheet-box-forward">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-close" data-close-sheet="sheet-forward">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div class="sheet-title" data-i18n="forward_title">توجيه إلى</div>
+            <div class="sheet-sub" data-i18n="forward_pick_hint">اختر لغاية 10 أشخاص</div>
+
+            <input type="text" class="forward-search-input" id="forwardSearchInput" data-i18n-placeholder="forward_search_placeholder" placeholder="بحث بالاسم أو الإيميل">
+
+            <div class="forward-contacts-list" id="forwardContactsList">
+                <!-- بيتحط ديناميكياً من conversation.js -->
+            </div>
+
+            <button class="forward-send-btn" id="forwardSendBtn" disabled>
+                <span data-i18n="forward_send">توجيه</span>
+                <span class="forward-send-count" id="forwardSendCount"></span>
+            </button>
         </div>
     </div>
 

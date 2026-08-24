@@ -755,3 +755,231 @@ html[dir="ltr"] .bubble-color-section-title {
     text-align: end;
     word-break: break-all;
 }
+
+/* =====================================================
+   ضغطة مطولة على الرسالة: بلور عالي جدًا للخلفية + الرسالة
+   المحددة تفضل واضحة فوق الطبقة المموهة (spotlight effect)
+   ملحوظة: بنستخدم #ID عشان نضمن إن القيمة دي تكسب أي تعريف
+   تاني موجود لنفس العنصر جوه chatzone-extra.css (اللي
+   بيتحمّل بعد الملف ده)، لأن specificity الـ ID أعلى من أي
+   class selector عادي.
+===================================================== */
+#msgCtxOverlay.open {
+    background: rgba(4, 7, 9, 0.55);
+    backdrop-filter: blur(48px) saturate(1.6);
+    -webkit-backdrop-filter: blur(48px) saturate(1.6);
+}
+
+/* الصف المحدد بيتحط في stacking context جديد بـ z-index عالي
+   جدًا عشان يفضل ظاهر بوضوح فوق طبقة البلور بتاعة #msgCtxOverlay
+   (اللي بتبقى شقيقة لـ .conv-shell في الـ DOM)، بينما باقي
+   الرسايل بتفضل تحتها فمتبانش غير مموهة */
+.msg-row.selected {
+    position: relative;
+    z-index: 9999;
+}
+
+.msg-row.selected .bubble {
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
+}
+
+/* ===== شارة "تم التوجيه" فوق الفقاعة ===== */
+.bubble-forwarded-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11.5px;
+    font-style: italic;
+    margin-bottom: 3px;
+    position: relative;
+    z-index: 1;
+}
+
+.bubble-forwarded-label svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+}
+
+.bubble.bubble-right .bubble-forwarded-label {
+    color: var(--bubble-mine-time);
+}
+
+.bubble.bubble-left .bubble-forwarded-label {
+    color: var(--bubble-theirs-time);
+}
+
+/* =====================================================
+   شيت "توجيه إلى" — قايمة الأشخاص اللي كلمتهم قبل كده
+===================================================== */
+.sheet-box-forward {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+
+.forward-search-input {
+    width: 100%;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-size: 14px;
+    color: var(--text);
+    margin: 14px 0 10px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.forward-search-input:focus {
+    border-color: var(--glass-border-strong);
+    background: var(--glass-strong);
+}
+
+.forward-search-input::placeholder {
+    color: var(--text-faint);
+}
+
+.forward-contacts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 46vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+}
+
+.forward-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 6px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, opacity 0.2s ease;
+}
+
+.forward-contact-row:active,
+.forward-contact-row:hover {
+    background: var(--glass-strong);
+}
+
+.forward-contact-row.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.forward-contact-avatar {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 50%;
+    background: var(--grad);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    color: #06110C;
+    flex-shrink: 0;
+}
+
+.forward-contact-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.forward-contact-name {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.forward-contact-email {
+    font-size: 12px;
+    color: var(--text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+    direction: ltr;
+    text-align: start;
+}
+
+.forward-contact-check {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--glass-border-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.forward-contact-row.checked .forward-contact-check {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.forward-contact-check svg {
+    width: 12px;
+    height: 12px;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    stroke: #06110C;
+}
+
+.forward-contact-row.checked .forward-contact-check svg {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.forward-empty,
+.forward-loading {
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 13.5px;
+    padding: 30px 10px;
+}
+
+.forward-send-btn {
+    width: 100%;
+    margin-top: 14px;
+    padding: 13px;
+    border: none;
+    border-radius: 999px;
+    background: var(--grad);
+    color: #06110C;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.forward-send-btn:active {
+    transform: scale(0.98);
+}
+
+.forward-send-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.forward-send-count {
+    font-size: 13px;
+    font-weight: 700;
+    direction: ltr;
+}

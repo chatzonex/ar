@@ -3,6 +3,7 @@ import {
     doc,
     setDoc,
     getDoc,
+    getDocs,
     addDoc,
     updateDoc,
     deleteField,
@@ -10,6 +11,7 @@ import {
     arrayRemove,
     collection,
     query,
+    where,
     orderBy,
     onSnapshot,
     serverTimestamp,
@@ -112,6 +114,8 @@ async function verifyOwnership(email, uid) {
             info_rename_success: 'اتغيّر الاسم',
             info_rename_empty: 'اكتب اسم الأول',
             ctx_reply: 'رد',
+            ctx_copy: 'نسخ',
+            ctx_forward: 'توجيه',
             ctx_delete_msg: 'حذف الرسالة',
             ctx_delete_everyone: 'حذف من عند الطرفين',
             ctx_delete_me: 'حذف من عندي بس',
@@ -121,6 +125,16 @@ async function verifyOwnership(email, uid) {
             deleted_msg_text: 'تم حذف هذه الرسالة',
             reply_you: 'أنت',
             msg_deleted_toast: 'اتحذفت الرسالة',
+            copied_toast: 'اتنسخت الرسالة',
+            forwarded_label: 'تم التوجيه',
+            forward_title: 'توجيه إلى',
+            forward_pick_hint: 'اختر لغاية 10 أشخاص',
+            forward_search_placeholder: 'بحث بالاسم أو الإيميل',
+            forward_send: 'توجيه',
+            forward_limit_toast: 'أقصى حاجة تقدر تختار 10 أشخاص',
+            forward_empty: 'لسه معملتش أي محادثة مع حد',
+            forward_loading: 'بيتحمّل...',
+            forwarded_toast: 'اتوجهت الرسالة',
             typing_status: 'يكتب الآن...',
             weak_connection: 'نتك ضعيف'
         },
@@ -162,6 +176,8 @@ async function verifyOwnership(email, uid) {
             info_rename_success: 'Name updated',
             info_rename_empty: 'Type a name first',
             ctx_reply: 'Reply',
+            ctx_copy: 'Copy',
+            ctx_forward: 'Forward',
             ctx_delete_msg: 'Delete message',
             ctx_delete_everyone: 'Delete for everyone',
             ctx_delete_me: 'Delete for me',
@@ -171,6 +187,16 @@ async function verifyOwnership(email, uid) {
             deleted_msg_text: 'This message was deleted',
             reply_you: 'You',
             msg_deleted_toast: 'Message deleted',
+            copied_toast: 'Message copied',
+            forwarded_label: 'Forwarded',
+            forward_title: 'Forward to',
+            forward_pick_hint: 'Choose up to 10 people',
+            forward_search_placeholder: 'Search by name or email',
+            forward_send: 'Forward',
+            forward_limit_toast: 'You can select up to 10 people only',
+            forward_empty: "You haven't chatted with anyone yet",
+            forward_loading: 'Loading...',
+            forwarded_toast: 'Message forwarded',
             typing_status: 'typing...',
             weak_connection: 'Weak connection'
         }
@@ -732,6 +758,18 @@ async function verifyOwnership(email, uid) {
         const bubble = document.createElement('div');
         bubble.className = 'bubble ' + (isMine ? 'bubble-right' : 'bubble-left');
 
+        // لو الرسالة دي متوجهة من شات تاني، بنعرض شارة "تم التوجيه"
+        // فوق كل حاجة تانية جوه الفقاعة
+        if (msg.forwarded) {
+            const fwd = document.createElement('div');
+            fwd.className = 'bubble-forwarded-label';
+            fwd.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 17 20 12 15 7"></polyline><path d="M4 18v-2a4 4 0 0 1 4-4h12"></path></svg>';
+            const fwdText = document.createElement('span');
+            fwdText.textContent = T.forwarded_label;
+            fwd.appendChild(fwdText);
+            bubble.appendChild(fwd);
+        }
+
         // لو الرسالة دي رد على رسالة تانية، بنعرض مقتطف صغير منها فوق
         // نص الرسالة نفسها (زي واتساب)
         if (msg.replyTo && msg.replyTo.text) {
@@ -924,6 +962,8 @@ async function verifyOwnership(email, uid) {
     const msgCtxOverlay = document.getElementById('msgCtxOverlay');
     const msgCtxMenu = document.getElementById('msgCtxMenu');
     const msgCtxReply = document.getElementById('msgCtxReply');
+    const msgCtxCopy = document.getElementById('msgCtxCopy');
+    const msgCtxForward = document.getElementById('msgCtxForward');
     const msgCtxDelete = document.getElementById('msgCtxDelete');
     let ctxMsgId = null, ctxMsgData = null, ctxMsgIsMine = false;
 
@@ -938,7 +978,7 @@ async function verifyOwnership(email, uid) {
         const rect = row.getBoundingClientRect();
         const isRtl = document.documentElement.dir === 'rtl';
         let top = rect.bottom + 6;
-        const menuHeightEstimate = 110;
+        const menuHeightEstimate = 210;
         if (top + menuHeightEstimate > window.innerHeight) {
             top = Math.max(10, rect.top - menuHeightEstimate - 6);
         }
@@ -971,10 +1011,246 @@ async function verifyOwnership(email, uid) {
         });
     }
 
+    if (msgCtxCopy) {
+        msgCtxCopy.addEventListener('click', () => {
+            const msg = ctxMsgData;
+            closeMsgCtxMenu();
+            if (!msg || msg.deleted) return;
+            copyTextToClipboard(msg.text || '');
+        });
+    }
+
+    if (msgCtxForward) {
+        msgCtxForward.addEventListener('click', () => {
+            const msg = ctxMsgData;
+            closeMsgCtxMenu();
+            if (!msg || msg.deleted) return;
+            openForwardSheet(msg);
+        });
+    }
+
     if (msgCtxDelete) {
         msgCtxDelete.addEventListener('click', () => {
             closeMsgCtxMenu();
             openDeleteMsgSheet(ctxMsgId, ctxMsgData, ctxMsgIsMine);
+        });
+    }
+
+    // =====================================================
+    // نسخ نص الرسالة للكليبورد
+    // =====================================================
+    function copyTextToClipboard(text) {
+        if (!text) return;
+        const done = () => showToast(T.copied_toast);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopyText(text, done));
+        } else {
+            fallbackCopyText(text, done);
+        }
+    }
+
+    function fallbackCopyText(text, done) {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            ta.style.pointerEvents = 'none';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            done();
+        } catch (e) {
+            console.error('فشل نسخ الرسالة:', e);
+        }
+    }
+
+    // =====================================================
+    // توجيه الرسالة لواحد أو أكتر من الأشخاص اللي كلمتهم قبل
+    // كده (لغاية 10 أشخاص). بنجيب القايمة من مستندات 'chats'
+    // اللي أنا participant فيها (نفس منطق الصفحة الرئيسية).
+    // =====================================================
+    const FORWARD_MAX = 10;
+    const forwardContactsList = document.getElementById('forwardContactsList');
+    const forwardSearchInput = document.getElementById('forwardSearchInput');
+    const forwardSendBtn = document.getElementById('forwardSendBtn');
+    const forwardSendCount = document.getElementById('forwardSendCount');
+
+    let forwardMsgData = null;
+    let forwardAllContacts = null; // بيتكاش بعد أول تحميل عشان منكررش القراءة
+    let forwardSelected = new Map(); // email -> name
+
+    function contactInitial(name) {
+        const trimmed = (name || '').trim();
+        return trimmed ? trimmed.charAt(0).toUpperCase() : '؟';
+    }
+
+    async function fetchForwardContacts() {
+        if (forwardAllContacts) return forwardAllContacts;
+        const chatsRef = collection(db, 'chats');
+        const q = query(chatsRef, where('participants', 'array-contains', myUid));
+        const snap = await getDocs(q);
+        const emails = new Set();
+        snap.forEach(chatDoc => {
+            const data = chatDoc.data();
+            const list = data.participantsEmails || [];
+            list.forEach(e => {
+                const lower = (e || '').toLowerCase();
+                if (lower && lower !== myEmailLower) emails.add(lower);
+            });
+        });
+        const contacts = [];
+        for (const email of emails) {
+            let name = displayNameFromEmail(email);
+            try {
+                const uSnap = await getDoc(doc(db, 'users', email));
+                if (uSnap.exists() && uSnap.data().name) name = uSnap.data().name;
+            } catch (e) {
+                // تجاهل — هنستخدم الاسم المستخرج من الإيميل
+            }
+            contacts.push({ email, name });
+        }
+        contacts.sort((a, b) => a.name.localeCompare(b.name, isAr ? 'ar' : 'en'));
+        forwardAllContacts = contacts;
+        return contacts;
+    }
+
+    function renderForwardContacts(list) {
+        if (!forwardContactsList) return;
+        forwardContactsList.innerHTML = '';
+        if (!list.length) {
+            const empty = document.createElement('div');
+            empty.className = 'forward-empty';
+            empty.textContent = T.forward_empty;
+            forwardContactsList.appendChild(empty);
+            return;
+        }
+        list.forEach(contact => {
+            const row = document.createElement('div');
+            row.className = 'forward-contact-row';
+            row.dataset.email = contact.email;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'forward-contact-avatar';
+            avatar.textContent = contactInitial(contact.name);
+
+            const textWrap = document.createElement('div');
+            textWrap.className = 'forward-contact-text';
+            const nameEl = document.createElement('div');
+            nameEl.className = 'forward-contact-name';
+            nameEl.textContent = contact.name;
+            const emailEl = document.createElement('div');
+            emailEl.className = 'forward-contact-email';
+            emailEl.textContent = contact.email;
+            textWrap.appendChild(nameEl);
+            textWrap.appendChild(emailEl);
+
+            const check = document.createElement('div');
+            check.className = 'forward-contact-check';
+            check.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+            row.appendChild(avatar);
+            row.appendChild(textWrap);
+            row.appendChild(check);
+
+            row.classList.toggle('checked', forwardSelected.has(contact.email));
+
+            row.addEventListener('click', () => toggleForwardContact(contact, row));
+
+            forwardContactsList.appendChild(row);
+        });
+        updateForwardUI();
+    }
+
+    function toggleForwardContact(contact, row) {
+        if (forwardSelected.has(contact.email)) {
+            forwardSelected.delete(contact.email);
+            row.classList.remove('checked');
+        } else {
+            if (forwardSelected.size >= FORWARD_MAX) {
+                showToast(T.forward_limit_toast);
+                return;
+            }
+            forwardSelected.set(contact.email, contact.name);
+            row.classList.add('checked');
+        }
+        updateForwardUI();
+    }
+
+    function updateForwardUI() {
+        const count = forwardSelected.size;
+        if (forwardSendBtn) forwardSendBtn.disabled = count === 0;
+        if (forwardSendCount) forwardSendCount.textContent = count > 0 ? `(${count}/${FORWARD_MAX})` : '';
+        if (forwardContactsList) {
+            forwardContactsList.querySelectorAll('.forward-contact-row').forEach(row => {
+                const isChecked = row.classList.contains('checked');
+                row.classList.toggle('disabled', !isChecked && count >= FORWARD_MAX);
+            });
+        }
+    }
+
+    async function openForwardSheet(msg) {
+        forwardMsgData = msg;
+        forwardSelected = new Map();
+        if (forwardSearchInput) forwardSearchInput.value = '';
+        updateForwardUI();
+        if (forwardContactsList) {
+            forwardContactsList.innerHTML = `<div class="forward-loading">${T.forward_loading}</div>`;
+        }
+        openSheet('sheet-forward');
+        try {
+            const contacts = await fetchForwardContacts();
+            renderForwardContacts(contacts);
+        } catch (e) {
+            console.error('فشل تحميل قائمة جهات الاتصال للتوجيه:', e);
+            renderForwardContacts([]);
+        }
+    }
+
+    if (forwardSearchInput) {
+        forwardSearchInput.addEventListener('input', () => {
+            if (!forwardAllContacts) return;
+            const term = forwardSearchInput.value.trim().toLowerCase();
+            const filtered = !term
+                ? forwardAllContacts
+                : forwardAllContacts.filter(c =>
+                    c.name.toLowerCase().includes(term) || c.email.toLowerCase().includes(term)
+                );
+            renderForwardContacts(filtered);
+        });
+    }
+
+    if (forwardSendBtn) {
+        forwardSendBtn.addEventListener('click', () => {
+            if (!forwardMsgData || forwardSelected.size === 0 || !myUid) return;
+            const targets = Array.from(forwardSelected.keys());
+            const text = forwardMsgData.text || '';
+            forwardSendBtn.disabled = true;
+
+            const jobs = targets.map(targetEmail => {
+                const targetChatId = makeChatId(myEmail, targetEmail);
+                const payload = {
+                    senderUid: myUid,
+                    senderEmail: myEmail,
+                    text,
+                    forwarded: true,
+                    createdAt: serverTimestamp(),
+                    status: 'unread'
+                };
+                const messagesRef = collection(db, 'chats', targetChatId, 'messages');
+                return addDoc(messagesRef, payload);
+            });
+
+            Promise.all(jobs).then(() => {
+                if (navigator.vibrate) { try { navigator.vibrate(8); } catch (e) {} }
+                closeSheet('sheet-forward');
+                showToast(T.forwarded_toast);
+            }).catch((err) => {
+                console.error('فشل توجيه الرسالة:', err);
+                updateForwardUI();
+            });
         });
     }
 
