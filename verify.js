@@ -8,6 +8,7 @@ import { ensureAuthenticated } from "./firebase-init.js";
     const RESEND_COOLDOWN_SECONDS = 30;
 
     const otpBoxes = Array.from(document.querySelectorAll('.otp-box'));
+    const otpRow = document.getElementById('otpRow');
     const verifyStatus = document.getElementById('verifyStatus');
     const targetEmailEl = document.getElementById('targetEmail');
     const resendLink = document.getElementById('resendLink');
@@ -46,21 +47,37 @@ import { ensureAuthenticated } from "./firebase-init.js";
         otpBoxes.forEach(box => box.classList.remove('error'));
     }
 
+    function clearResultState() {
+        otpBoxes.forEach(box => box.classList.remove('verified', 'wrong'));
+        if (otpRow) otpRow.classList.remove('show-result', 'result-correct', 'result-wrong');
+    }
+
     function markVerified() {
         otpBoxes.forEach(box => {
             box.disabled = true;
             box.classList.add('verified');
         });
+        if (otpRow) otpRow.classList.add('show-result', 'result-correct');
         verifyStatus.innerHTML = '<span class="dot"></span> تم التأكيد بنجاح';
+    }
+
+    function markWrong() {
+        // كل المربعات الستة تتحول مع بعض للون الأحمر، والأرقام تختفي
+        // ويظهر بدلها علامة X حمرا واحدة في نص الصف.
+        otpBoxes.forEach(box => box.classList.add('wrong'));
+        if (otpRow) otpRow.classList.add('show-result', 'result-wrong');
+
+        setTimeout(() => {
+            otpBoxes.forEach(box => box.value = '');
+            clearResultState();
+            clearBoxesError();
+            otpBoxes[0].focus();
+        }, 900);
     }
 
     function shakeBoxes() {
         otpBoxes.forEach(box => box.classList.add('error'));
-        setTimeout(() => {
-            otpBoxes.forEach(box => box.value = '');
-            clearBoxesError();
-            otpBoxes[0].focus();
-        }, 400);
+        markWrong();
     }
 
     async function checkCode() {
@@ -109,6 +126,7 @@ import { ensureAuthenticated } from "./firebase-init.js";
         box.addEventListener('input', () => {
             box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
             clearBoxesError();
+            clearResultState();
             if (box.value && index < otpBoxes.length - 1) {
                 otpBoxes[index + 1].focus();
             }
