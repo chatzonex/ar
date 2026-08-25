@@ -18,6 +18,10 @@ import {
     deleteUser
 } from "./firebase-init.js";
 
+// أيقونة البروفايل الافتراضية (بدل الحرف الأول من الاسم) — بتتحط جوه
+// دائرة chat-row-avatar، ولونها بياخد من CSS (fill: currentColor).
+const PROFILE_ICON_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 12.5c2.9 0 5.25-2.35 5.25-5.25S14.9 2 12 2s-5.25 2.35-5.25 5.25S9.1 12.5 12 12.5Zm0 2.25c-3.5 0-10.5 1.75-10.5 5.25V21a1 1 0 0 0 1 1h19a1 1 0 0 0 1-1v-1c0-3.5-7-5.25-10.5-5.25Z"/></svg>`;
+
 (function () {
     // ===== حماية الصفحة: أي حد يفتح MainActivity مباشرة من غير تسجيل دخول يترحّل =====
     if (!localStorage.getItem('cz_verified_email')) {
@@ -355,7 +359,6 @@ import {
             const realName = await getRealName(entry.otherEmail);
             entry.realName = realName;
             const name = displayNameForChat(entry) || realName;
-            const initial = name.charAt(0).toUpperCase();
             const timeStr = entry.lastAt ? formatChatTime(new Date(entry.lastAt)) : '';
             const unreadCount = entry.unread || 0;
             const unreadBadge = unreadCount > 0
@@ -380,7 +383,7 @@ import {
 
             return `
                 <div class="chat-row${unreadCount > 0 ? ' chat-row-unread' : ''}${entry.pinned ? ' chat-row-pinned' : ''}" data-email="${entry.otherEmail}" data-chat-id="${entry.chatId}" data-pinned="${entry.pinned ? '1' : '0'}">
-                    <div class="chat-row-avatar">${initial}</div>
+                    <div class="chat-row-avatar">${PROFILE_ICON_SVG}</div>
                     <div class="chat-row-text">
                         <h4 class="chat-row-name">${name}</h4>
                         ${previewHtml}
