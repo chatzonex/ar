@@ -218,9 +218,12 @@ html[dir="ltr"] .msg-row-reply-icon,
     height: 15px;
 }
 
-/* الرسالة المختارة (بعد الضغطة الطويلة) بتتظلل شوية */
+/* الرسالة المختارة (بعد الضغطة الطويلة) — من غير أي بوردر أو تظليل
+   حوالين الفقاعة، ومن غير ما يتحدد نص الرسالة نفسه (زي تحديد
+   Ctrl+A) وقت ما القايمة فاتحة */
 .msg-row.selected .bubble {
-    box-shadow: 0 0 0 2px var(--accent);
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 /* ===== Quoted / replied-to snippet inside a bubble ===== */
