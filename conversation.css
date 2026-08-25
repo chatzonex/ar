@@ -271,6 +271,27 @@ body.select-mode-on .msg-row.from-me .msg-row-inner {
     justify-content: flex-start;
 }
 
+/* ===== System Messages (زي "فلان غيّر لون الفقاعات") ===== */
+.msg-row-system {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 10px 0;
+}
+
+.msg-row-system-badge {
+    max-width: 82%;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--glass-strong, rgba(255, 255, 255, 0.08));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
+    color: var(--text-dim, #8A9691);
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: center;
+    animation: bubbleIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .bubble {
     position: relative;
     max-width: 78%;
@@ -545,6 +566,17 @@ body.theme-white .bubble-time {
     color: rgba(16, 22, 26, 0.5);
 }
 
+/* ===== theme-whatsapp support (نفس فكرة theme-white) ===== */
+body.theme-whatsapp-dark .conv-topbar,
+body.theme-whatsapp-dark .conv-input-area {
+    background: #202C33;
+}
+
+body.theme-whatsapp-light .conv-topbar,
+body.theme-whatsapp-light .conv-input-area {
+    background: #F0F2F5;
+}
+
 body.theme-white.lg-chat-on .conv-input-bar {
     background: rgba(255, 255, 255, 0.55);
     border-color: rgba(0, 0, 0, 0.08);
@@ -600,6 +632,33 @@ body.theme-white.lg-chat-on .conv-topbar {
     --bubble-theirs-text: #10161A;
     --bubble-theirs-time: rgba(16, 22, 26, 0.55);
     --bubble-tick-read: #4FA3FF;
+}
+
+/* ===================================================
+   ثيم واتساب: ألوان الفقاعات الافتراضية بتاعته (لو المستخدم
+   عنده لون شخصي مخصص، الجافاسكريبت بيحط inline style على نفس
+   العنصر ده وبيكسب تلقائيًا فوق القيم دي من غير أي تعديل تاني).
+=================================================== */
+body.theme-whatsapp-dark .conv-shell {
+    --bubble-mine-bg: #005C4B;
+    --bubble-mine-text: #E9EDEF;
+    --bubble-mine-time: rgba(233, 237, 239, 0.6);
+    --bubble-mine-tick: rgba(233, 237, 239, 0.55);
+    --bubble-theirs-bg: #202C33;
+    --bubble-theirs-text: #E9EDEF;
+    --bubble-theirs-time: rgba(233, 237, 239, 0.6);
+    --bubble-tick-read: #53BDEB;
+}
+
+body.theme-whatsapp-light .conv-shell {
+    --bubble-mine-bg: #DCF8C6;
+    --bubble-mine-text: #111B21;
+    --bubble-mine-time: rgba(17, 27, 33, 0.5);
+    --bubble-mine-tick: rgba(17, 27, 33, 0.45);
+    --bubble-theirs-bg: #FFFFFF;
+    --bubble-theirs-text: #111B21;
+    --bubble-theirs-time: rgba(17, 27, 33, 0.5);
+    --bubble-tick-read: #34B7F1;
 }
 
 .bubble.bubble-right {
