@@ -163,6 +163,11 @@ async function saveContact(myEmail, otherEmail) {
             msg_deleted_toast: 'اتحذفت الرسالة',
             copied_toast: 'اتنسخت الرسالة',
             forwarded_label: 'تم التوجيه',
+            voice_message_label: 'رسالة صوتية',
+            voice_slide_cancel: 'اسحب لإلغاء التسجيل',
+            voice_mic_permission_denied: 'محتاجين إذن استخدام المايك عشان تبعت رسالة صوتية',
+            voice_upload_failed: 'فشل رفع الرسالة الصوتية، حاول تاني',
+            voice_too_short: 'التسجيل قصير جدًا',
             forward_title: 'توجيه إلى',
             forward_pick_hint: 'اختر لغاية 10 أشخاص',
             forward_search_placeholder: 'بحث بالاسم أو الإيميل',
@@ -243,6 +248,11 @@ async function saveContact(myEmail, otherEmail) {
             msg_deleted_toast: 'Message deleted',
             copied_toast: 'Message copied',
             forwarded_label: 'Forwarded',
+            voice_message_label: 'Voice message',
+            voice_slide_cancel: 'Drag to cancel recording',
+            voice_mic_permission_denied: 'Microphone access is needed to send a voice message',
+            voice_upload_failed: 'Failed to upload the voice message, try again',
+            voice_too_short: 'Recording too short',
             forward_title: 'Forward to',
             forward_pick_hint: 'Choose up to 10 people',
             forward_search_placeholder: 'Search by name or email',
@@ -1103,7 +1113,92 @@ async function saveContact(myEmail, otherEmail) {
 
     function messagePreviewText(data) {
         if (data.deleted) return T.deleted_msg_text;
+        if (data.type === 'voice') return '🎤 ' + T.voice_message_label;
         return (data.text || '').length > 60 ? data.text.slice(0, 60) + '…' : (data.text || '');
+    }
+
+    function formatVoiceDuration(totalSeconds) {
+        const s = Math.max(0, Math.round(totalSeconds || 0));
+        const m = Math.floor(s / 60);
+        const rem = s % 60;
+        return m + ':' + String(rem).padStart(2, '0');
+    }
+
+    // ===== محتوى فقاعة الرسالة الصوتية: زرار تشغيل/إيقاف + شكل موجة
+    // بسيط ثابت (مش موجة حقيقية للصوت، مجرد تصميم) + مدة التسجيل =====
+    function buildVoiceBubbleContent(msg) {
+        const wrap = document.createElement('div');
+        wrap.className = 'bubble-voice';
+
+        const playBtn = document.createElement('button');
+        playBtn.className = 'bubble-voice-play';
+        playBtn.setAttribute('aria-label', T.voice_message_label);
+        playBtn.innerHTML = `
+            <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+            <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+        `;
+
+        const wave = document.createElement('div');
+        wave.className = 'bubble-voice-wave';
+        const barCount = 22;
+        const bars = [];
+        for (let i = 0; i < barCount; i++) {
+            const bar = document.createElement('span');
+            bar.className = 'bubble-voice-wave-bar';
+            // ارتفاعات شبه عشوائية ثابتة (نفس القيمة كل مرة عشان الشكل
+            // ميتغيرش لما يعاد الرسم) بس بتدّي إحساس بصري بموجة صوت
+            const seed = (i * 37 + 11) % 17;
+            bar.style.height = (5 + seed) + 'px';
+            wave.appendChild(bar);
+            bars.push(bar);
+        }
+
+        const durationEl = document.createElement('span');
+        durationEl.className = 'bubble-voice-duration';
+        durationEl.textContent = formatVoiceDuration(msg.voiceDuration);
+
+        wrap.appendChild(playBtn);
+        wrap.appendChild(wave);
+        wrap.appendChild(durationEl);
+
+        let audioEl = null;
+
+        playBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!audioEl) {
+                audioEl = new Audio(msg.audioUrl);
+                audioEl.addEventListener('timeupdate', () => {
+                    if (!audioEl.duration) return;
+                    const progress = audioEl.currentTime / audioEl.duration;
+                    const filledCount = Math.round(progress * bars.length);
+                    bars.forEach((b, i) => b.classList.toggle('filled', i < filledCount));
+                    durationEl.textContent = formatVoiceDuration(audioEl.duration - audioEl.currentTime);
+                });
+                audioEl.addEventListener('ended', () => {
+                    playBtn.classList.remove('playing');
+                    bars.forEach(b => b.classList.remove('filled'));
+                    durationEl.textContent = formatVoiceDuration(msg.voiceDuration);
+                });
+                audioEl.addEventListener('error', () => {
+                    showToast(T.voice_upload_failed);
+                });
+            }
+
+            if (playBtn.classList.contains('playing')) {
+                audioEl.pause();
+                playBtn.classList.remove('playing');
+            } else {
+                // نوقف أي تشغيل تاني شغال دلوقتي في نفس الشات قبل ما
+                // نشغّل ده، عشان مايتشغلوش صوتين مع بعض
+                document.querySelectorAll('.bubble-voice-play.playing').forEach(otherBtn => {
+                    if (otherBtn !== playBtn) otherBtn.click();
+                });
+                audioEl.play();
+                playBtn.classList.add('playing');
+            }
+        });
+
+        return wrap;
     }
 
     // رسالة نظام (زي "فلان غيّر لون الفقاعات") — شارة صغيرة في نص
@@ -1178,8 +1273,16 @@ async function saveContact(myEmail, otherEmail) {
 
         const textEl = document.createElement('p');
         textEl.className = 'bubble-text' + (msg.deleted ? ' deleted' : '');
-        textEl.textContent = msg.deleted ? T.deleted_msg_text : msg.text;
-        bubble.appendChild(textEl);
+
+        if (msg.deleted) {
+            textEl.textContent = T.deleted_msg_text;
+            bubble.appendChild(textEl);
+        } else if (msg.type === 'voice' && msg.audioUrl) {
+            bubble.appendChild(buildVoiceBubbleContent(msg));
+        } else {
+            textEl.textContent = msg.text;
+            bubble.appendChild(textEl);
+        }
 
         const meta = document.createElement('div');
         meta.className = 'bubble-meta';
@@ -1965,6 +2068,196 @@ async function saveContact(myEmail, otherEmail) {
     });
 
     updateSendVisibility();
+
+    // =====================================================
+    // 5.2) الرسايل الصوتية (Voice Notes)
+    //
+    // التسجيل بيتم بمكتبة MediaRecorder المدمجة في المتصفح، والملف
+    // الناتج (Blob) بيترفع مباشرة على Cloudinary (تخزين خارجي مجاني)
+    // بدل Firebase Storage لأن حساب المشروع لسه على باقة Spark
+    // المجانية اللي مش بتدعم Storage. بعد الرفع، بنحفظ في Firestore
+    // بس رابط الملف (audioUrl) ومدته (voiceDuration)، مش الملف نفسه.
+    // =====================================================
+    const CLOUDINARY_CLOUD_NAME = '26211ae0e9ef19f2a257053ee6da31';
+    const CLOUDINARY_UPLOAD_PRESET = 'chatzone_voice';
+    const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`;
+    // ملحوظة: Cloudinary بيصنّف ملفات الصوت (audio) تحت resource_type
+    // "video" في الـ API بتاعه (مفيش "audio" منفصل للرفع)، فده مقصود.
+
+    const MIN_VOICE_DURATION_SEC = 1;
+
+    const micBtn = document.getElementById('convMicBtn');
+    const voiceRecordBar = document.getElementById('convVoiceRecordBar');
+    const voiceCancelBtn = document.getElementById('convVoiceCancel');
+    const voiceSendBtn = document.getElementById('convVoiceSend');
+    const voiceTimerEl = document.getElementById('convVoiceTimer');
+
+    let mediaRecorder = null;
+    let mediaStream = null;
+    let recordedChunks = [];
+    let recordStartTime = 0;
+    let recordTimerInterval = null;
+    let isCancelled = false;
+
+    function formatRecordTimer(ms) {
+        const totalSec = Math.floor(ms / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        return m + ':' + String(s).padStart(2, '0');
+    }
+
+    function showRecordingUI(isRecording) {
+        if (isRecording) {
+            inputBar.classList.add('hidden-while-recording');
+            voiceRecordBar.classList.add('active');
+        } else {
+            inputBar.classList.remove('hidden-while-recording');
+            voiceRecordBar.classList.remove('active');
+            voiceTimerEl.textContent = '0:00';
+        }
+    }
+
+    function stopMediaStream() {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
+        }
+    }
+
+    async function startRecording() {
+        if (mediaRecorder) return;
+
+        let stream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (err) {
+            console.error('فشل الوصول للمايك:', err);
+            showToast(T.voice_mic_permission_denied);
+            return;
+        }
+
+        mediaStream = stream;
+        recordedChunks = [];
+        isCancelled = false;
+
+        // اختيار أفضل mimeType متاح في المتصفح الحالي (Chrome/Edge
+        // بيدعموا webm عادة، Safari ممكن يحتاج mp4/aac)
+        const preferredTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+        const supportedType = preferredTypes.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+
+        try {
+            mediaRecorder = supportedType
+                ? new MediaRecorder(stream, { mimeType: supportedType })
+                : new MediaRecorder(stream);
+        } catch (err) {
+            console.error('فشل إنشاء MediaRecorder:', err);
+            stopMediaStream();
+            showToast(T.voice_upload_failed);
+            return;
+        }
+
+        mediaRecorder.addEventListener('dataavailable', (e) => {
+            if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+        });
+
+        mediaRecorder.addEventListener('stop', handleRecordingStopped);
+
+        mediaRecorder.start();
+        recordStartTime = Date.now();
+        showRecordingUI(true);
+
+        recordTimerInterval = setInterval(() => {
+            voiceTimerEl.textContent = formatRecordTimer(Date.now() - recordStartTime);
+        }, 200);
+    }
+
+    function stopRecording(cancelled) {
+        if (!mediaRecorder) return;
+        isCancelled = !!cancelled;
+        if (mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        if (recordTimerInterval) {
+            clearInterval(recordTimerInterval);
+            recordTimerInterval = null;
+        }
+    }
+
+    async function handleRecordingStopped() {
+        const durationSec = (Date.now() - recordStartTime) / 1000;
+        const chunks = recordedChunks;
+        const mimeType = mediaRecorder && mediaRecorder.mimeType ? mediaRecorder.mimeType : 'audio/webm';
+        mediaRecorder = null;
+        recordedChunks = [];
+        stopMediaStream();
+        showRecordingUI(false);
+
+        if (isCancelled) return;
+
+        if (!chunks.length || durationSec < MIN_VOICE_DURATION_SEC) {
+            showToast(T.voice_too_short);
+            return;
+        }
+
+        const blob = new Blob(chunks, { type: mimeType });
+        await uploadAndSendVoice(blob, durationSec);
+    }
+
+    async function uploadAndSendVoice(blob, durationSec) {
+        if (!myUid) return;
+
+        try {
+            const formData = new FormData();
+            formData.append('file', blob);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+            const res = await fetch(CLOUDINARY_UPLOAD_URL, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!res.ok) throw new Error('Cloudinary upload failed: ' + res.status);
+
+            const data = await res.json();
+            if (!data.secure_url) throw new Error('Cloudinary response missing secure_url');
+
+            const payload = {
+                senderUid: myUid,
+                senderEmail: myEmail,
+                type: 'voice',
+                text: '🎤 ' + T.voice_message_label,
+                audioUrl: data.secure_url,
+                voiceDuration: durationSec,
+                createdAt: serverTimestamp(),
+                status: 'unread'
+            };
+
+            const messagesRef = collection(db, 'chats', chatId, 'messages');
+            await addDoc(messagesRef, payload);
+            if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
+        } catch (err) {
+            console.error('فشل رفع/إرسال الرسالة الصوتية:', err);
+            showToast(T.voice_upload_failed);
+        }
+    }
+
+    if (micBtn) {
+        micBtn.addEventListener('click', () => {
+            startRecording();
+        });
+    }
+
+    if (voiceCancelBtn) {
+        voiceCancelBtn.addEventListener('click', () => {
+            stopRecording(true);
+        });
+    }
+
+    if (voiceSendBtn) {
+        voiceSendBtn.addEventListener('click', () => {
+            stopRecording(false);
+        });
+    }
 
     // =====================================================
     // 6) الاتصال الفعلي بـ Firestore
