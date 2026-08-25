@@ -20,7 +20,7 @@ body {
 }
 
 :root {
-    --bg: #0A0F14;
+    --bg: #000000;
     --bg-elevated: #10161C;
     --glass: rgba(255, 255, 255, 0.045);
     --glass-strong: rgba(255, 255, 255, 0.08);
