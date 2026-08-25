@@ -164,10 +164,6 @@
 
     let currentTheme = localStorage.getItem('cz_theme') || 'dark';
     let customColor = localStorage.getItem('cz_theme_color') || '#25D9A0';
-    // آخر اختيار "أساسي" (dark أو white بس، مش whatsapp) — بنحتفظ بيه
-    // عشان لو المستخدم فعّل ثيم واتساب، نعرف نطبّق نسخة الدارك ولا
-    // الفاتحة بتاعته (واتساب مش ثيم لوحده، هو "طبقة" فوق dark/white).
-    let lastBaseTheme = localStorage.getItem('cz_theme_base') || (currentTheme === 'white' ? 'white' : 'dark');
 
     function updateColorSwatch(hex) {
         const swatch = document.getElementById('themeColorSwatch');
@@ -196,23 +192,9 @@
         currentTheme = theme;
         localStorage.setItem('cz_theme', theme);
 
-        // dark و white هما القاعدة الأساسية اللي ثيم واتساب بيتبعها
-        // (بيفتكرها حتى لو دلوقتي مفعّل ثيم واتساب، عشان لو المستخدم
-        // بدّل بين dark/white وهو في وضع واتساب نعرف نلوّن صح)
-        if (theme === 'dark' || theme === 'white') {
-            lastBaseTheme = theme;
-            localStorage.setItem('cz_theme_base', theme);
-        }
-
-        document.body.classList.remove('theme-white', 'theme-custom', 'theme-whatsapp', 'theme-whatsapp-dark', 'theme-whatsapp-light');
+        document.body.classList.remove('theme-white', 'theme-custom');
         if (theme === 'white') document.body.classList.add('theme-white');
         if (theme === 'custom') document.body.classList.add('theme-custom');
-        if (theme === 'whatsapp') {
-            document.body.classList.add('theme-whatsapp');
-            // لو كنت في وضع أبيض قبل ما أفعّل واتساب، يبقى نطبّق نسخة
-            // واتساب الفاتحة، وإلا (دارك هو الافتراضي) نطبّق الغامقة
-            document.body.classList.add(lastBaseTheme === 'white' ? 'theme-whatsapp-light' : 'theme-whatsapp-dark');
-        }
 
         if (theme === 'custom') {
             applyAccentVars(customColor);
@@ -224,11 +206,9 @@
 
         const darkOpt = document.getElementById('theme-opt-dark');
         const whiteOpt = document.getElementById('theme-opt-white');
-        const whatsappOpt = document.getElementById('theme-opt-whatsapp');
         const colorRow = document.getElementById('themeColorRow');
         if (darkOpt) darkOpt.classList.toggle('selected', theme === 'dark');
         if (whiteOpt) whiteOpt.classList.toggle('selected', theme === 'white');
-        if (whatsappOpt) whatsappOpt.classList.toggle('selected', theme === 'whatsapp');
         if (colorRow) colorRow.classList.toggle('selected', theme === 'custom');
     }
 
@@ -242,10 +222,8 @@
 
     const themeDarkOpt = document.getElementById('theme-opt-dark');
     const themeWhiteOpt = document.getElementById('theme-opt-white');
-    const themeWhatsappOpt = document.getElementById('theme-opt-whatsapp');
     if (themeDarkOpt) themeDarkOpt.addEventListener('click', () => applyTheme('dark'));
     if (themeWhiteOpt) themeWhiteOpt.addEventListener('click', () => applyTheme('white'));
-    if (themeWhatsappOpt) themeWhatsappOpt.addEventListener('click', () => applyTheme('whatsapp'));
 
     const colorPicker = document.getElementById('themeColorPicker');
     const colorRowEl = document.getElementById('themeColorRow');
@@ -297,7 +275,6 @@
         themes_body: 'اختر ثيم ألوان للتطبيق، وسيتم حفظ اختيارك تلقائياً.',
         theme_dark: 'داكن',
         theme_white: 'أبيض',
-        theme_whatsapp: 'واتساب',
         theme_pick: 'اختر لون الثيم',
         lang_title: 'لغة التطبيق',
         lang_sub: 'التبديل بين العربية والإنجليزية',
@@ -374,7 +351,6 @@
         themes_body: 'Choose a color theme for the app. Your choice is saved automatically.',
         theme_dark: 'Dark',
         theme_white: 'White',
-        theme_whatsapp: 'WhatsApp',
         theme_pick: 'Choose your theme color',
         lang_title: 'App Language',
         lang_sub: 'Switch between Arabic and English',

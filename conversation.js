@@ -109,7 +109,6 @@ async function saveContact(myEmail, otherEmail) {
             bubbles_mine_title: 'لون فقاعتي',
             bubbles_theirs_title: 'لون فقاعة {name}',
             bubbles_tick_title: 'لون الصح الزرقاء',
-            bubbles_system_changed: '{name} قام بتغيير لون الفقاعات',
             bubbles_preview_hi: 'أهلا',
             bubbles_preview_hi_reply: 'أهلا وسهلا',
             bubbles_default: 'افتراضي',
@@ -190,7 +189,6 @@ async function saveContact(myEmail, otherEmail) {
             bubbles_mine_title: 'My bubble color',
             bubbles_theirs_title: '{name}\'s bubble color',
             bubbles_tick_title: 'Blue checkmark color',
-            bubbles_system_changed: '{name} changed the bubble colors',
             bubbles_preview_hi: 'Hi',
             bubbles_preview_hi_reply: 'Hi there',
             bubbles_default: 'Default',
@@ -638,8 +636,18 @@ async function saveContact(myEmail, otherEmail) {
     const convShellEl = document.querySelector('.conv-shell');
     const BUBBLE_TICK_KEY = 'cz_bubble_tick_' + chatId;
 
-    const DEFAULT_MINE_COLOR = '#FFFFFF';
-    const DEFAULT_THEIRS_COLOR = '#FFFFFF';
+    // الألوان الافتراضية الرسمية لما المستخدم ملوّنش أي حاجة بنفسه:
+    // فقاعتي = أخضر واتساب، فقاعة التاني = رمادي غامق واتساب،
+    // وبتختلف حسب الوضع الفاتح/الداكن بتاع التطبيق (مش لون ثابت).
+    function isLightMode() {
+        return document.body.classList.contains('theme-white');
+    }
+    function DEFAULT_MINE_COLOR() {
+        return isLightMode() ? '#DCF8C6' : '#005C4B';
+    }
+    function DEFAULT_THEIRS_COLOR() {
+        return isLightMode() ? '#E9EAEB' : '#202C33';
+    }
     const DEFAULT_TICK_COLOR = '#4FA3FF';
 
     // آخر لون معروف لكل طرف (بيتحدث لايف من onSnapshot على مستند
@@ -721,8 +729,8 @@ async function saveContact(myEmail, otherEmail) {
     const bubbleOptionTickSwatch = document.getElementById('bubbleOptionTickSwatch');
 
     function refreshBubblePreview() {
-        const mineColor = myBubbleColor || DEFAULT_MINE_COLOR;
-        const theirsColor = otherBubbleColor || DEFAULT_THEIRS_COLOR;
+        const mineColor = myBubbleColor || DEFAULT_MINE_COLOR();
+        const theirsColor = otherBubbleColor || DEFAULT_THEIRS_COLOR();
         const tickColor = localStorage.getItem(BUBBLE_TICK_KEY) || DEFAULT_TICK_COLOR;
         const mineDark = myBubbleColorDark || '1';
         const theirsDark = otherBubbleColorDark || '1';
@@ -753,11 +761,11 @@ async function saveContact(myEmail, otherEmail) {
         theirs: 'bubbles_theirs_title',
         tick: 'bubbles_tick_title'
     };
-    const TARGET_DEFAULTS = {
-        mine: DEFAULT_MINE_COLOR,
-        theirs: DEFAULT_THEIRS_COLOR,
-        tick: DEFAULT_TICK_COLOR
-    };
+    function TARGET_DEFAULT(target) {
+        if (target === 'mine') return DEFAULT_MINE_COLOR();
+        if (target === 'theirs') return DEFAULT_THEIRS_COLOR();
+        return DEFAULT_TICK_COLOR;
+    }
 
     // بيرجع اللون الحالي المحفوظ للهدف ده (مش localStorage تاني —
     // mine/theirs بقوا متابعين للمتغيرات اللايف الجاية من Firestore)
@@ -818,7 +826,7 @@ async function saveContact(myEmail, otherEmail) {
     // --- محرر الألوان الحر ---
     if (openColorEditorBtn && bubbleColorNativePicker) {
         openColorEditorBtn.addEventListener('click', () => {
-            const current = currentColorFor(activeColorTarget) || TARGET_DEFAULTS[activeColorTarget];
+            const current = currentColorFor(activeColorTarget) || TARGET_DEFAULT(activeColorTarget);
             bubbleColorNativePicker.value = current;
             bubbleColorNativePicker.click();
         });
@@ -828,24 +836,6 @@ async function saveContact(myEmail, otherEmail) {
             if (colorEditorPreviewSwatch) colorEditorPreviewSwatch.style.background = pendingEditorColor;
             closeSheet('sheet-choose-color');
             openSheet('sheet-color-editor-confirm');
-        });
-    }
-
-    // بيبعت رسالة نظام في الشات بـ "فلان قام بتغيير لون الفقاعات"،
-    // "فلان" هنا دايمًا اسم صاحب اللون اللي فعليًا اتغيّر (مش مين
-    // ضغط الزرار)، زي ما اتفقنا. الاسم بيتاخد من نفس مصدر الاسم
-    // المعروض فوق الشات (currentDisplayName لصاحبي، أو otherRealName
-    // لصاحب التاني لو موجود).
-    function sendBubbleThemeSystemMessage(ownerIsMe) {
-        if (!myUid) return;
-        const ownerName = ownerIsMe ? myRealName : otherRealName;
-        const messagesRef = collection(db, 'chats', chatId, 'messages');
-        addDoc(messagesRef, {
-            type: 'system',
-            text: (T.bubbles_system_changed || '{name} قام بتغيير لون الفقاعات').replace('{name}', ownerName),
-            createdAt: serverTimestamp()
-        }).catch((e) => {
-            console.error('فشل إرسال رسالة نظام تغيير الثيم:', e);
         });
     }
 
@@ -865,7 +855,7 @@ async function saveContact(myEmail, otherEmail) {
 
     async function commitColor(target, color, isDark) {
         if (target === 'tick') {
-            if (color === TARGET_DEFAULTS.tick) {
+            if (color === TARGET_DEFAULT('tick')) {
                 localStorage.removeItem(BUBBLE_TICK_KEY);
             } else {
                 localStorage.setItem(BUBBLE_TICK_KEY, color);
@@ -884,7 +874,7 @@ async function saveContact(myEmail, otherEmail) {
         const targetEmail = target === 'mine' ? myEmail : otherEmail;
         const previousColor = target === 'mine' ? myBubbleColor : otherBubbleColor;
         const previousDark = target === 'mine' ? myBubbleColorDark : otherBubbleColorDark;
-        const isDefault = color === TARGET_DEFAULTS[target];
+        const isDefault = color === TARGET_DEFAULT(target);
 
         if (target === 'mine') {
             myBubbleColor = isDefault ? null : color;
@@ -899,7 +889,6 @@ async function saveContact(myEmail, otherEmail) {
 
         try {
             await writeBubbleColorFor(targetEmail, color, isDark, isDefault);
-            sendBubbleThemeSystemMessage(target === 'mine');
         } catch (e) {
             console.error('فشل حفظ لون الفقاعة:', e);
             // رجّع القيمة القديمة لو الكتابة فشلت فعليًا
@@ -1039,15 +1028,14 @@ async function saveContact(myEmail, otherEmail) {
     const bubbleResetBtn = document.getElementById('bubbleResetBtn');
     if (bubbleResetBtn) {
         bubbleResetBtn.addEventListener('click', async () => {
-            // بيرجّع لون فقاعتي أنا وفقاعة الطرف التاني للأبيض
-            // الافتراضي مع بعض — كل واحد فيهم بيتبعت update منفصل
-            // على مستنده هو، وبيتبعت رسالة نظام لكل واحد اتغيّر فعليًا
-            // (يعني لو كان أصلاً مالوش لون مخصص، مفيش رسالة له).
+            // بيرجّع لون فقاعتي أنا وفقاعة الطرف التاني للألوان
+            // الافتراضية (أخضر/رمادي واتساب) مع بعض — كل واحد فيهم
+            // بيتبعت update منفصل على مستنده هو.
             const hadMine = !!myBubbleColor;
             const hadTheirs = !!otherBubbleColor;
             localStorage.removeItem(BUBBLE_TICK_KEY);
-            if (hadMine) await commitColor('mine', DEFAULT_MINE_COLOR, '1');
-            if (hadTheirs) await commitColor('theirs', DEFAULT_THEIRS_COLOR, '1');
+            if (hadMine) await commitColor('mine', DEFAULT_MINE_COLOR(), '1');
+            if (hadTheirs) await commitColor('theirs', DEFAULT_THEIRS_COLOR(), '1');
             applyBubbleColors();
             refreshBubblePreview();
             if (navigator.vibrate) { try { navigator.vibrate([6, 30, 6]); } catch (e) {} }

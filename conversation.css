@@ -566,17 +566,6 @@ body.theme-white .bubble-time {
     color: rgba(16, 22, 26, 0.5);
 }
 
-/* ===== theme-whatsapp support (نفس فكرة theme-white) ===== */
-body.theme-whatsapp-dark .conv-topbar,
-body.theme-whatsapp-dark .conv-input-area {
-    background: #202C33;
-}
-
-body.theme-whatsapp-light .conv-topbar,
-body.theme-whatsapp-light .conv-input-area {
-    background: #F0F2F5;
-}
-
 body.theme-white.lg-chat-on .conv-input-bar {
     background: rgba(255, 255, 255, 0.55);
     border-color: rgba(0, 0, 0, 0.08);
@@ -619,27 +608,13 @@ body.theme-white.lg-chat-on .conv-topbar {
 }
 
 /* ===================================================
-   CUSTOM BUBBLE COLORS — خاص بكل شات (chatId) لوحده،
-   بيتطبق عن طريق CSS variables بتتحط على .conv-shell
-   من الجافاسكريبت. الافتراضي بيفضل أبيض زي ما هو.
+   CUSTOM BUBBLE COLORS — خاص بكل شخص (Firestore)، بيتطبق
+   عن طريق CSS variables بتتحط على .conv-shell من الجافاسكريبت.
+   الافتراضي الرسمي: فقاعتي أخضر واتساب، فقاعة التاني رمادي
+   غامق واتساب (ده الافتراضي في الوضع الداكن). في الوضع الأبيض
+   فيه override تحت بألوان واتساب الفاتحة المقابلة.
 =================================================== */
 .conv-shell {
-    --bubble-mine-bg: #FFFFFF;
-    --bubble-mine-text: #10161A;
-    --bubble-mine-time: rgba(16, 22, 26, 0.55);
-    --bubble-mine-tick: rgba(16, 22, 26, 0.45);
-    --bubble-theirs-bg: #FFFFFF;
-    --bubble-theirs-text: #10161A;
-    --bubble-theirs-time: rgba(16, 22, 26, 0.55);
-    --bubble-tick-read: #4FA3FF;
-}
-
-/* ===================================================
-   ثيم واتساب: ألوان الفقاعات الافتراضية بتاعته (لو المستخدم
-   عنده لون شخصي مخصص، الجافاسكريبت بيحط inline style على نفس
-   العنصر ده وبيكسب تلقائيًا فوق القيم دي من غير أي تعديل تاني).
-=================================================== */
-body.theme-whatsapp-dark .conv-shell {
     --bubble-mine-bg: #005C4B;
     --bubble-mine-text: #E9EDEF;
     --bubble-mine-time: rgba(233, 237, 239, 0.6);
@@ -650,12 +625,12 @@ body.theme-whatsapp-dark .conv-shell {
     --bubble-tick-read: #53BDEB;
 }
 
-body.theme-whatsapp-light .conv-shell {
+body.theme-white .conv-shell {
     --bubble-mine-bg: #DCF8C6;
     --bubble-mine-text: #111B21;
     --bubble-mine-time: rgba(17, 27, 33, 0.5);
     --bubble-mine-tick: rgba(17, 27, 33, 0.45);
-    --bubble-theirs-bg: #FFFFFF;
+    --bubble-theirs-bg: #E9EAEB;
     --bubble-theirs-text: #111B21;
     --bubble-theirs-time: rgba(17, 27, 33, 0.5);
     --bubble-tick-read: #34B7F1;
