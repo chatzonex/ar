@@ -332,7 +332,10 @@ async function saveContact(myEmail, otherEmail) {
                 <span>${T.weak_connection}</span>
             </div>`;
         document.body.appendChild(weakAlertEl);
-        requestAnimationFrame(() => weakAlertEl.classList.add('show'));
+        const alertElRef = weakAlertEl;
+        requestAnimationFrame(() => {
+            if (alertElRef && alertElRef.isConnected) alertElRef.classList.add('show');
+        });
         weakAlertHideTimer = setTimeout(hideWeakConnectionAlert, WEAK_ALERT_DURATION_MS);
     }
 
