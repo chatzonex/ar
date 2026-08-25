@@ -1141,20 +1141,48 @@ async function saveContact(myEmail, otherEmail) {
         row.classList.add('selected');
 
         if (!msgCtxMenu || !msgCtxOverlay) return;
-        const rect = row.getBoundingClientRect();
+
+        // مهم: بنقيس مكان الفقاعة (.bubble) نفسها مش الـ row، لأن
+        // الـ row عرضه 100% دايمًا (عشان الـ justify-content بتاعت
+        // محاذاة يمين/شمال تشتغل)، فلو قسنا الـ row هيرجعلنا مركز
+        // الشاشة أفقيًا كل مرة بغض النظر عن مكان الفقاعة الفعلي —
+        // وده بالظبط سبب ظهور القايمة في نص الشاشة بدل تحت الرسالة.
+        const bubbleEl = row.querySelector('.bubble') || row;
+        const rect = bubbleEl.getBoundingClientRect();
         const isRtl = document.documentElement.dir === 'rtl';
+
+        // بنستنى فريم واحد عشان نعرف الأبعاد الحقيقية للقايمة (width
+        // بتاعها ثابت في الـ CSS: 230px، لكن الارتفاع بيتغيّر حسب لو
+        // فيه أوبشن "تحديد"/"توجيه" ظاهر أو لأ)
+        msgCtxMenu.style.visibility = 'hidden';
+        msgCtxMenu.style.top = '0px';
+        msgCtxMenu.style.left = '0px';
+        msgCtxMenu.style.right = 'auto';
+        msgCtxMenu.classList.add('open');
+        const menuRect = msgCtxMenu.getBoundingClientRect();
+        const menuWidth = menuRect.width || 230;
+        const menuHeight = menuRect.height || 210;
+        msgCtxMenu.classList.remove('open');
+        msgCtxMenu.style.visibility = '';
+
+        const margin = 10;
         let top = rect.bottom + 6;
-        const menuHeightEstimate = 210;
-        if (top + menuHeightEstimate > window.innerHeight) {
-            top = Math.max(10, rect.top - menuHeightEstimate - 6);
+        if (top + menuHeight > window.innerHeight - margin) {
+            top = rect.top - menuHeight - 6;
         }
+        top = Math.min(Math.max(margin, top), window.innerHeight - menuHeight - margin);
         msgCtxMenu.style.top = top + 'px';
+
         const centerX = rect.left + rect.width / 2;
+        let leftPos = Math.min(
+            Math.max(margin, centerX - menuWidth / 2),
+            window.innerWidth - menuWidth - margin
+        );
         if (isRtl) {
-            msgCtxMenu.style.right = Math.max(10, window.innerWidth - centerX - 100) + 'px';
+            msgCtxMenu.style.right = (window.innerWidth - leftPos - menuWidth) + 'px';
             msgCtxMenu.style.left = 'auto';
         } else {
-            msgCtxMenu.style.left = Math.max(10, centerX - 100) + 'px';
+            msgCtxMenu.style.left = leftPos + 'px';
             msgCtxMenu.style.right = 'auto';
         }
         msgCtxMenu.classList.add('open');
