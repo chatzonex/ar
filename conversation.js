@@ -106,8 +106,11 @@ async function saveContact(myEmail, otherEmail) {
             conv_menu_info_sub: 'اسم وإيميل الشخص اللي بتكلمه',
             bubbles_title: 'تخصيص لون الفقاعات',
             bubbles_body: 'الألوان دي هتتطبق في الشات ده بس. لو دخلت شات تاني هتلاقي الفقاعات البيضاء العادية.',
-            bubbles_mine_title: 'فقاعتي أنا',
-            bubbles_theirs_title: 'فقاعة الطرف التاني',
+            bubbles_mine_title: 'لون الفقاعة اليمين',
+            bubbles_theirs_title: 'لون الفقاعة اليسار',
+            bubbles_tick_title: 'لون الصح الزرقاء',
+            bubbles_preview_hi: 'أهلا',
+            bubbles_preview_hi_reply: 'أهلا وسهلا',
             bubbles_default: 'افتراضي',
             bubbles_silver: 'فضي',
             bubbles_green: 'أخضر',
@@ -119,6 +122,17 @@ async function saveContact(myEmail, otherEmail) {
             bubbles_red: 'أحمر',
             bubbles_dark: 'داكن',
             bubbles_reset: 'إرجاع الافتراضي',
+            choose_color_title: 'اختر لون',
+            choose_color_custom: 'محرر الألوان (اختر أي لون)',
+            choose_color_presets: 'ألوان الفقاعات الخاصة بالتطبيق',
+            choose_color_presets_title: 'ألوان الفقاعات الخاصة بالتطبيق',
+            choose_color_editor_title: 'اختر لون',
+            choose_color_editor_sub: 'دوس حفظ عشان اللون يتطبق، أو إلغاء عشان ترجع من غير أي تغيير.',
+            color_save: 'حفظ',
+            color_cancel: 'إلغاء',
+            unsaved_guard_title: 'تحفظ اللون الأول؟',
+            unsaved_guard_sub: 'عندك لون مختار لسه ما اتحفظش. لو خرجت دلوقتي هيتلغي.',
+            unsaved_guard_discard: 'إلغاء',
             font_title: 'تخصيص الخط',
             font_body: 'اختر خط الكتابة في الشات، وسيتم حفظه واستخدامه دايمًا في كل المحادثات.',
             font_default: 'الافتراضي',
@@ -172,8 +186,11 @@ async function saveContact(myEmail, otherEmail) {
             conv_menu_info_sub: 'Name and email of the person you\'re chatting with',
             bubbles_title: 'Customize bubble colors',
             bubbles_body: 'These colors apply to this chat only. Other chats will still show the default white bubbles.',
-            bubbles_mine_title: 'My bubble',
-            bubbles_theirs_title: 'Their bubble',
+            bubbles_mine_title: 'Right bubble color',
+            bubbles_theirs_title: 'Left bubble color',
+            bubbles_tick_title: 'Blue checkmark color',
+            bubbles_preview_hi: 'Hi',
+            bubbles_preview_hi_reply: 'Hi there',
             bubbles_default: 'Default',
             bubbles_silver: 'Silver',
             bubbles_green: 'Green',
@@ -185,6 +202,17 @@ async function saveContact(myEmail, otherEmail) {
             bubbles_red: 'Red',
             bubbles_dark: 'Dark',
             bubbles_reset: 'Reset to default',
+            choose_color_title: 'Choose a color',
+            choose_color_custom: 'Color editor (pick any color)',
+            choose_color_presets: 'App bubble colors',
+            choose_color_presets_title: 'App bubble colors',
+            choose_color_editor_title: 'Choose a color',
+            choose_color_editor_sub: 'Tap Save to apply the color, or Cancel to go back without changes.',
+            color_save: 'Save',
+            color_cancel: 'Cancel',
+            unsaved_guard_title: 'Save this color?',
+            unsaved_guard_sub: 'You picked a color that hasn\'t been saved yet. Leaving now will discard it.',
+            unsaved_guard_discard: 'Discard',
             font_title: 'Customize font',
             font_body: 'Choose the chat font. It will be saved and used across all conversations.',
             font_default: 'Default',
@@ -586,6 +614,11 @@ async function saveContact(myEmail, otherEmail) {
     const convShellEl = document.querySelector('.conv-shell');
     const BUBBLE_MINE_KEY = 'cz_bubble_mine_' + chatId;
     const BUBBLE_THEIRS_KEY = 'cz_bubble_theirs_' + chatId;
+    const BUBBLE_TICK_KEY = 'cz_bubble_tick_' + chatId;
+
+    const DEFAULT_MINE_COLOR = '#FFFFFF';
+    const DEFAULT_THEIRS_COLOR = '#FFFFFF';
+    const DEFAULT_TICK_COLOR = '#4FA3FF';
 
     function textColorFor(hex, isDark) {
         if (isDark === '1') return '#10161A';
@@ -600,9 +633,21 @@ async function saveContact(myEmail, otherEmail) {
         return isDark === '1' ? 'rgba(16, 22, 26, 0.45)' : 'rgba(255, 255, 255, 0.6)';
     }
 
+    // بيحسب هل اللون فاتح ولا غامق عشان يقرر لون النص الأنسب
+    // (مستخدم لما اللون جاي من محرر الألوان الحر، مش من قايمة جاهزة).
+    function isColorDark(hex) {
+        const c = hex.replace('#', '');
+        const r = parseInt(c.substring(0, 2), 16);
+        const g = parseInt(c.substring(2, 4), 16);
+        const b = parseInt(c.substring(4, 6), 16);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness > 150 ? '1' : '0';
+    }
+
     function applyBubbleColors() {
         const mineColor = localStorage.getItem(BUBBLE_MINE_KEY);
         const theirsColor = localStorage.getItem(BUBBLE_THEIRS_KEY);
+        const tickColor = localStorage.getItem(BUBBLE_TICK_KEY);
         const mineDark = localStorage.getItem(BUBBLE_MINE_KEY + '_dark') || '1';
         const theirsDark = localStorage.getItem(BUBBLE_THEIRS_KEY + '_dark') || '1';
 
@@ -627,80 +672,276 @@ async function saveContact(myEmail, otherEmail) {
                 convShellEl.style.removeProperty('--bubble-theirs-text');
                 convShellEl.style.removeProperty('--bubble-theirs-time');
             }
+            if (tickColor) {
+                convShellEl.style.setProperty('--bubble-tick-read', tickColor);
+            } else {
+                convShellEl.style.removeProperty('--bubble-tick-read');
+            }
         }
     }
 
-    function markSelectedSwatch(gridEl, savedColor) {
-        if (!gridEl) return;
-        const options = gridEl.querySelectorAll('.bubble-swatch-option');
-        options.forEach(opt => {
+    // =====================================================
+    // معاينة حية (الفقاعتين + الصح) في أعلى شيت "تخصيص لون
+    // الفقاعات" — بتتحدث فورًا كل ما لون يتغيّر أو يتحفظ
+    // =====================================================
+    const bubblePreviewMine = document.getElementById('bubblePreviewMine');
+    const bubblePreviewTheirs = document.getElementById('bubblePreviewTheirs');
+    const bubblePreviewTick = document.getElementById('bubblePreviewTick');
+    const bubbleOptionMineSwatch = document.getElementById('bubbleOptionMineSwatch');
+    const bubbleOptionTheirsSwatch = document.getElementById('bubbleOptionTheirsSwatch');
+    const bubbleOptionTickSwatch = document.getElementById('bubbleOptionTickSwatch');
+
+    function refreshBubblePreview() {
+        const mineColor = localStorage.getItem(BUBBLE_MINE_KEY) || DEFAULT_MINE_COLOR;
+        const theirsColor = localStorage.getItem(BUBBLE_THEIRS_KEY) || DEFAULT_THEIRS_COLOR;
+        const tickColor = localStorage.getItem(BUBBLE_TICK_KEY) || DEFAULT_TICK_COLOR;
+        const mineDark = localStorage.getItem(BUBBLE_MINE_KEY + '_dark') || '1';
+        const theirsDark = localStorage.getItem(BUBBLE_THEIRS_KEY + '_dark') || '1';
+
+        if (bubblePreviewMine) {
+            bubblePreviewMine.style.background = mineColor;
+            bubblePreviewMine.style.color = textColorFor(mineColor, mineDark);
+        }
+        if (bubblePreviewTheirs) {
+            bubblePreviewTheirs.style.background = theirsColor;
+            bubblePreviewTheirs.style.color = textColorFor(theirsColor, theirsDark);
+        }
+        if (bubblePreviewTick) {
+            bubblePreviewTick.style.backgroundColor = tickColor;
+        }
+        if (bubbleOptionMineSwatch) bubbleOptionMineSwatch.style.background = mineColor;
+        if (bubbleOptionTheirsSwatch) bubbleOptionTheirsSwatch.style.background = theirsColor;
+        if (bubbleOptionTickSwatch) bubbleOptionTickSwatch.style.background = tickColor;
+    }
+
+    // =====================================================
+    // "اختر لون" — شيت بيظهر لما تدوس على أي من الخيارات
+    // التلاتة (يمين / يسار / صح زرقاء)، وفيه محرر ألوان حر
+    // أو قايمة ألوان جاهزة (مربعات) في نص الشاشة
+    // =====================================================
+    const TARGET_LABELS = {
+        mine: 'bubbles_mine_title',
+        theirs: 'bubbles_theirs_title',
+        tick: 'bubbles_tick_title'
+    };
+    const TARGET_KEYS = {
+        mine: BUBBLE_MINE_KEY,
+        theirs: BUBBLE_THEIRS_KEY,
+        tick: BUBBLE_TICK_KEY
+    };
+    const TARGET_DEFAULTS = {
+        mine: DEFAULT_MINE_COLOR,
+        theirs: DEFAULT_THEIRS_COLOR,
+        tick: DEFAULT_TICK_COLOR
+    };
+
+    let activeColorTarget = null; // 'mine' | 'theirs' | 'tick'
+    let pendingEditorColor = null; // اللون اللي متختار في المحرر بس لسه ما اتحفظش
+    let pendingEditorIsDark = '1';
+
+    const chooseColorTitle = document.getElementById('chooseColorTitle');
+    const openColorEditorBtn = document.getElementById('openColorEditorBtn');
+    const openColorPresetsBtn = document.getElementById('openColorPresetsBtn');
+    const bubbleColorNativePicker = document.getElementById('bubbleColorNativePicker');
+    const colorEditorPreviewSwatch = document.getElementById('colorEditorPreviewSwatch');
+    const editorSaveBtn = document.getElementById('editorSaveBtn');
+    const editorCancelBtn = document.getElementById('editorCancelBtn');
+    const presetSquareGrid = document.getElementById('presetSquareGrid');
+    const presetsSaveBtn = document.getElementById('presetsSaveBtn');
+    const presetsCancelBtn = document.getElementById('presetsCancelBtn');
+    const unsavedSaveBtn = document.getElementById('unsavedSaveBtn');
+    const unsavedDiscardBtn = document.getElementById('unsavedDiscardBtn');
+
+    let pendingPresetChoice = null; // { color, isDark } — اختيار من المربعات لسه ما اتحفظش
+
+    function labelFor(key) {
+        return (T && T[key]) || key;
+    }
+
+    function openChooseColorFor(target) {
+        activeColorTarget = target;
+        if (chooseColorTitle) chooseColorTitle.textContent = labelFor(TARGET_LABELS[target]);
+        openSheet('sheet-choose-color');
+    }
+
+    if (document.getElementById('bubbleOptionMine')) {
+        document.getElementById('bubbleOptionMine').addEventListener('click', () => openChooseColorFor('mine'));
+    }
+    if (document.getElementById('bubbleOptionTheirs')) {
+        document.getElementById('bubbleOptionTheirs').addEventListener('click', () => openChooseColorFor('theirs'));
+    }
+    if (document.getElementById('bubbleOptionTick')) {
+        document.getElementById('bubbleOptionTick').addEventListener('click', () => openChooseColorFor('tick'));
+    }
+
+    // --- محرر الألوان الحر ---
+    if (openColorEditorBtn && bubbleColorNativePicker) {
+        openColorEditorBtn.addEventListener('click', () => {
+            const current = localStorage.getItem(TARGET_KEYS[activeColorTarget]) || TARGET_DEFAULTS[activeColorTarget];
+            bubbleColorNativePicker.value = current;
+            bubbleColorNativePicker.click();
+        });
+        bubbleColorNativePicker.addEventListener('input', (e) => {
+            pendingEditorColor = e.target.value;
+            pendingEditorIsDark = isColorDark(pendingEditorColor);
+            if (colorEditorPreviewSwatch) colorEditorPreviewSwatch.style.background = pendingEditorColor;
+            closeSheet('sheet-choose-color');
+            openSheet('sheet-color-editor-confirm');
+        });
+    }
+
+    function commitColor(target, color, isDark) {
+        if (color === TARGET_DEFAULTS[target] && target !== 'tick') {
+            localStorage.removeItem(TARGET_KEYS[target]);
+            localStorage.removeItem(TARGET_KEYS[target] + '_dark');
+        } else if (color === TARGET_DEFAULTS[target] && target === 'tick') {
+            localStorage.removeItem(TARGET_KEYS[target]);
+        } else {
+            localStorage.setItem(TARGET_KEYS[target], color);
+            if (target !== 'tick') localStorage.setItem(TARGET_KEYS[target] + '_dark', isDark);
+        }
+        applyBubbleColors();
+        refreshBubblePreview();
+        if (navigator.vibrate) { try { navigator.vibrate([6, 30, 6]); } catch (e) {} }
+    }
+
+    if (editorSaveBtn) {
+        editorSaveBtn.addEventListener('click', () => {
+            if (activeColorTarget && pendingEditorColor) {
+                commitColor(activeColorTarget, pendingEditorColor, pendingEditorIsDark);
+            }
+            pendingEditorColor = null;
+            closeSheet('sheet-color-editor-confirm');
+        });
+    }
+    if (editorCancelBtn) {
+        editorCancelBtn.addEventListener('click', () => {
+            pendingEditorColor = null;
+            closeSheet('sheet-color-editor-confirm');
+        });
+    }
+
+    // --- قايمة الألوان الجاهزة (مربعات، في نص الشاشة) ---
+    function markSelectedPreset(savedColor) {
+        if (!presetSquareGrid) return;
+        presetSquareGrid.querySelectorAll('.preset-square-option').forEach(opt => {
             const isDefault = opt.dataset.color === '#FFFFFF' && !savedColor;
             const isMatch = savedColor && opt.dataset.color.toLowerCase() === savedColor.toLowerCase();
             opt.classList.toggle('selected', isDefault || isMatch);
         });
     }
 
-    const gridMine = document.getElementById('bubbleSwatchGridMine');
-    const gridTheirs = document.getElementById('bubbleSwatchGridTheirs');
+    if (openColorPresetsBtn) {
+        openColorPresetsBtn.addEventListener('click', () => {
+            closeSheet('sheet-choose-color');
+            pendingPresetChoice = null;
+            markSelectedPreset(localStorage.getItem(TARGET_KEYS[activeColorTarget]));
+            openSheet('sheet-color-presets');
+        });
+    }
+
+    if (presetSquareGrid) {
+        presetSquareGrid.querySelectorAll('.preset-square-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                pendingPresetChoice = { color: opt.dataset.color, isDark: opt.dataset.textDark };
+                markSelectedPreset(opt.dataset.color === '#FFFFFF' ? null : opt.dataset.color);
+                if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
+            });
+        });
+    }
+
+    if (presetsSaveBtn) {
+        presetsSaveBtn.addEventListener('click', () => {
+            if (activeColorTarget && pendingPresetChoice) {
+                commitColor(activeColorTarget, pendingPresetChoice.color, pendingPresetChoice.isDark);
+            }
+            pendingPresetChoice = null;
+            closeSheet('sheet-color-presets');
+        });
+    }
+    if (presetsCancelBtn) {
+        presetsCancelBtn.addEventListener('click', () => {
+            pendingPresetChoice = null;
+            closeSheet('sheet-color-presets');
+        });
+    }
+
+    // --- تحذير الخروج من غير حفظ (لو فيه لون مختار ولسه ما اتحفظش) ---
+    function hasUnsavedChoice() {
+        return !!(pendingEditorColor || pendingPresetChoice);
+    }
+
+    function discardPendingChoice() {
+        pendingEditorColor = null;
+        pendingPresetChoice = null;
+    }
+
+    if (unsavedSaveBtn) {
+        unsavedSaveBtn.addEventListener('click', () => {
+            if (activeColorTarget) {
+                if (pendingEditorColor) {
+                    commitColor(activeColorTarget, pendingEditorColor, pendingEditorIsDark);
+                } else if (pendingPresetChoice) {
+                    commitColor(activeColorTarget, pendingPresetChoice.color, pendingPresetChoice.isDark);
+                }
+            }
+            discardPendingChoice();
+            closeSheet('sheet-unsaved-guard');
+            closeSheet('sheet-color-editor-confirm');
+            closeSheet('sheet-color-presets');
+            closeSheet('sheet-choose-color');
+        });
+    }
+    if (unsavedDiscardBtn) {
+        unsavedDiscardBtn.addEventListener('click', () => {
+            discardPendingChoice();
+            closeSheet('sheet-unsaved-guard');
+            closeSheet('sheet-color-editor-confirm');
+            closeSheet('sheet-color-presets');
+            closeSheet('sheet-choose-color');
+        });
+    }
+
+    // بيعترض قفل شيتات اللون (بالـ X أو بالدوس بره) لو فيه اختيار
+    // لسه ما اتحفظش، ويعرض تحذير بدل ما يقفل على طول
+    const GUARDED_SHEETS = ['sheet-color-editor-confirm', 'sheet-color-presets'];
+    document.querySelectorAll('[data-close-sheet]').forEach(el => {
+        const targetSheet = el.dataset.closeSheet;
+        if (!GUARDED_SHEETS.includes(targetSheet)) return;
+        el.addEventListener('click', (e) => {
+            if (hasUnsavedChoice()) {
+                e.stopImmediatePropagation();
+                openSheet('sheet-unsaved-guard');
+            }
+        }, true);
+    });
+    GUARDED_SHEETS.forEach(sheetId => {
+        const overlay = document.getElementById(sheetId);
+        if (!overlay) return;
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay && hasUnsavedChoice()) {
+                e.stopImmediatePropagation();
+                openSheet('sheet-unsaved-guard');
+            }
+        }, true);
+    });
+
     const bubbleResetBtn = document.getElementById('bubbleResetBtn');
-
-    function initBubbleColorUI() {
-        markSelectedSwatch(gridMine, localStorage.getItem(BUBBLE_MINE_KEY));
-        markSelectedSwatch(gridTheirs, localStorage.getItem(BUBBLE_THEIRS_KEY));
-    }
-
-    if (gridMine) {
-        gridMine.querySelectorAll('.bubble-swatch-option').forEach(opt => {
-            opt.addEventListener('click', () => {
-                const color = opt.dataset.color;
-                const isDark = opt.dataset.textDark;
-                if (color === '#FFFFFF') {
-                    localStorage.removeItem(BUBBLE_MINE_KEY);
-                    localStorage.removeItem(BUBBLE_MINE_KEY + '_dark');
-                } else {
-                    localStorage.setItem(BUBBLE_MINE_KEY, color);
-                    localStorage.setItem(BUBBLE_MINE_KEY + '_dark', isDark);
-                }
-                markSelectedSwatch(gridMine, localStorage.getItem(BUBBLE_MINE_KEY));
-                applyBubbleColors();
-                if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
-            });
-        });
-    }
-
-    if (gridTheirs) {
-        gridTheirs.querySelectorAll('.bubble-swatch-option').forEach(opt => {
-            opt.addEventListener('click', () => {
-                const color = opt.dataset.color;
-                const isDark = opt.dataset.textDark;
-                if (color === '#FFFFFF') {
-                    localStorage.removeItem(BUBBLE_THEIRS_KEY);
-                    localStorage.removeItem(BUBBLE_THEIRS_KEY + '_dark');
-                } else {
-                    localStorage.setItem(BUBBLE_THEIRS_KEY, color);
-                    localStorage.setItem(BUBBLE_THEIRS_KEY + '_dark', isDark);
-                }
-                markSelectedSwatch(gridTheirs, localStorage.getItem(BUBBLE_THEIRS_KEY));
-                applyBubbleColors();
-                if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
-            });
-        });
-    }
-
     if (bubbleResetBtn) {
         bubbleResetBtn.addEventListener('click', () => {
             localStorage.removeItem(BUBBLE_MINE_KEY);
             localStorage.removeItem(BUBBLE_MINE_KEY + '_dark');
             localStorage.removeItem(BUBBLE_THEIRS_KEY);
             localStorage.removeItem(BUBBLE_THEIRS_KEY + '_dark');
-            initBubbleColorUI();
+            localStorage.removeItem(BUBBLE_TICK_KEY);
             applyBubbleColors();
+            refreshBubblePreview();
             if (navigator.vibrate) { try { navigator.vibrate([6, 30, 6]); } catch (e) {} }
         });
     }
 
-    initBubbleColorUI();
     applyBubbleColors();
+    refreshBubblePreview();
 
     // =====================================================
     // 4.3) تخصيص الخط — عام لكل الشاتات (مش خاص بشات واحد
