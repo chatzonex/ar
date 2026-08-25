@@ -12,15 +12,21 @@ html, body {
 
 body {
     font-family: 'IBM Plex Sans Arabic', 'Inter', sans-serif;
-    background: #0A0F14;
+    background: #000000;
     color: #F2F5F4;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.theme-white {
+    background: #F4F6F5;
+    color: #12181A;
 }
 
 :root {
-    --bg: #0A0F14;
+    --bg: #000000;
     --glass: rgba(255, 255, 255, 0.045);
     --glass-strong: rgba(255, 255, 255, 0.08);
     --glass-border: rgba(255, 255, 255, 0.12);
@@ -37,17 +43,70 @@ body {
     --font-display: 'Space Grotesk', 'Inter', sans-serif;
 }
 
+/* ===== Light theme (auth pages) — synced with cz_theme from the main app ===== */
+body.theme-white {
+    --bg: #F4F6F5;
+    --glass: rgba(0, 0, 0, 0.035);
+    --glass-strong: rgba(0, 0, 0, 0.06);
+    --glass-border: rgba(0, 0, 0, 0.09);
+    --glass-border-strong: rgba(0, 0, 0, 0.14);
+    --text: #12181A;
+    --text-dim: #5C6B67;
+    --text-faint: #8B9793;
+}
+
 .auth-screen {
+    position: relative;
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 32px 20px;
-    background:
-        radial-gradient(circle at 15% 10%, rgba(37, 217, 160, 0.08), transparent 45%),
-        radial-gradient(circle at 85% 90%, rgba(91, 127, 255, 0.08), transparent 45%),
-        var(--bg);
+    background: var(--bg);
+    transition: background-color 0.3s ease;
+}
+
+/* ===== Dark / Light toggle button ===== */
+.theme-toggle-btn {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-strong);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: var(--text);
+    cursor: pointer;
+    z-index: 5;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.theme-toggle-btn:active {
+    transform: scale(0.9);
+}
+
+.theme-toggle-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+.theme-toggle-btn .icon-sun {
+    display: none;
+}
+
+body.theme-white .theme-toggle-btn .icon-moon {
+    display: none;
+}
+
+body.theme-white .theme-toggle-btn .icon-sun {
+    display: block;
 }
 
 .auth-top {
@@ -71,13 +130,35 @@ body {
 }
 
 .auth-card {
+    position: relative;
     width: 100%;
     max-width: 380px;
-    background: var(--glass);
-    border: 1px solid var(--glass-border);
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
+    border: 1px solid var(--glass-border-strong);
     border-radius: var(--radius-lg);
     padding: 28px 24px;
-    backdrop-filter: blur(14px);
+    backdrop-filter: blur(22px) saturate(1.6);
+    -webkit-backdrop-filter: blur(22px) saturate(1.6);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    overflow: hidden;
+}
+
+.auth-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.10), transparent 55%);
+    pointer-events: none;
+}
+
+body.theme-white .auth-card {
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.35));
+    box-shadow:
+        0 8px 28px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .auth-title {
@@ -244,12 +325,12 @@ body {
 }
 
 .otp-box {
-    width: 60px;
-    height: 70px;
+    width: 42px;
+    height: 50px;
     text-align: center;
-    font-size: 26px;
+    font-size: 19px;
     font-weight: 700;
-    border-radius: var(--radius-md);
+    border-radius: 12px;
     background: var(--glass-strong);
     border: 1px solid var(--glass-border);
     color: var(--text);
@@ -267,23 +348,49 @@ body {
     animation: shake 0.3s ease;
 }
 
-.otp-box.verified {
-    border-color: var(--accent);
-    background: rgba(37, 217, 160, 0.12);
+/* ===== Whole-group result state =====
+   All 6 boxes flip together: digits hidden, a single big green check
+   (correct) or red X (wrong) is drawn once, centered over the row. */
+.otp-box.verified,
+.otp-box.wrong {
     color: transparent;
-    position: relative;
     transition: border-color 0.25s ease, background 0.25s ease;
 }
 
-.otp-box.verified::after {
+.otp-box.verified {
+    border-color: var(--accent);
+    background: rgba(37, 217, 160, 0.12);
+}
+
+.otp-box.wrong {
+    border-color: var(--danger);
+    background: rgba(248, 113, 113, 0.12);
+}
+
+.otp-row {
+    position: relative;
+}
+
+.otp-row.show-result::after {
     content: '';
     position: absolute;
     inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2325D9A0' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+    margin: auto;
+    width: 34px;
+    height: 34px;
     background-repeat: no-repeat;
     background-position: center;
-    background-size: 24px 24px;
+    background-size: 34px 34px;
     animation: checkPop 0.3s ease;
+    pointer-events: none;
+}
+
+.otp-row.show-result.result-correct::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2325D9A0' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.otp-row.show-result.result-wrong::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F87171' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3E%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3E%3C/svg%3E");
 }
 
 @keyframes checkPop {
@@ -388,9 +495,9 @@ body {
 
 @media(max-width: 380px) {
     .otp-box {
-        width: 50px;
-        height: 60px;
-        font-size: 22px;
+        width: 36px;
+        height: 44px;
+        font-size: 17px;
     }
     .otp-row {
         gap: 7px;
