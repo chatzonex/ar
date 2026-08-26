@@ -245,10 +245,22 @@
         empty_sub: 'دوس على علامة + وابدأ أول محادثة',
         nav_chats: 'الدردشات',
         nav_settings: 'الإعدادات',
-        sidebar_restart: 'إعادة تشغيل التطبيق',
-        sidebar_restart_sub: 'إعادة تحميل ChatZone',
-        sidebar_settings: 'الإعدادات',
-        sidebar_settings_sub: 'تخصيص التطبيق',
+        sidebar_airplane: 'وضع الطيران',
+        sidebar_airplane_sub: 'اقطع نفسك عن الإنترنت جوه التطبيق',
+        sidebar_ghost: 'وضع الشبح',
+        sidebar_ghost_sub: 'ردودك توصل، وتفضل ظاهر صح واحدة بس',
+        vip_required_title: 'الخاصية دي لمشتركي VIP بس',
+        vip_required_sub: 'وضع الطيران ووضع الشبح متاحين لمشتركي VIP مقابل 30 جنيه بس في الشهر',
+        vip_required_cta: 'اشترك دلوقتي',
+        airplane_confirm_on_title: 'تفعيل وضع الطيران؟',
+        airplane_confirm_on_sub: 'هتتقطع عن الإنترنت جوه التطبيق تمامًا، ومش هتوصلك أي رسايل جديدة لحد ما تلغيه',
+        airplane_confirm_off_title: 'إلغاء وضع الطيران؟',
+        airplane_confirm_off_sub: 'هترجع تتصل بالإنترنت جوه التطبيق عادي وهتوصلك الرسايل تاني',
+        ghost_confirm_on_title: 'تفعيل وضع الشبح؟',
+        ghost_confirm_on_sub: 'ردودك هتوصل عادي، لكن هتفضل ظاهر عند الطرف التاني تيك واحد بس لحد ما تلغي الوضع',
+        ghost_confirm_off_title: 'إلغاء وضع الشبح؟',
+        ghost_confirm_off_sub: 'هتفضل الرسايل تظهر تيكين زرقاء عادي زي ما هي في الأصل',
+        btn_confirm: 'تأكيد',
         modal_new_chat_sub: 'اكتب الإيميل اللي هتكلمه',
         btn_cancel: 'إلغاء',
         btn_start_chat: 'ابدأ المحادثة',
@@ -321,10 +333,22 @@
         empty_sub: 'Tap the + button to start your first chat',
         nav_chats: 'Chats',
         nav_settings: 'Settings',
-        sidebar_restart: 'Restart App',
-        sidebar_restart_sub: 'Reload ChatZone',
-        sidebar_settings: 'Settings',
-        sidebar_settings_sub: 'Customize the app',
+        sidebar_airplane: 'Airplane Mode',
+        sidebar_airplane_sub: 'Cut yourself off from the internet in-app',
+        sidebar_ghost: 'Ghost Mode',
+        sidebar_ghost_sub: 'Your replies go through, but only a single check shows',
+        vip_required_title: 'This feature is for VIP members only',
+        vip_required_sub: 'Airplane Mode and Ghost Mode are available for VIP members for just 30 EGP a month',
+        vip_required_cta: 'Subscribe now',
+        airplane_confirm_on_title: 'Turn on Airplane Mode?',
+        airplane_confirm_on_sub: "You'll be disconnected from the internet in-app entirely, and won't receive any new messages until you turn it off",
+        airplane_confirm_off_title: 'Turn off Airplane Mode?',
+        airplane_confirm_off_sub: "You'll reconnect to the internet in-app normally and start receiving messages again",
+        ghost_confirm_on_title: 'Turn on Ghost Mode?',
+        ghost_confirm_on_sub: 'Your replies will go through normally, but the other side will only see a single check mark until you turn this off',
+        ghost_confirm_off_title: 'Turn off Ghost Mode?',
+        ghost_confirm_off_sub: 'Messages will go back to showing normal blue double checks',
+        btn_confirm: 'Confirm',
         modal_new_chat_sub: 'Type the email you want to chat with',
         btn_cancel: 'Cancel',
         btn_start_chat: 'Start Chat',
@@ -497,8 +521,6 @@
     const menuBtn = document.getElementById('menuBtn');
     const sidebarMenu = document.getElementById('sidebarMenu');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
-    const sidebarRestart = document.getElementById('sidebarRestart');
-    const sidebarSettingsShortcut = document.getElementById('sidebarSettingsShortcut');
 
     function openSidebarMenu() {
         if (!sidebarMenu || !sidebarOverlay || !menuBtn) return;
@@ -534,19 +556,5 @@
     }
     if (sidebarOverlay) {
         sidebarOverlay.addEventListener('click', closeSidebarMenu);
-    }
-    if (sidebarSettingsShortcut) {
-        sidebarSettingsShortcut.addEventListener('click', () => {
-            switchTab('screen-settings');
-        });
-    }
-
-    // ملحوظة: صفوف "الصفحة الرئيسية" و"الدردشة" في الإعدادات بقت بتفتح
-    // شيت Liquid Glass الخاص بيها (مسجلة فوق في sheetTriggers)، مش بتنقل الشاشة.
-    if (sidebarRestart) {
-        sidebarRestart.addEventListener('click', () => {
-            closeSidebarMenu();
-            window.location.reload();
-        });
     }
 })();

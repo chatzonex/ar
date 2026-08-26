@@ -17,7 +17,9 @@ import {
     onSnapshot,
     serverTimestamp,
     writeBatch,
-    ensureAuthenticated
+    ensureAuthenticated,
+    enableNetwork,
+    disableNetwork
 } from "./firebase-init.js";
 
 // =====================================================
@@ -163,11 +165,6 @@ async function saveContact(myEmail, otherEmail) {
             msg_deleted_toast: 'اتحذفت الرسالة',
             copied_toast: 'اتنسخت الرسالة',
             forwarded_label: 'تم التوجيه',
-            voice_message_label: 'رسالة صوتية',
-            voice_slide_cancel: 'اسحب لإلغاء التسجيل',
-            voice_mic_permission_denied: 'محتاجين إذن استخدام المايك عشان تبعت رسالة صوتية',
-            voice_upload_failed: 'فشل رفع الرسالة الصوتية، حاول تاني',
-            voice_too_short: 'التسجيل قصير جدًا',
             forward_title: 'توجيه إلى',
             forward_pick_hint: 'اختر لغاية 10 أشخاص',
             forward_search_placeholder: 'بحث بالاسم أو الإيميل',
@@ -248,11 +245,6 @@ async function saveContact(myEmail, otherEmail) {
             msg_deleted_toast: 'Message deleted',
             copied_toast: 'Message copied',
             forwarded_label: 'Forwarded',
-            voice_message_label: 'Voice message',
-            voice_slide_cancel: 'Drag to cancel recording',
-            voice_mic_permission_denied: 'Microphone access is needed to send a voice message',
-            voice_upload_failed: 'Failed to upload the voice message, try again',
-            voice_too_short: 'Recording too short',
             forward_title: 'Forward to',
             forward_pick_hint: 'Choose up to 10 people',
             forward_search_placeholder: 'Search by name or email',
@@ -332,10 +324,7 @@ async function saveContact(myEmail, otherEmail) {
                 <span>${T.weak_connection}</span>
             </div>`;
         document.body.appendChild(weakAlertEl);
-        const alertElRef = weakAlertEl;
-        requestAnimationFrame(() => {
-            if (alertElRef && alertElRef.isConnected) alertElRef.classList.add('show');
-        });
+        requestAnimationFrame(() => weakAlertEl.classList.add('show'));
         weakAlertHideTimer = setTimeout(hideWeakConnectionAlert, WEAK_ALERT_DURATION_MS);
     }
 
@@ -398,6 +387,53 @@ async function saveContact(myEmail, otherEmail) {
         }
     }
     loadMyRealName();
+
+    // =====================================================
+    // وضع الشبح (Ghost Mode — VIP): لو مفعّل عندي، رسايل الطرف
+    // التاني اللي بتوصلني بتفضل status: 'unread' من غير ما نحدّثها
+    // لـ 'read'، حتى لو أنا فعليًا فاتح الشات وقاريها أو رديت عليها.
+    // النتيجة: عنده تفضل ظاهرة تيك واحد رمادي بس لحد ما ألغي الوضع
+    // (وقتها بس markIncomingMessagesAsRead هترجع تحدّث الرسايل
+    // المتراكمة كلها لـ read مرة واحدة، زي واتساب بالظبط).
+    // =====================================================
+    // وضع الطيران (Airplane Mode — VIP): لو مفعّل عندي، بنقطع
+    // الاتصال الفعلي بـ Firestore بالكامل (disableNetwork) طول ما
+    // أنا فاتح صفحة الشات دي، عشان ولا رسالة جديدة توصلني حتى لو
+    // فاتح الشات فعليًا. الاستماع لحالة الوضع نفسه (ghostModeEnabled/
+    // airplaneModeEnabled) شغال دايمًا بغض النظر عن حالة الشبكة،
+    // لأن بيانات مستند اليوزر بتاعي أنا متاحة من الكاش المحلي حتى
+    // لو النت مقطوع فعليًا (IndexedDB persistence).
+    let myAirplaneModeOn = false;
+    let convNetworkDisabledLocally = false;
+    function applyAirplaneNetworkStateInConv() {
+        if (myAirplaneModeOn && !convNetworkDisabledLocally) {
+            convNetworkDisabledLocally = true;
+            disableNetwork(db).catch((e) => console.error('فشل قطع الاتصال بـ Firestore:', e));
+        } else if (!myAirplaneModeOn && convNetworkDisabledLocally) {
+            convNetworkDisabledLocally = false;
+            enableNetwork(db).catch((e) => console.error('فشل استرجاع الاتصال بـ Firestore:', e));
+        }
+    }
+
+    let myGhostModeOn = false;
+    function listenToMyVipModes() {
+        onSnapshot(doc(db, 'users', myEmail.toLowerCase()), (snap) => {
+            if (!snap.exists()) return;
+            const wasOn = myGhostModeOn;
+            myGhostModeOn = !!snap.data().ghostModeEnabled;
+            myAirplaneModeOn = !!snap.data().airplaneModeEnabled;
+            applyAirplaneNetworkStateInConv();
+            // لو الوضع اتلغى دلوقتي وكان شغال، نعلّم أي رسايل واصلة
+            // ومتراكمة كـ unread إنها read فورًا (بدل ما تستنى رسالة
+            // جديدة توصل عشان الـ listener يتحرك تاني)
+            if (wasOn && !myGhostModeOn) {
+                markAlreadyVisibleIncomingMessagesAsRead();
+            }
+        }, (err) => {
+            console.error('فشل متابعة حالة وضع الشبح:', err);
+        });
+    }
+    listenToMyVipModes();
 
     function currentDisplayName() {
         return myContactName || otherRealName;
@@ -1116,92 +1152,7 @@ async function saveContact(myEmail, otherEmail) {
 
     function messagePreviewText(data) {
         if (data.deleted) return T.deleted_msg_text;
-        if (data.type === 'voice') return '🎤 ' + T.voice_message_label;
         return (data.text || '').length > 60 ? data.text.slice(0, 60) + '…' : (data.text || '');
-    }
-
-    function formatVoiceDuration(totalSeconds) {
-        const s = Math.max(0, Math.round(totalSeconds || 0));
-        const m = Math.floor(s / 60);
-        const rem = s % 60;
-        return m + ':' + String(rem).padStart(2, '0');
-    }
-
-    // ===== محتوى فقاعة الرسالة الصوتية: زرار تشغيل/إيقاف + شكل موجة
-    // بسيط ثابت (مش موجة حقيقية للصوت، مجرد تصميم) + مدة التسجيل =====
-    function buildVoiceBubbleContent(msg) {
-        const wrap = document.createElement('div');
-        wrap.className = 'bubble-voice';
-
-        const playBtn = document.createElement('button');
-        playBtn.className = 'bubble-voice-play';
-        playBtn.setAttribute('aria-label', T.voice_message_label);
-        playBtn.innerHTML = `
-            <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
-            <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-        `;
-
-        const wave = document.createElement('div');
-        wave.className = 'bubble-voice-wave';
-        const barCount = 22;
-        const bars = [];
-        for (let i = 0; i < barCount; i++) {
-            const bar = document.createElement('span');
-            bar.className = 'bubble-voice-wave-bar';
-            // ارتفاعات شبه عشوائية ثابتة (نفس القيمة كل مرة عشان الشكل
-            // ميتغيرش لما يعاد الرسم) بس بتدّي إحساس بصري بموجة صوت
-            const seed = (i * 37 + 11) % 17;
-            bar.style.height = (5 + seed) + 'px';
-            wave.appendChild(bar);
-            bars.push(bar);
-        }
-
-        const durationEl = document.createElement('span');
-        durationEl.className = 'bubble-voice-duration';
-        durationEl.textContent = formatVoiceDuration(msg.voiceDuration);
-
-        wrap.appendChild(playBtn);
-        wrap.appendChild(wave);
-        wrap.appendChild(durationEl);
-
-        let audioEl = null;
-
-        playBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (!audioEl) {
-                audioEl = new Audio(msg.audioUrl);
-                audioEl.addEventListener('timeupdate', () => {
-                    if (!audioEl.duration) return;
-                    const progress = audioEl.currentTime / audioEl.duration;
-                    const filledCount = Math.round(progress * bars.length);
-                    bars.forEach((b, i) => b.classList.toggle('filled', i < filledCount));
-                    durationEl.textContent = formatVoiceDuration(audioEl.duration - audioEl.currentTime);
-                });
-                audioEl.addEventListener('ended', () => {
-                    playBtn.classList.remove('playing');
-                    bars.forEach(b => b.classList.remove('filled'));
-                    durationEl.textContent = formatVoiceDuration(msg.voiceDuration);
-                });
-                audioEl.addEventListener('error', () => {
-                    showToast(T.voice_upload_failed);
-                });
-            }
-
-            if (playBtn.classList.contains('playing')) {
-                audioEl.pause();
-                playBtn.classList.remove('playing');
-            } else {
-                // نوقف أي تشغيل تاني شغال دلوقتي في نفس الشات قبل ما
-                // نشغّل ده، عشان مايتشغلوش صوتين مع بعض
-                document.querySelectorAll('.bubble-voice-play.playing').forEach(otherBtn => {
-                    if (otherBtn !== playBtn) otherBtn.click();
-                });
-                audioEl.play();
-                playBtn.classList.add('playing');
-            }
-        });
-
-        return wrap;
     }
 
     // رسالة نظام (زي "فلان غيّر لون الفقاعات") — شارة صغيرة في نص
@@ -1276,16 +1227,8 @@ async function saveContact(myEmail, otherEmail) {
 
         const textEl = document.createElement('p');
         textEl.className = 'bubble-text' + (msg.deleted ? ' deleted' : '');
-
-        if (msg.deleted) {
-            textEl.textContent = T.deleted_msg_text;
-            bubble.appendChild(textEl);
-        } else if (msg.type === 'voice' && msg.audioUrl) {
-            bubble.appendChild(buildVoiceBubbleContent(msg));
-        } else {
-            textEl.textContent = msg.text;
-            bubble.appendChild(textEl);
-        }
+        textEl.textContent = msg.deleted ? T.deleted_msg_text : msg.text;
+        bubble.appendChild(textEl);
 
         const meta = document.createElement('div');
         meta.className = 'bubble-meta';
@@ -2073,15 +2016,6 @@ async function saveContact(myEmail, otherEmail) {
     updateSendVisibility();
 
     // =====================================================
-    // 5.2) الرسايل الصوتية — متشالة بالكامل بناءً على طلب المستخدم.
-    // زرار المايك بيتخفي من الواجهة عشان محدش يقدر يضغط عليه، والرسايل
-    // الصوتية القديمة (لو موجودة في الشاتات القديمة) لسه بتتعرض عادي
-    // لأن كود العرض (buildVoiceBubbleContent) متسيبناش زي ما هو.
-    // =====================================================
-    const micBtn = document.getElementById('convMicBtn');
-    if (micBtn) micBtn.style.display = 'none';
-
-    // =====================================================
     // 6) الاتصال الفعلي بـ Firestore
     // =====================================================
     let myUid = null;
@@ -2356,7 +2290,16 @@ async function saveContact(myEmail, otherEmail) {
 
     const myEmailLower = myEmail.toLowerCase();
 
+    // آخر دفعة رسايل ظاهرة فعليًا في الشاشة (بنحدّثها في كل onSnapshot
+    // للرسايل، حتى لو مامسحناش أي حاجة بسبب وضع الشبح)، عشان لو
+    // الشبح اتلغى بعدين نعرف نعلّم اللي كان متراكم كـ unread فورًا.
+    let lastVisibleDocs = [];
+
     function markIncomingMessagesAsRead(docs) {
+        lastVisibleDocs = docs;
+        // وضع الشبح شغال عندي: منسيبش أي رسالة توصل من الطرف التاني
+        // تتحدث لـ read، عشان تفضل عنده تيك واحد بس زي ما هو متوقّع.
+        if (myGhostModeOn) return;
         docs.forEach(d => {
             const data = d.data();
             const isFromOther = (data.senderEmail || '').toLowerCase() !== myEmailLower;
@@ -2365,6 +2308,13 @@ async function saveContact(myEmail, otherEmail) {
                 updateStatusWithRetry(d.ref);
             }
         });
+    }
+
+    // بتتنادى لما وضع الشبح يتلغى: بتاخد آخر دفعة رسايل كانت ظاهرة
+    // وتعلّم أي حاجة متراكمة عندها unread إنها read دفعة واحدة.
+    function markAlreadyVisibleIncomingMessagesAsRead() {
+        if (myGhostModeOn) return;
+        markIncomingMessagesAsRead(lastVisibleDocs);
     }
 
     function sendMessage() {

@@ -31,6 +31,7 @@ import {
 import {
   getAuth,
   signInAnonymously,
+  signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
   deleteUser
@@ -110,6 +111,17 @@ async function ensureAuthenticated() {
   return result.user;
 }
 
+/**
+ * تسجيل دخول الأدمن بإيميل وباسورد حقيقيين (مش anonymous). مستخدمة
+ * بس في صفحة system.html. لازم تفعيل "Email/Password" من
+ * Firebase Console -> Authentication -> Sign-in method، وإنشاء
+ * حساب الأدمن (إيميل + باسورد) يدويًا من هناك مرة واحدة.
+ */
+async function signInAdmin(email, password) {
+  const result = await signInWithEmailAndPassword(auth, email, password);
+  return result.user;
+}
+
 export {
   db,
   auth,
@@ -134,9 +146,11 @@ export {
   disableNetwork,
   writeBatch,
   signInAnonymously,
+  signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
   deleteUser,
   waitForAuthUser,
-  ensureAuthenticated
+  ensureAuthenticated,
+  signInAdmin
 };

@@ -15,12 +15,10 @@ import {
     onSnapshot,
     writeBatch,
     ensureAuthenticated,
-    deleteUser
+    deleteUser,
+    enableNetwork,
+    disableNetwork
 } from "./firebase-init.js";
-
-// أيقونة البروفايل الافتراضية (بدل الحرف الأول من الاسم) — بتتحط جوه
-// دائرة chat-row-avatar، ولونها بياخد من CSS (fill: currentColor).
-const PROFILE_ICON_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 12.5c2.9 0 5.25-2.35 5.25-5.25S14.9 2 12 2s-5.25 2.35-5.25 5.25S9.1 12.5 12 12.5Zm0 2.25c-3.5 0-10.5 1.75-10.5 5.25V21a1 1 0 0 0 1 1h19a1 1 0 0 0 1-1v-1c0-3.5-7-5.25-10.5-5.25Z"/></svg>`;
 
 (function () {
     // ===== حماية الصفحة: أي حد يفتح MainActivity مباشرة من غير تسجيل دخول يترحّل =====
@@ -359,6 +357,7 @@ const PROFILE_ICON_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" xmlns="ht
             const realName = await getRealName(entry.otherEmail);
             entry.realName = realName;
             const name = displayNameForChat(entry) || realName;
+            const initial = name.charAt(0).toUpperCase();
             const timeStr = entry.lastAt ? formatChatTime(new Date(entry.lastAt)) : '';
             const unreadCount = entry.unread || 0;
             const unreadBadge = unreadCount > 0
@@ -383,7 +382,7 @@ const PROFILE_ICON_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" xmlns="ht
 
             return `
                 <div class="chat-row${unreadCount > 0 ? ' chat-row-unread' : ''}${entry.pinned ? ' chat-row-pinned' : ''}" data-email="${entry.otherEmail}" data-chat-id="${entry.chatId}" data-pinned="${entry.pinned ? '1' : '0'}">
-                    <div class="chat-row-avatar">${PROFILE_ICON_SVG}</div>
+                    <div class="chat-row-avatar">${initial}</div>
                     <div class="chat-row-text">
                         <h4 class="chat-row-name">${name}</h4>
                         ${previewHtml}
@@ -771,12 +770,180 @@ const PROFILE_ICON_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" xmlns="ht
         unreadUnsubscribers.set(chatId, unsub);
     }
 
+    // =====================================================
+    // وضع الطيران (Airplane Mode) + وضع الشبح (Ghost Mode) — VIP
+    // =====================================================
+    // بنقرا حالة الـ VIP وحالة الوضعين لايف من مستند اليوزر بتاعي،
+    // عشان لو الأدمن وافق على طلب VIP وأنا فاتح الصفحة، الزرارين
+    // يبقوا شغالين فورًا من غير ما أحتاج أعمل ريفريش.
+    let myVip = false;
+    let airplaneModeOn = false;
+    let ghostModeOn = false;
+    let networkDisabledLocally = false;
+
+    const sidebarAirplane = document.getElementById('sidebarAirplane');
+    const sidebarGhost = document.getElementById('sidebarGhost');
+    const sidebarAirplaneSwitch = document.getElementById('sidebarAirplaneSwitch');
+    const sidebarGhostSwitch = document.getElementById('sidebarGhostSwitch');
+    const sidebarAirplaneSub = document.getElementById('sidebarAirplaneSub');
+    const sidebarGhostSub = document.getElementById('sidebarGhostSub');
+
+    const airplaneConfirmTitle = document.getElementById('airplaneConfirmTitle');
+    const airplaneConfirmSub = document.getElementById('airplaneConfirmSub');
+    const airplaneConfirmBtn = document.getElementById('airplaneConfirmBtn');
+    const ghostConfirmTitle = document.getElementById('ghostConfirmTitle');
+    const ghostConfirmSub = document.getElementById('ghostConfirmSub');
+    const ghostConfirmBtn = document.getElementById('ghostConfirmBtn');
+    const vipRequiredGoBtn = document.getElementById('vipRequiredGoBtn');
+
+    function t(arText, enText) {
+        return (localStorage.getItem('cz_lang') || 'ar') === 'en' ? enText : arText;
+    }
+
+    function syncModeSwitches() {
+        if (sidebarAirplaneSwitch) sidebarAirplaneSwitch.classList.toggle('on', airplaneModeOn);
+        if (sidebarGhostSwitch) sidebarGhostSwitch.classList.toggle('on', ghostModeOn);
+        if (sidebarAirplaneSub) {
+            sidebarAirplaneSub.textContent = airplaneModeOn
+                ? t('مفعّل حاليًا — مش هتوصلك رسايل', 'Currently on — you won\'t receive messages')
+                : t('اقطع نفسك عن الإنترنت جوه التطبيق', 'Cut yourself off from the internet in-app');
+        }
+        if (sidebarGhostSub) {
+            sidebarGhostSub.textContent = ghostModeOn
+                ? t('مفعّل حاليًا — ردودك تيك واحد بس', 'Currently on — your replies show one check')
+                : t('ردودك توصل، وتفضل ظاهر صح واحدة بس', 'Your replies go through, but only a single check shows');
+        }
+    }
+
+    // بتتبع حالة الشبكة الفعلية بتاعة Firestore محليًا: لو وضع
+    // الطيران شغال بنقطع enableNetwork/disableNetwork دايمًا مهما
+    // كانت حالة الإنترنت الحقيقية بتاعة الجهاز، فمفيش رسايل جديدة
+    // (ولا حتى تحديثات حالة "مقروءة") توصل للصفحة دي طول ما هو شغال.
+    function applyAirplaneNetworkState() {
+        if (airplaneModeOn && !networkDisabledLocally) {
+            networkDisabledLocally = true;
+            disableNetwork(db).catch((e) => console.error('فشل قطع الاتصال بـ Firestore:', e));
+        } else if (!airplaneModeOn && networkDisabledLocally) {
+            networkDisabledLocally = false;
+            enableNetwork(db).catch((e) => console.error('فشل استرجاع الاتصال بـ Firestore:', e));
+        }
+    }
+
+    function listenToMyVipState(myUid) {
+        onSnapshot(doc(db, 'users', savedEmailLower), (snap) => {
+            if (!snap.exists()) return;
+            const data = snap.data();
+            myVip = !!data.vip;
+            airplaneModeOn = !!data.airplaneModeEnabled;
+            ghostModeOn = !!data.ghostModeEnabled;
+            syncModeSwitches();
+            applyAirplaneNetworkState();
+        }, (err) => {
+            console.error('فشل متابعة حالة VIP:', err);
+        });
+    }
+
+    async function setModeField(field, value) {
+        await updateDoc(doc(db, 'users', savedEmailLower), { [field]: value });
+    }
+
+    if (sidebarAirplane) {
+        sidebarAirplane.addEventListener('click', () => {
+            closeSidebarMenuIfOpen();
+            if (!myVip) {
+                openSheet('sheet-vip-required');
+                return;
+            }
+            if (airplaneConfirmTitle && airplaneConfirmSub && airplaneConfirmBtn) {
+                if (airplaneModeOn) {
+                    airplaneConfirmTitle.textContent = t('إلغاء وضع الطيران؟', 'Turn off Airplane Mode?');
+                    airplaneConfirmSub.textContent = t('هترجع تتصل بالإنترنت جوه التطبيق عادي وهتوصلك الرسايل تاني', "You'll reconnect to the internet in-app normally and start receiving messages again");
+                } else {
+                    airplaneConfirmTitle.textContent = t('تفعيل وضع الطيران؟', 'Turn on Airplane Mode?');
+                    airplaneConfirmSub.textContent = t('هتتقطع عن الإنترنت جوه التطبيق تمامًا، ومش هتوصلك أي رسايل جديدة لحد ما تلغيه', "You'll be disconnected from the internet in-app entirely, and won't receive any new messages until you turn it off");
+                }
+            }
+            openSheet('sheet-airplane-confirm');
+        });
+    }
+
+    if (airplaneConfirmBtn) {
+        airplaneConfirmBtn.addEventListener('click', async () => {
+            airplaneConfirmBtn.disabled = true;
+            const turningOff = airplaneModeOn;
+            try {
+                // لو بنلغي وضع الطيران، لازم نرجّع الاتصال بـ Firestore
+                // فورًا قبل ما نستنى الـ write نفسها، لأن الـ write دي
+                // مش هتوصل للسيرفر أصلاً طول ما الشبكة مقطوعة محليًا
+                // (Firestore بيسيبها pending للأبد من غير enableNetwork).
+                if (turningOff) {
+                    networkDisabledLocally = false;
+                    await enableNetwork(db).catch((e) => console.error('فشل استرجاع الاتصال بـ Firestore:', e));
+                }
+                await setModeField('airplaneModeEnabled', !airplaneModeOn);
+                closeSheet('sheet-airplane-confirm');
+            } catch (e) {
+                console.error('فشل تحديث وضع الطيران:', e);
+            }
+            airplaneConfirmBtn.disabled = false;
+        });
+    }
+
+    if (sidebarGhost) {
+        sidebarGhost.addEventListener('click', () => {
+            closeSidebarMenuIfOpen();
+            if (!myVip) {
+                openSheet('sheet-vip-required');
+                return;
+            }
+            if (ghostConfirmTitle && ghostConfirmSub && ghostConfirmBtn) {
+                if (ghostModeOn) {
+                    ghostConfirmTitle.textContent = t('إلغاء وضع الشبح؟', 'Turn off Ghost Mode?');
+                    ghostConfirmSub.textContent = t('هتفضل الرسايل تظهر تيكين زرقاء عادي زي ما هي في الأصل', 'Messages will go back to showing normal blue double checks');
+                } else {
+                    ghostConfirmTitle.textContent = t('تفعيل وضع الشبح؟', 'Turn on Ghost Mode?');
+                    ghostConfirmSub.textContent = t('ردودك هتوصل عادي، لكن هتفضل ظاهر عند الطرف التاني تيك واحد بس لحد ما تلغي الوضع', 'Your replies will go through normally, but the other side will only see a single check mark until you turn this off');
+                }
+            }
+            openSheet('sheet-ghost-confirm');
+        });
+    }
+
+    if (ghostConfirmBtn) {
+        ghostConfirmBtn.addEventListener('click', async () => {
+            ghostConfirmBtn.disabled = true;
+            try {
+                await setModeField('ghostModeEnabled', !ghostModeOn);
+                closeSheet('sheet-ghost-confirm');
+            } catch (e) {
+                console.error('فشل تحديث وضع الشبح:', e);
+            }
+            ghostConfirmBtn.disabled = false;
+        });
+    }
+
+    if (vipRequiredGoBtn) {
+        vipRequiredGoBtn.addEventListener('click', () => {
+            window.location.href = 'payment.html';
+        });
+    }
+
+    // ملحوظة: openSheet/closeSheet معرّفين فوق في قسم "Sheet helpers"
+    // كـ function declarations، فهم متاحين هنا فورًا (hoisting).
+    function closeSidebarMenuIfOpen() {
+        const sidebarMenuEl = document.getElementById('sidebarMenu');
+        const sidebarOverlayEl = document.getElementById('sidebarOverlay');
+        if (sidebarMenuEl) sidebarMenuEl.classList.remove('open');
+        if (sidebarOverlayEl) sidebarOverlayEl.classList.remove('open');
+    }
+
     async function initChatsList() {
         let myUid = null;
         try {
             const user = await ensureAuthenticated();
             myUid = user.uid;
             myUidGlobal = user.uid;
+            listenToMyVipState(myUid);
         } catch (e) {
             console.error('فشل تسجيل الدخول في Firebase Auth:', e);
             return;

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ChatZone — نظام الطلبات</title>
+<link rel="stylesheet" href="system.css">
+</head>
+<body>
+
+    <!-- ===== شاشة تسجيل دخول الأدمن ===== -->
+    <section class="sys-screen" id="sysLoginScreen">
+        <div class="sys-login-box">
+            <img src="chatzone.png" alt="ChatZone" class="sys-logo" onerror="this.style.display='none'">
+            <h1>نظام إدارة الطلبات</h1>
+            <p class="sys-login-sub">سجّل دخول بحساب الأدمن للمتابعة</p>
+
+            <div class="sys-field">
+                <label for="sysEmailInput">الإيميل</label>
+                <input type="email" id="sysEmailInput" placeholder="admin@example.com" autocomplete="username">
+            </div>
+            <div class="sys-field">
+                <label for="sysPasswordInput">الباسورد</label>
+                <input type="password" id="sysPasswordInput" placeholder="••••••••" autocomplete="current-password">
+            </div>
+
+            <p class="sys-error hidden" id="sysLoginError"></p>
+
+            <button class="sys-btn sys-btn-primary" id="sysLoginBtn">دخول</button>
+        </div>
+    </section>
+
+    <!-- ===== شاشة لوحة الطلبات ===== -->
+    <section class="sys-screen hidden" id="sysDashboardScreen">
+        <header class="sys-topbar">
+            <img src="chatzone.png" alt="ChatZone" class="sys-topbar-logo" onerror="this.style.display='none'">
+            <h1>طلبات تفعيل VIP</h1>
+            <button class="sys-logout-btn" id="sysLogoutBtn">خروج</button>
+        </header>
+
+        <div class="sys-tabs">
+            <button class="sys-tab active" id="sysTabPending" data-tab="pending">
+                قيد المراجعة <span class="sys-tab-count" id="sysPendingCount">0</span>
+            </button>
+            <button class="sys-tab" id="sysTabApproved" data-tab="approved">مقبولة</button>
+            <button class="sys-tab" id="sysTabRejected" data-tab="rejected">مرفوضة</button>
+        </div>
+
+        <div class="sys-list" id="sysList">
+            <div class="sys-empty" id="sysEmpty">
+                <div class="sys-empty-icon">📭</div>
+                <p>مفيش طلبات دلوقتي</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== شيت تفاصيل الطلب / الإيصال بحجم كامل ===== -->
+    <div class="sys-sheet-overlay" id="sysReceiptOverlay">
+        <div class="sys-sheet-box sys-sheet-box-receipt">
+            <div class="sys-sheet-close" id="sysReceiptClose">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <img id="sysReceiptImg" src="" alt="صورة الإيصال">
+        </div>
+    </div>
+
+    <!-- ===== شيت تأكيد الرفض (حذف نهائي) ===== -->
+    <div class="sys-sheet-overlay" id="sysRejectOverlay">
+        <div class="sys-sheet-box">
+            <h3>رفض الطلب نهائيًا؟</h3>
+            <p>هيتم حذف الطلب ده نهائيًا من السيستم ومن قاعدة البيانات، ومش هينفع ترجعه تاني.</p>
+            <div class="sys-sheet-actions">
+                <button class="sys-btn sys-btn-ghost" id="sysRejectCancelBtn">إلغاء</button>
+                <button class="sys-btn sys-btn-danger" id="sysRejectConfirmBtn">حذف ورفض</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="system.js"></script>
+</body>
+</html>
