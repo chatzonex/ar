@@ -850,10 +850,6 @@ import {
     if (sidebarAirplane) {
         sidebarAirplane.addEventListener('click', () => {
             closeSidebarMenuIfOpen();
-            if (!myVip) {
-                openSheet('sheet-vip-required');
-                return;
-            }
             if (airplaneConfirmTitle && airplaneConfirmSub && airplaneConfirmBtn) {
                 if (airplaneModeOn) {
                     airplaneConfirmTitle.textContent = t('إلغاء وضع الطيران؟', 'Turn off Airplane Mode?');
@@ -882,6 +878,10 @@ import {
                 }
                 await setModeField('airplaneModeEnabled', !airplaneModeOn);
                 closeSheet('sheet-airplane-confirm');
+                // ريستارت (ريفريش) للتطبيق بعد تأكيد التفعيل/الإلغاء
+                // عشان الحالة الجديدة تتطبق فعليًا من أول تحميل للصفحة.
+                window.location.reload();
+                return;
             } catch (e) {
                 console.error('فشل تحديث وضع الطيران:', e);
             }
@@ -892,10 +892,6 @@ import {
     if (sidebarGhost) {
         sidebarGhost.addEventListener('click', () => {
             closeSidebarMenuIfOpen();
-            if (!myVip) {
-                openSheet('sheet-vip-required');
-                return;
-            }
             if (ghostConfirmTitle && ghostConfirmSub && ghostConfirmBtn) {
                 if (ghostModeOn) {
                     ghostConfirmTitle.textContent = t('إلغاء وضع الشبح؟', 'Turn off Ghost Mode?');
@@ -915,16 +911,13 @@ import {
             try {
                 await setModeField('ghostModeEnabled', !ghostModeOn);
                 closeSheet('sheet-ghost-confirm');
+                // ريستارت (ريفريش) للتطبيق بعد تأكيد التفعيل/الإلغاء
+                window.location.reload();
+                return;
             } catch (e) {
                 console.error('فشل تحديث وضع الشبح:', e);
             }
             ghostConfirmBtn.disabled = false;
-        });
-    }
-
-    if (vipRequiredGoBtn) {
-        vipRequiredGoBtn.addEventListener('click', () => {
-            window.location.href = 'payment.html';
         });
     }
 
