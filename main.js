@@ -783,8 +783,9 @@ import {
 
     const sidebarAirplane = document.getElementById('sidebarAirplane');
     const sidebarGhost = document.getElementById('sidebarGhost');
-    const sidebarAirplaneSwitch = document.getElementById('sidebarAirplaneSwitch');
-    const sidebarGhostSwitch = document.getElementById('sidebarGhostSwitch');
+    const sidebarRestart = document.getElementById('sidebarRestart');
+    const sidebarAirplaneCheck = document.getElementById('sidebarAirplaneCheck');
+    const sidebarGhostCheck = document.getElementById('sidebarGhostCheck');
     const sidebarAirplaneSub = document.getElementById('sidebarAirplaneSub');
     const sidebarGhostSub = document.getElementById('sidebarGhostSub');
 
@@ -801,8 +802,8 @@ import {
     }
 
     function syncModeSwitches() {
-        if (sidebarAirplaneSwitch) sidebarAirplaneSwitch.classList.toggle('on', airplaneModeOn);
-        if (sidebarGhostSwitch) sidebarGhostSwitch.classList.toggle('on', ghostModeOn);
+        if (sidebarAirplaneCheck) sidebarAirplaneCheck.classList.toggle('on', airplaneModeOn);
+        if (sidebarGhostCheck) sidebarGhostCheck.classList.toggle('on', ghostModeOn);
         if (sidebarAirplaneSub) {
             sidebarAirplaneSub.textContent = airplaneModeOn
                 ? t('مفعّل حاليًا — مش هتوصلك رسايل', 'Currently on — you won\'t receive messages')
@@ -918,6 +919,13 @@ import {
                 console.error('فشل تحديث وضع الشبح:', e);
             }
             ghostConfirmBtn.disabled = false;
+        });
+    }
+
+    if (sidebarRestart) {
+        sidebarRestart.addEventListener('click', () => {
+            closeSidebarMenuIfOpen();
+            window.location.reload();
         });
     }
 
