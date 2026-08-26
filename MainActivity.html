@@ -63,7 +63,6 @@
                 </div>
                 <div class="sidebar-item-text">
                     <h4 data-i18n="sidebar_airplane">وضع الطيران</h4>
-                    <p data-i18n="sidebar_airplane_sub" id="sidebarAirplaneSub">اقطع نفسك عن الإنترنت جوه التطبيق</p>
                 </div>
             </div>
             <div class="sidebar-item sidebar-item-toggle" id="sidebarGhost">
@@ -75,7 +74,6 @@
                 </div>
                 <div class="sidebar-item-text">
                     <h4 data-i18n="sidebar_ghost">وضع الشبح</h4>
-                    <p data-i18n="sidebar_ghost_sub" id="sidebarGhostSub">ردودك توصل، وتفضل ظاهر صح واحدة بس</p>
                 </div>
             </div>
             <div class="sidebar-item" id="sidebarRestart">
@@ -84,7 +82,6 @@
                 </div>
                 <div class="sidebar-item-text">
                     <h4 data-i18n="sidebar_restart">إعادة تشغيل التطبيق</h4>
-                    <p data-i18n="sidebar_restart_sub" id="sidebarRestartSub">يعمل ريفريش فوري للتطبيق</p>
                 </div>
             </div>
         </div>
@@ -142,6 +139,24 @@
                 <div class="confirm-sheet-actions">
                     <button class="confirm-sheet-btn" id="ghostConfirmBtn" data-i18n="btn_confirm">تأكيد</button>
                     <button class="confirm-sheet-btn cancel" data-close-sheet="sheet-ghost-confirm" data-i18n="btn_cancel">إلغاء</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Mode conflict sheet (Airplane & Ghost can't both be on) ===== -->
+        <div class="sheet-overlay" id="sheet-mode-conflict">
+            <div class="sheet-box">
+                <div class="sheet-grabber"></div>
+                <div class="sheet-close" data-close-sheet="sheet-mode-conflict">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </div>
+                <div class="sheet-icon">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                </div>
+                <div class="sheet-title" id="modeConflictTitle" data-i18n="mode_conflict_title">لازم تلغي وضع تاني الأول</div>
+                <div class="sheet-sub" id="modeConflictSub" data-i18n="mode_conflict_sub">مينفعش تشغّل وضع الطيران ووضع الشبح مع بعض في نفس الوقت</div>
+                <div class="confirm-sheet-actions">
+                    <button class="confirm-sheet-btn cancel" data-close-sheet="sheet-mode-conflict" data-i18n="btn_ok">تمام</button>
                 </div>
             </div>
         </div>

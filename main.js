@@ -786,8 +786,6 @@ import {
     const sidebarRestart = document.getElementById('sidebarRestart');
     const sidebarAirplaneCheck = document.getElementById('sidebarAirplaneCheck');
     const sidebarGhostCheck = document.getElementById('sidebarGhostCheck');
-    const sidebarAirplaneSub = document.getElementById('sidebarAirplaneSub');
-    const sidebarGhostSub = document.getElementById('sidebarGhostSub');
 
     const airplaneConfirmTitle = document.getElementById('airplaneConfirmTitle');
     const airplaneConfirmSub = document.getElementById('airplaneConfirmSub');
@@ -796,24 +794,32 @@ import {
     const ghostConfirmSub = document.getElementById('ghostConfirmSub');
     const ghostConfirmBtn = document.getElementById('ghostConfirmBtn');
     const vipRequiredGoBtn = document.getElementById('vipRequiredGoBtn');
+    const modeConflictTitle = document.getElementById('modeConflictTitle');
+    const modeConflictSub = document.getElementById('modeConflictSub');
 
     function t(arText, enText) {
         return (localStorage.getItem('cz_lang') || 'ar') === 'en' ? enText : arText;
     }
 
+    // بيمنع تشغيل وضع الطيران ووضع الشبح مع بعض في نفس الوقت.
+    // بيرجع true (ويوقف الإجراء) لو المستخدم بيحاول يفعّل وضع
+    // وهو أصلاً مفعّل عنده الوضع التاني.
+    function blockIfOtherModeOn(turningOn, otherModeOn, otherModeNameAr, otherModeNameEn) {
+        if (!turningOn || !otherModeOn) return false;
+        if (modeConflictTitle && modeConflictSub) {
+            modeConflictTitle.textContent = t('لازم تلغي وضع تاني الأول', 'Turn off the other mode first');
+            modeConflictSub.textContent = t(
+                `مينفعش تشغّل الوضعين مع بعض. لازم تلغي ${otherModeNameAr} الأول قبل ما تفعّل ده`,
+                `You can't run both modes at once. Turn off ${otherModeNameEn} first before enabling this one`
+            );
+        }
+        openSheet('sheet-mode-conflict');
+        return true;
+    }
+
     function syncModeSwitches() {
         if (sidebarAirplaneCheck) sidebarAirplaneCheck.classList.toggle('on', airplaneModeOn);
         if (sidebarGhostCheck) sidebarGhostCheck.classList.toggle('on', ghostModeOn);
-        if (sidebarAirplaneSub) {
-            sidebarAirplaneSub.textContent = airplaneModeOn
-                ? t('مفعّل حاليًا — مش هتوصلك رسايل', 'Currently on — you won\'t receive messages')
-                : t('اقطع نفسك عن الإنترنت جوه التطبيق', 'Cut yourself off from the internet in-app');
-        }
-        if (sidebarGhostSub) {
-            sidebarGhostSub.textContent = ghostModeOn
-                ? t('مفعّل حاليًا — ردودك تيك واحد بس', 'Currently on — your replies show one check')
-                : t('ردودك توصل، وتفضل ظاهر صح واحدة بس', 'Your replies go through, but only a single check shows');
-        }
     }
 
     // بتتبع حالة الشبكة الفعلية بتاعة Firestore محليًا: لو وضع
@@ -851,6 +857,7 @@ import {
     if (sidebarAirplane) {
         sidebarAirplane.addEventListener('click', () => {
             closeSidebarMenuIfOpen();
+            if (blockIfOtherModeOn(!airplaneModeOn, ghostModeOn, 'وضع الشبح', 'Ghost Mode')) return;
             if (airplaneConfirmTitle && airplaneConfirmSub && airplaneConfirmBtn) {
                 if (airplaneModeOn) {
                     airplaneConfirmTitle.textContent = t('إلغاء وضع الطيران؟', 'Turn off Airplane Mode?');
@@ -867,21 +874,17 @@ import {
     if (airplaneConfirmBtn) {
         airplaneConfirmBtn.addEventListener('click', async () => {
             airplaneConfirmBtn.disabled = true;
-            const turningOff = airplaneModeOn;
             try {
-                // لو بنلغي وضع الطيران، لازم نرجّع الاتصال بـ Firestore
-                // فورًا قبل ما نستنى الـ write نفسها، لأن الـ write دي
-                // مش هتوصل للسيرفر أصلاً طول ما الشبكة مقطوعة محليًا
-                // (Firestore بيسيبها pending للأبد من غير enableNetwork).
-                if (turningOff) {
-                    networkDisabledLocally = false;
-                    await enableNetwork(db).catch((e) => console.error('فشل استرجاع الاتصال بـ Firestore:', e));
-                }
+                // بنرجّع الاتصال بـ Firestore دايمًا قبل أي كتابة (تفعيل
+                // أو إلغاء)، عشان نضمن إن التحديث بيوصل للسيرفر فعليًا
+                // ومش بيفضل عالق كـ pending لو الشبكة كانت مقطوعة محليًا.
+                networkDisabledLocally = false;
+                await enableNetwork(db).catch((e) => console.error('فشل استرجاع الاتصال بـ Firestore:', e));
                 await setModeField('airplaneModeEnabled', !airplaneModeOn);
                 closeSheet('sheet-airplane-confirm');
-                // ريستارت (ريفريش) للتطبيق بعد تأكيد التفعيل/الإلغاء
-                // عشان الحالة الجديدة تتطبق فعليًا من أول تحميل للصفحة.
-                window.location.reload();
+                // مهلة صغيرة قبل الريفريش عشان نضمن إن التحديث اتخزن
+                // فعليًا (محليًا وعلى السيرفر) قبل ما الصفحة تعيد التحميل.
+                setTimeout(() => window.location.reload(), 350);
                 return;
             } catch (e) {
                 console.error('فشل تحديث وضع الطيران:', e);
@@ -893,6 +896,7 @@ import {
     if (sidebarGhost) {
         sidebarGhost.addEventListener('click', () => {
             closeSidebarMenuIfOpen();
+            if (blockIfOtherModeOn(!ghostModeOn, airplaneModeOn, 'وضع الطيران', 'Airplane Mode')) return;
             if (ghostConfirmTitle && ghostConfirmSub && ghostConfirmBtn) {
                 if (ghostModeOn) {
                     ghostConfirmTitle.textContent = t('إلغاء وضع الشبح؟', 'Turn off Ghost Mode?');
@@ -910,10 +914,12 @@ import {
         ghostConfirmBtn.addEventListener('click', async () => {
             ghostConfirmBtn.disabled = true;
             try {
+                // نفس ضمان الاتصال قبل الكتابة، حتى لو مفروض إن الشبكة
+                // شغالة عادي، عشان نغطي أي حالة كانت اتقطعت فيها قبل كده.
+                await enableNetwork(db).catch((e) => console.error('فشل استرجاع الاتصال بـ Firestore:', e));
                 await setModeField('ghostModeEnabled', !ghostModeOn);
                 closeSheet('sheet-ghost-confirm');
-                // ريستارت (ريفريش) للتطبيق بعد تأكيد التفعيل/الإلغاء
-                window.location.reload();
+                setTimeout(() => window.location.reload(), 350);
                 return;
             } catch (e) {
                 console.error('فشل تحديث وضع الشبح:', e);
