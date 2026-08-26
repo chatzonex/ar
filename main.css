@@ -504,12 +504,9 @@ html[dir="ltr"] .sidebar {
     min-width: 0;
 }
 
-.sidebar-item-icon-air {
-    color: #7C9BFF;
-}
-
+.sidebar-item-icon-air,
 .sidebar-item-icon-ghost {
-    color: #C7CBD6;
+    color: var(--text);
 }
 
 .sidebar-item-switch {
