@@ -1,3 +1,5 @@
+import { db, doc, getDoc, updateDoc, ensureAuthenticated } from "./firebase-init.js";
+
 (function () {
     // ===== فتح/قفل الـ Sheets =====
     function openSheet(id) {
@@ -518,6 +520,102 @@
     }
     if (savedEmail && profileEmail) {
         profileEmail.textContent = savedEmail;
+    }
+
+    function t(arText, enText) {
+        return (localStorage.getItem('cz_lang') || 'ar') === 'en' ? enText : arText;
+    }
+
+    // ===== صورة البروفايل (رفع على Cloudinary + حفظ الرابط في Firestore) =====
+    const CLOUDINARY_CLOUD_NAME = 'rkeddyph';
+    const CLOUDINARY_UPLOAD_PRESET = 'chatzone_upload_image';
+    const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+    const profileAvatarIcon = document.getElementById('profileAvatarIcon');
+    const avatarFileInput = document.getElementById('avatarFileInput');
+    const avatarUploadBtn = document.getElementById('avatarUploadBtn');
+    const savedEmailLowerForAvatar = savedEmail ? savedEmail.toLowerCase() : '';
+
+    // بيعرض الصورة الحالية جوه دايرة البروفايل، أو يرجّع الأيقونة
+    // الافتراضية لو مفيش صورة محفوظة أصلاً.
+    function renderProfileAvatarImage(photoURL) {
+        if (!profileAvatar) return;
+        let img = profileAvatar.querySelector('.profile-avatar-img');
+        if (photoURL) {
+            if (!img) {
+                img = document.createElement('img');
+                img.className = 'profile-avatar-img';
+                img.alt = '';
+                profileAvatar.appendChild(img);
+            }
+            img.src = photoURL;
+            if (profileAvatarIcon) profileAvatarIcon.style.display = 'none';
+        } else {
+            if (img) img.remove();
+            if (profileAvatarIcon) profileAvatarIcon.style.display = '';
+        }
+    }
+
+    // أول ما تفتح صفحة الإعدادات، نجيب صورة البروفايل المحفوظة (لو
+    // موجودة) من Firestore ونعرضها فورًا.
+    (async function loadSavedAvatar() {
+        if (!savedEmailLowerForAvatar) return;
+        try {
+            const snap = await getDoc(doc(db, 'users', savedEmailLowerForAvatar));
+            const photoURL = snap.exists() && snap.data().photoURL ? snap.data().photoURL : '';
+            if (photoURL) renderProfileAvatarImage(photoURL);
+        } catch (e) {
+            console.warn('تعذّر تحميل صورة البروفايل:', e);
+        }
+    })();
+
+    if (avatarUploadBtn && avatarFileInput) {
+        avatarUploadBtn.addEventListener('click', () => avatarFileInput.click());
+
+        avatarFileInput.addEventListener('change', async () => {
+            const file = avatarFileInput.files && avatarFileInput.files[0];
+            avatarFileInput.value = ''; // يسمح باختيار نفس الملف تاني لو حصل خطأ
+            if (!file || !savedEmailLowerForAvatar) return;
+
+            // نتأكد إنها فعلاً صورة، وحجمها معقول قبل ما نرفعها
+            if (!file.type.startsWith('image/')) {
+                alert(t('من فضلك اختر ملف صورة صالح', 'Please choose a valid image file'));
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                alert(t('حجم الصورة كبير جدًا (الحد الأقصى 5 ميجا)', 'Image is too large (max 5MB)'));
+                return;
+            }
+
+            if (profileAvatar) profileAvatar.classList.add('profile-avatar-uploading');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+                const uploadRes = await fetch(CLOUDINARY_UPLOAD_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (!uploadRes.ok) throw new Error('فشل الرفع إلى Cloudinary');
+                const uploadData = await uploadRes.json();
+                const photoURL = uploadData.secure_url;
+                if (!photoURL) throw new Error('لم يتم استلام رابط الصورة');
+
+                // نتأكد إن فيه جلسة Firebase Auth (anonymous على الأقل) قبل
+                // الكتابة، بنفس المنطق المستخدم في باقي الصفحة.
+                await ensureAuthenticated();
+                await updateDoc(doc(db, 'users', savedEmailLowerForAvatar), { photoURL });
+
+                renderProfileAvatarImage(photoURL);
+            } catch (err) {
+                console.error('خطأ أثناء رفع صورة البروفايل:', err);
+                alert(t('حصل خطأ أثناء رفع الصورة، حاول تاني', 'Something went wrong uploading the image, please try again'));
+            } finally {
+                if (profileAvatar) profileAvatar.classList.remove('profile-avatar-uploading');
+            }
+        });
     }
 
     // ===== قائمة التلت نقط (Dropdown Menu) =====

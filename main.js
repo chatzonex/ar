@@ -238,15 +238,28 @@ import {
     const nameCache = new Map();
 
     async function getRealName(email) {
+        const profile = await getUserProfile(email);
+        return profile.name;
+    }
+
+    // زي getRealName بالظبط، بس بيرجّع كمان رابط صورة البروفايل (لو
+    // المستخدم رفعها عن طريق Cloudinary وحفظناها في users/{email}.photoURL).
+    // بنستخدم نفس الكاش (nameCache) عشان مش هنعمل getDoc تاني لو
+    // getRealName اتنادت قبل كده لنفس الإيميل.
+    async function getUserProfile(email) {
         const key = email.toLowerCase();
         if (nameCache.has(key)) return nameCache.get(key);
         try {
             const snap = await getDoc(doc(db, 'users', key));
-            const name = snap.exists() && snap.data().name ? snap.data().name : displayNameFromEmail(email);
-            nameCache.set(key, name);
-            return name;
+            const data = snap.exists() ? snap.data() : null;
+            const profile = {
+                name: (data && data.name) ? data.name : displayNameFromEmail(email),
+                photoURL: (data && data.photoURL) ? data.photoURL : ''
+            };
+            nameCache.set(key, profile);
+            return profile;
         } catch (e) {
-            return displayNameFromEmail(email);
+            return { name: displayNameFromEmail(email), photoURL: '' };
         }
     }
 
@@ -352,10 +365,15 @@ import {
         const pinIconSvg = `<svg class="chat-row-pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>`;
 
         const rows = await Promise.all(entries.map(async (entry) => {
-            const realName = await getRealName(entry.otherEmail);
-            entry.realName = realName;
-            const name = displayNameForChat(entry) || realName;
-            const initial = name.charAt(0).toUpperCase();
+            const profile = await getUserProfile(entry.otherEmail);
+            entry.realName = profile.name;
+            const name = displayNameForChat(entry) || profile.name;
+            const avatarInnerHtml = profile.photoURL
+                ? `<img class="chat-row-avatar-img" src="${profile.photoURL}" alt="">`
+                : `<svg class="chat-row-avatar-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                   </svg>`;
             const timeStr = entry.lastAt ? formatChatTime(new Date(entry.lastAt)) : '';
             const unreadCount = entry.unread || 0;
             const unreadBadge = unreadCount > 0
@@ -380,12 +398,7 @@ import {
 
             return `
                 <div class="chat-row${unreadCount > 0 ? ' chat-row-unread' : ''}${entry.pinned ? ' chat-row-pinned' : ''}" data-email="${entry.otherEmail}" data-chat-id="${entry.chatId}" data-pinned="${entry.pinned ? '1' : '0'}">
-                    <div class="chat-row-avatar">
-                        <svg class="chat-row-avatar-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
-                            <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                        </svg>
-                    </div>
+                    <div class="chat-row-avatar">${avatarInnerHtml}</div>
                     <div class="chat-row-text">
                         <h4 class="chat-row-name">${name}</h4>
                         ${previewHtml}

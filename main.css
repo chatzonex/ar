@@ -285,6 +285,13 @@ body {
     color: #9BA0A6;
 }
 
+.chat-row-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
 .chat-row-text {
     flex: 1;
     min-width: 0;
@@ -381,6 +388,7 @@ body {
 }
 
 .profile-avatar {
+    position: relative;
     width: 56px;
     height: 56px;
     border-radius: 50%;
@@ -397,6 +405,40 @@ body {
     width: 62%;
     height: 62%;
     color: #9BA0A6;
+}
+
+.profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.profile-avatar-upload-btn {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--grad);
+    border: 2px solid #0B0C0E;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #06110C;
+    cursor: pointer;
+    padding: 0;
+}
+
+.profile-avatar-upload-btn svg {
+    width: 60%;
+    height: 60%;
+}
+
+.profile-avatar-uploading {
+    opacity: 0.55;
+    pointer-events: none;
 }
 
 
