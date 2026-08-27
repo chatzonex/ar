@@ -109,6 +109,50 @@ body.theme-white .theme-toggle-btn .icon-sun {
     display: block;
 }
 
+/* ===== Language toggle button ===== */
+.lang-toggle-btn {
+    position: absolute;
+    top: 18px;
+    left: 68px;
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-strong);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 5;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.lang-toggle-btn:active {
+    transform: scale(0.9);
+}
+
+body.lang-en .lang-toggle-btn {
+    right: 18px;
+    left: auto;
+}
+
+/* Mirror the layout when English/LTR is active */
+body.lang-en .theme-toggle-btn {
+    left: auto;
+    right: 18px;
+}
+
+body.lang-en .lang-toggle-btn {
+    left: auto;
+    right: 68px;
+}
+
 .auth-top {
     margin-bottom: 26px;
 }
@@ -203,6 +247,11 @@ body.theme-white .auth-card {
 
 .field-group input:focus {
     border-color: var(--accent);
+}
+
+body.lang-en .field-group input {
+    direction: ltr;
+    text-align: left;
 }
 
 .field-group input.error {

@@ -24,6 +24,18 @@ import { ensureAuthenticated } from "./firebase-init.js";
 
     targetEmailEl.textContent = pendingEmail;
 
+    function isEn() {
+        return (window.czGetLang ? window.czGetLang() : 'ar') === 'en';
+    }
+
+    // لما اللغة تتغيّر، auth-lang.js بيستبدل innerHTML بتاع الجملة
+    // اللي جوّاها #targetEmail (عشان يترجم النص المحيط)، فده بيمسح
+    // الإيميل الحقيقي اللي حطيناه. نعيد ضبطه تاني بعد كل تبديل لغة.
+    document.addEventListener('czlangchange', () => {
+        const emailEl = document.getElementById('targetEmail');
+        if (emailEl) emailEl.textContent = pendingEmail;
+    });
+
     function showToast(message, isError) {
         toast.textContent = message;
         toast.className = 'toast show' + (isError ? ' error' : '');
@@ -58,7 +70,7 @@ import { ensureAuthenticated } from "./firebase-init.js";
             box.classList.add('verified');
         });
         if (otpRow) otpRow.classList.add('show-result', 'result-correct');
-        verifyStatus.innerHTML = '<span class="dot"></span> تم التأكيد بنجاح';
+        verifyStatus.innerHTML = '<span class="dot"></span> ' + (isEn() ? 'Confirmed successfully' : 'تم التأكيد بنجاح');
     }
 
     function markWrong() {
@@ -87,7 +99,7 @@ import { ensureAuthenticated } from "./firebase-init.js";
         const { code, expiresAt } = getStoredCode();
 
         if (!code || Date.now() > expiresAt) {
-            showToast('الكود انتهت صلاحيته، ابعت كود جديد', true);
+            showToast(isEn() ? 'The code has expired, send a new one' : 'الكود انتهت صلاحيته، ابعت كود جديد', true);
             shakeBoxes();
             return;
         }
@@ -97,13 +109,13 @@ import { ensureAuthenticated } from "./firebase-init.js";
             // (anonymous) عشان يبقى عند المستخدم request.auth.uid حقيقي
             // تعتمد عليه Firestore Rules، مش مجرد قيمة في localStorage.
             otpBoxes.forEach(box => box.disabled = true);
-            verifyStatus.innerHTML = '<span class="dot"></span> جاري تسجيل الدخول...';
+            verifyStatus.innerHTML = '<span class="dot"></span> ' + (isEn() ? 'Signing in...' : 'جاري تسجيل الدخول...');
 
             try {
                 await ensureAuthenticated();
             } catch (err) {
                 console.error('فشل تسجيل الدخول في Firebase Auth:', err);
-                showToast('حصل خطأ أثناء تسجيل الدخول، حاول تاني', true);
+                showToast(isEn() ? 'Something went wrong signing in, try again' : 'حصل خطأ أثناء تسجيل الدخول، حاول تاني', true);
                 otpBoxes.forEach(box => box.disabled = false);
                 verifyStatus.innerHTML = '';
                 return;
@@ -117,7 +129,7 @@ import { ensureAuthenticated } from "./firebase-init.js";
                 window.location.href = 'profile.html';
             }, 900);
         } else {
-            showToast('الكود غلط، حاول تاني', true);
+            showToast(isEn() ? 'Wrong code, try again' : 'الكود غلط، حاول تاني', true);
             shakeBoxes();
         }
     }
@@ -187,11 +199,11 @@ import { ensureAuthenticated } from "./firebase-init.js";
             });
             localStorage.setItem('cz_pending_code', code);
             localStorage.setItem('cz_pending_expires', String(expiresAt));
-            showToast('اتبعت كود جديد على إيميلك');
+            showToast(isEn() ? 'A new code has been sent to your email' : 'اتبعت كود جديد على إيميلك');
             startCooldown();
         } catch (err) {
             console.error('Resend failed:', err);
-            showToast('حصل خطأ أثناء إرسال الكود، حاول تاني', true);
+            showToast(isEn() ? 'Something went wrong sending the code, try again' : 'حصل خطأ أثناء إرسال الكود، حاول تاني', true);
             resendLink.classList.remove('disabled');
         }
     }

@@ -34,15 +34,19 @@
 
     emailInput.addEventListener('input', clearError);
 
+    function isEn() {
+        return (window.czGetLang ? window.czGetLang() : 'ar') === 'en';
+    }
+
     async function handleSend() {
         const email = emailInput.value.trim().toLowerCase();
 
         if (!email) {
-            showError('من فضلك اكتب إيميلك');
+            showError(isEn() ? 'Please enter your email' : 'من فضلك اكتب إيميلك');
             return;
         }
         if (!isValidEmail(email)) {
-            showError('الإيميل ده مش صحيح، تأكد منه');
+            showError(isEn() ? "This email doesn't look right" : 'الإيميل ده مش صحيح، تأكد منه');
             return;
         }
 
@@ -65,7 +69,7 @@
             window.location.href = 'verify.html';
         } catch (err) {
             console.error('EmailJS send failed:', err);
-            showError('حصل خطأ أثناء إرسال الكود، حاول تاني');
+            showError(isEn() ? 'Something went wrong sending the code, try again' : 'حصل خطأ أثناء إرسال الكود، حاول تاني');
             setLoading(false);
         }
     }

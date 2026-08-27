@@ -31,12 +31,12 @@ import { db, doc, getDoc, setDoc, serverTimestamp, ensureAuthenticated } from ".
             if (!file) return;
 
             if (!file.type.startsWith('image/')) {
-                showToast('من فضلك اختر ملف صورة صالح', true);
+                showToast(isEn() ? 'Please choose a valid image file' : 'من فضلك اختر ملف صورة صالح', true);
                 profilePicInput.value = '';
                 return;
             }
             if (file.size > 5 * 1024 * 1024) {
-                showToast('حجم الصورة كبير جدًا (الحد الأقصى 5 ميجا)', true);
+                showToast(isEn() ? 'Image is too large (5MB max)' : 'حجم الصورة كبير جدًا (الحد الأقصى 5 ميجا)', true);
                 profilePicInput.value = '';
                 return;
             }
@@ -57,9 +57,9 @@ import { db, doc, getDoc, setDoc, serverTimestamp, ensureAuthenticated } from ".
         formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
         const uploadRes = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
-        if (!uploadRes.ok) throw new Error('فشل الرفع إلى Cloudinary');
+        if (!uploadRes.ok) throw new Error(isEn() ? 'Upload to Cloudinary failed' : 'فشل الرفع إلى Cloudinary');
         const uploadData = await uploadRes.json();
-        if (!uploadData.secure_url) throw new Error('لم يتم استلام رابط الصورة');
+        if (!uploadData.secure_url) throw new Error(isEn() ? 'No image URL was received' : 'لم يتم استلام رابط الصورة');
         return uploadData.secure_url;
     }
 
@@ -77,6 +77,10 @@ import { db, doc, getDoc, setDoc, serverTimestamp, ensureAuthenticated } from ".
     // اتحفظ هنا بحروف كابيتال، أي بحث بعد كده هيدور على مستند تاني
     // (مش موجود) وهيفشل التحقق من الملكية أو جلب الاسم الحقيقي.
     const verifiedEmailLower = verifiedEmail.toLowerCase();
+
+    function isEn() {
+        return (window.czGetLang ? window.czGetLang() : 'ar') === 'en';
+    }
 
     function showToast(message, isError) {
         toast.textContent = message;
@@ -142,7 +146,7 @@ import { db, doc, getDoc, setDoc, serverTimestamp, ensureAuthenticated } from ".
             const existingSnap = await getDoc(userDocRef);
             if (existingSnap.exists() && existingSnap.data().uid && existingSnap.data().uid !== user.uid) {
                 console.error('محاولة تعديل مستند مستخدم بجلسة Auth غير مطابقة لصاحبه الأصلي.');
-                showToast('في مشكلة في جلسة الدخول، سجّل الكود تاني من صفحة التأكيد', true);
+                showToast(isEn() ? 'There\u2019s an issue with your sign-in session, re-enter the code from the verification page' : 'في مشكلة في جلسة الدخول، سجّل الكود تاني من صفحة التأكيد', true);
                 setLoading(false);
                 return;
             }
@@ -160,14 +164,14 @@ import { db, doc, getDoc, setDoc, serverTimestamp, ensureAuthenticated } from ".
             localStorage.setItem('cz_user_name', name);
             localStorage.setItem('cz_uid', user.uid);
 
-            showToast('تم حفظ اسمك بنجاح');
+            showToast(isEn() ? 'Your name has been saved' : 'تم حفظ اسمك بنجاح');
 
             setTimeout(() => {
                 window.location.href = 'MainActivity.html';
             }, 900);
         } catch (err) {
             console.error('فشل حفظ الاسم في Firestore:', err);
-            showToast('حصل خطأ أثناء حفظ الاسم، حاول تاني', true);
+            showToast(isEn() ? 'Something went wrong saving your name, try again' : 'حصل خطأ أثناء حفظ الاسم، حاول تاني', true);
             setLoading(false);
         }
     }
@@ -176,11 +180,11 @@ import { db, doc, getDoc, setDoc, serverTimestamp, ensureAuthenticated } from ".
         const name = nameInput.value.trim();
 
         if (!name) {
-            showError('من فضلك اكتب اسمك');
+            showError(isEn() ? 'Please enter your name' : 'من فضلك اكتب اسمك');
             return;
         }
         if (name.length < 2) {
-            showError('الاسم قصير جدًا');
+            showError(isEn() ? 'Name is too short' : 'الاسم قصير جدًا');
             return;
         }
 
@@ -232,7 +236,9 @@ import { db, doc, getDoc, setDoc, serverTimestamp, ensureAuthenticated } from ".
     if (contactDevBtn) {
         contactDevBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            const message = `${verifiedEmailLower}\n\nبعد إذنك، المشكلة هي:`;
+            const message = isEn()
+                ? `${verifiedEmailLower}\n\nHi, the issue I'm facing is:`
+                : `${verifiedEmailLower}\n\nبعد إذنك، المشكلة هي:`;
             const waLink = `https://wa.me/${DEV_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
             window.open(waLink, '_blank');
         });
