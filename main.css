@@ -376,17 +376,24 @@ body {
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background: var(--grad);
+    background: #16181B;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: 700;
-    color: #06110C;
-    box-shadow: 0 6px 18px rgba(37, 217, 160, 0.28);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
     flex-shrink: 0;
+    overflow: hidden;
 }
+
+.profile-avatar-icon {
+    width: 62%;
+    height: 62%;
+}
+
+.profile-avatar-icon-l1 { fill: #6B6F74; }
+.profile-avatar-icon-l2 { fill: #82868C; }
+.profile-avatar-icon-l3 { fill: #9BA0A6; }
+.profile-avatar-icon-l4 { fill: #C6C9CD; }
 
 .profile-name {
     font-family: var(--font-display);

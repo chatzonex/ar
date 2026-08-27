@@ -513,9 +513,8 @@
     const savedName = localStorage.getItem('cz_user_name');
     const savedEmail = localStorage.getItem('cz_verified_email');
 
-    if (savedName && profileName && profileAvatar) {
+    if (savedName && profileName) {
         profileName.textContent = savedName;
-        profileAvatar.textContent = savedName.trim().charAt(0).toUpperCase();
     }
     if (savedEmail && profileEmail) {
         profileEmail.textContent = savedEmail;

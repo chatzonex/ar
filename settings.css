@@ -659,10 +659,19 @@ body.theme-white .sheet-close {
 
 body.theme-white .modal-btn-primary,
 body.theme-white .nav-btn.active,
-body.theme-white .add-btn,
-body.theme-white .profile-avatar {
+body.theme-white .add-btn {
     color: #FFFFFF;
 }
+
+body.theme-white .profile-avatar {
+    background: #E4E6E8;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+body.theme-white .profile-avatar-icon-l1 { fill: #B9BDC2; }
+body.theme-white .profile-avatar-icon-l2 { fill: #C7CACE; }
+body.theme-white .profile-avatar-icon-l3 { fill: #DBDDDF; }
+body.theme-white .profile-avatar-icon-l4 { fill: #F4F5F6; }
 
 body.theme-white .sidebar {
     background: rgba(255, 255, 255, 0.88);
@@ -681,8 +690,7 @@ body.theme-white .sidebar-item:hover {
 =================================================== */
 body.theme-custom .add-btn,
 body.theme-custom .nav-btn.active,
-body.theme-custom .modal-btn-primary,
-body.theme-custom .profile-avatar {
+body.theme-custom .modal-btn-primary {
     background: var(--grad);
 }
 
