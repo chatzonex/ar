@@ -17,9 +17,7 @@ import {
     onSnapshot,
     serverTimestamp,
     writeBatch,
-    ensureAuthenticated,
-    enableNetwork,
-    disableNetwork
+    ensureAuthenticated
 } from "./firebase-init.js";
 
 // =====================================================
@@ -387,53 +385,6 @@ async function saveContact(myEmail, otherEmail) {
         }
     }
     loadMyRealName();
-
-    // =====================================================
-    // وضع الشبح (Ghost Mode — VIP): لو مفعّل عندي، رسايل الطرف
-    // التاني اللي بتوصلني بتفضل status: 'unread' من غير ما نحدّثها
-    // لـ 'read'، حتى لو أنا فعليًا فاتح الشات وقاريها أو رديت عليها.
-    // النتيجة: عنده تفضل ظاهرة تيك واحد رمادي بس لحد ما ألغي الوضع
-    // (وقتها بس markIncomingMessagesAsRead هترجع تحدّث الرسايل
-    // المتراكمة كلها لـ read مرة واحدة، زي واتساب بالظبط).
-    // =====================================================
-    // وضع الطيران (Airplane Mode — VIP): لو مفعّل عندي، بنقطع
-    // الاتصال الفعلي بـ Firestore بالكامل (disableNetwork) طول ما
-    // أنا فاتح صفحة الشات دي، عشان ولا رسالة جديدة توصلني حتى لو
-    // فاتح الشات فعليًا. الاستماع لحالة الوضع نفسه (ghostModeEnabled/
-    // airplaneModeEnabled) شغال دايمًا بغض النظر عن حالة الشبكة،
-    // لأن بيانات مستند اليوزر بتاعي أنا متاحة من الكاش المحلي حتى
-    // لو النت مقطوع فعليًا (IndexedDB persistence).
-    let myAirplaneModeOn = false;
-    let convNetworkDisabledLocally = false;
-    function applyAirplaneNetworkStateInConv() {
-        if (myAirplaneModeOn && !convNetworkDisabledLocally) {
-            convNetworkDisabledLocally = true;
-            disableNetwork(db).catch((e) => console.error('فشل قطع الاتصال بـ Firestore:', e));
-        } else if (!myAirplaneModeOn && convNetworkDisabledLocally) {
-            convNetworkDisabledLocally = false;
-            enableNetwork(db).catch((e) => console.error('فشل استرجاع الاتصال بـ Firestore:', e));
-        }
-    }
-
-    let myGhostModeOn = false;
-    function listenToMyVipModes() {
-        onSnapshot(doc(db, 'users', myEmail.toLowerCase()), (snap) => {
-            if (!snap.exists()) return;
-            const wasOn = myGhostModeOn;
-            myGhostModeOn = !!snap.data().ghostModeEnabled;
-            myAirplaneModeOn = !!snap.data().airplaneModeEnabled;
-            applyAirplaneNetworkStateInConv();
-            // لو الوضع اتلغى دلوقتي وكان شغال، نعلّم أي رسايل واصلة
-            // ومتراكمة كـ unread إنها read فورًا (بدل ما تستنى رسالة
-            // جديدة توصل عشان الـ listener يتحرك تاني)
-            if (wasOn && !myGhostModeOn) {
-                markAlreadyVisibleIncomingMessagesAsRead();
-            }
-        }, (err) => {
-            console.error('فشل متابعة حالة وضع الشبح:', err);
-        });
-    }
-    listenToMyVipModes();
 
     function currentDisplayName() {
         return myContactName || otherRealName;
@@ -2290,16 +2241,7 @@ async function saveContact(myEmail, otherEmail) {
 
     const myEmailLower = myEmail.toLowerCase();
 
-    // آخر دفعة رسايل ظاهرة فعليًا في الشاشة (بنحدّثها في كل onSnapshot
-    // للرسايل، حتى لو مامسحناش أي حاجة بسبب وضع الشبح)، عشان لو
-    // الشبح اتلغى بعدين نعرف نعلّم اللي كان متراكم كـ unread فورًا.
-    let lastVisibleDocs = [];
-
     function markIncomingMessagesAsRead(docs) {
-        lastVisibleDocs = docs;
-        // وضع الشبح شغال عندي: منسيبش أي رسالة توصل من الطرف التاني
-        // تتحدث لـ read، عشان تفضل عنده تيك واحد بس زي ما هو متوقّع.
-        if (myGhostModeOn) return;
         docs.forEach(d => {
             const data = d.data();
             const isFromOther = (data.senderEmail || '').toLowerCase() !== myEmailLower;
@@ -2308,13 +2250,6 @@ async function saveContact(myEmail, otherEmail) {
                 updateStatusWithRetry(d.ref);
             }
         });
-    }
-
-    // بتتنادى لما وضع الشبح يتلغى: بتاخد آخر دفعة رسايل كانت ظاهرة
-    // وتعلّم أي حاجة متراكمة عندها unread إنها read دفعة واحدة.
-    function markAlreadyVisibleIncomingMessagesAsRead() {
-        if (myGhostModeOn) return;
-        markIncomingMessagesAsRead(lastVisibleDocs);
     }
 
     function sendMessage() {

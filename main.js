@@ -15,9 +15,7 @@ import {
     onSnapshot,
     writeBatch,
     ensureAuthenticated,
-    deleteUser,
-    enableNetwork,
-    disableNetwork
+    deleteUser
 } from "./firebase-init.js";
 
 (function () {
@@ -770,166 +768,10 @@ import {
         unreadUnsubscribers.set(chatId, unsub);
     }
 
-    // =====================================================
-    // وضع الطيران (Airplane Mode) + وضع الشبح (Ghost Mode) — VIP
-    // =====================================================
-    // بنقرا حالة الـ VIP وحالة الوضعين لايف من مستند اليوزر بتاعي،
-    // عشان لو الأدمن وافق على طلب VIP وأنا فاتح الصفحة، الزرارين
-    // يبقوا شغالين فورًا من غير ما أحتاج أعمل ريفريش.
-    let myVip = false;
-    let airplaneModeOn = false;
-    let ghostModeOn = false;
-    let networkDisabledLocally = false;
-
-    const sidebarAirplane = document.getElementById('sidebarAirplane');
-    const sidebarGhost = document.getElementById('sidebarGhost');
     const sidebarRestart = document.getElementById('sidebarRestart');
-    const sidebarAirplaneCheck = document.getElementById('sidebarAirplaneCheck');
-    const sidebarGhostCheck = document.getElementById('sidebarGhostCheck');
-
-    const airplaneConfirmTitle = document.getElementById('airplaneConfirmTitle');
-    const airplaneConfirmSub = document.getElementById('airplaneConfirmSub');
-    const airplaneConfirmBtn = document.getElementById('airplaneConfirmBtn');
-    const ghostConfirmTitle = document.getElementById('ghostConfirmTitle');
-    const ghostConfirmSub = document.getElementById('ghostConfirmSub');
-    const ghostConfirmBtn = document.getElementById('ghostConfirmBtn');
-    const vipRequiredGoBtn = document.getElementById('vipRequiredGoBtn');
-    const modeConflictTitle = document.getElementById('modeConflictTitle');
-    const modeConflictSub = document.getElementById('modeConflictSub');
 
     function t(arText, enText) {
         return (localStorage.getItem('cz_lang') || 'ar') === 'en' ? enText : arText;
-    }
-
-    // بيمنع تشغيل وضع الطيران ووضع الشبح مع بعض في نفس الوقت.
-    // بيرجع true (ويوقف الإجراء) لو المستخدم بيحاول يفعّل وضع
-    // وهو أصلاً مفعّل عنده الوضع التاني.
-    function blockIfOtherModeOn(turningOn, otherModeOn, otherModeNameAr, otherModeNameEn) {
-        if (!turningOn || !otherModeOn) return false;
-        if (modeConflictTitle && modeConflictSub) {
-            modeConflictTitle.textContent = t('لازم تلغي وضع تاني الأول', 'Turn off the other mode first');
-            modeConflictSub.textContent = t(
-                `مينفعش تشغّل الوضعين مع بعض. لازم تلغي ${otherModeNameAr} الأول قبل ما تفعّل ده`,
-                `You can't run both modes at once. Turn off ${otherModeNameEn} first before enabling this one`
-            );
-        }
-        openSheet('sheet-mode-conflict');
-        return true;
-    }
-
-    function syncModeSwitches() {
-        if (sidebarAirplaneCheck) sidebarAirplaneCheck.classList.toggle('on', airplaneModeOn);
-        if (sidebarGhostCheck) sidebarGhostCheck.classList.toggle('on', ghostModeOn);
-    }
-
-    // بتتبع حالة الشبكة الفعلية بتاعة Firestore محليًا: لو وضع
-    // الطيران شغال بنقطع enableNetwork/disableNetwork دايمًا مهما
-    // كانت حالة الإنترنت الحقيقية بتاعة الجهاز، فمفيش رسايل جديدة
-    // (ولا حتى تحديثات حالة "مقروءة") توصل للصفحة دي طول ما هو شغال.
-    function applyAirplaneNetworkState() {
-        if (airplaneModeOn && !networkDisabledLocally) {
-            networkDisabledLocally = true;
-            disableNetwork(db).catch((e) => console.error('فشل قطع الاتصال بـ Firestore:', e));
-        } else if (!airplaneModeOn && networkDisabledLocally) {
-            networkDisabledLocally = false;
-            enableNetwork(db).catch((e) => console.error('فشل استرجاع الاتصال بـ Firestore:', e));
-        }
-    }
-
-    function listenToMyVipState(myUid) {
-        onSnapshot(doc(db, 'users', savedEmailLower), (snap) => {
-            if (!snap.exists()) return;
-            const data = snap.data();
-            myVip = !!data.vip;
-            airplaneModeOn = !!data.airplaneModeEnabled;
-            ghostModeOn = !!data.ghostModeEnabled;
-            syncModeSwitches();
-            applyAirplaneNetworkState();
-        }, (err) => {
-            console.error('فشل متابعة حالة VIP:', err);
-        });
-    }
-
-    async function setModeField(field, value) {
-        await updateDoc(doc(db, 'users', savedEmailLower), { [field]: value });
-    }
-
-    function openAirplaneConfirmSheet() {
-        closeSidebarMenuIfOpen();
-        if (blockIfOtherModeOn(!airplaneModeOn, ghostModeOn, 'وضع الشبح', 'Ghost Mode')) return;
-        if (airplaneConfirmTitle && airplaneConfirmSub && airplaneConfirmBtn) {
-            if (airplaneModeOn) {
-                airplaneConfirmTitle.textContent = t('إلغاء وضع الطيران؟', 'Turn off Airplane Mode?');
-                airplaneConfirmSub.textContent = t('هترجع تتصل بالإنترنت جوه التطبيق عادي وهتوصلك الرسايل تاني', "You'll reconnect to the internet in-app normally and start receiving messages again");
-            } else {
-                airplaneConfirmTitle.textContent = t('تفعيل وضع الطيران؟', 'Turn on Airplane Mode?');
-                airplaneConfirmSub.textContent = t('هتتقطع عن الإنترنت جوه التطبيق تمامًا، ومش هتوصلك أي رسايل جديدة لحد ما تلغيه', "You'll be disconnected from the internet in-app entirely, and won't receive any new messages until you turn it off");
-            }
-        }
-        openSheet('sheet-airplane-confirm');
-    }
-
-    if (sidebarAirplane) {
-        sidebarAirplane.addEventListener('click', openAirplaneConfirmSheet);
-    }
-
-    if (airplaneConfirmBtn) {
-        airplaneConfirmBtn.addEventListener('click', async () => {
-            airplaneConfirmBtn.disabled = true;
-            try {
-                // بنرجّع الاتصال بـ Firestore دايمًا قبل أي كتابة (تفعيل
-                // أو إلغاء)، عشان نضمن إن التحديث بيوصل للسيرفر فعليًا
-                // ومش بيفضل عالق كـ pending لو الشبكة كانت مقطوعة محليًا.
-                networkDisabledLocally = false;
-                await enableNetwork(db).catch((e) => console.error('فشل استرجاع الاتصال بـ Firestore:', e));
-                await setModeField('airplaneModeEnabled', !airplaneModeOn);
-                closeSheet('sheet-airplane-confirm');
-                // مهلة صغيرة قبل الريفريش عشان نضمن إن التحديث اتخزن
-                // فعليًا (محليًا وعلى السيرفر) قبل ما الصفحة تعيد التحميل.
-                setTimeout(() => window.location.reload(), 350);
-                return;
-            } catch (e) {
-                console.error('فشل تحديث وضع الطيران:', e);
-            }
-            airplaneConfirmBtn.disabled = false;
-        });
-    }
-
-    function openGhostConfirmSheet() {
-        closeSidebarMenuIfOpen();
-        if (blockIfOtherModeOn(!ghostModeOn, airplaneModeOn, 'وضع الطيران', 'Airplane Mode')) return;
-        if (ghostConfirmTitle && ghostConfirmSub && ghostConfirmBtn) {
-            if (ghostModeOn) {
-                ghostConfirmTitle.textContent = t('إلغاء وضع الشبح؟', 'Turn off Ghost Mode?');
-                ghostConfirmSub.textContent = t('هتفضل الرسايل تظهر تيكين زرقاء عادي زي ما هي في الأصل', 'Messages will go back to showing normal blue double checks');
-            } else {
-                ghostConfirmTitle.textContent = t('تفعيل وضع الشبح؟', 'Turn on Ghost Mode?');
-                ghostConfirmSub.textContent = t('ردودك هتوصل عادي، لكن هتفضل ظاهر عند الطرف التاني تيك واحد بس لحد ما تلغي الوضع', 'Your replies will go through normally, but the other side will only see a single check mark until you turn this off');
-            }
-        }
-        openSheet('sheet-ghost-confirm');
-    }
-
-    if (sidebarGhost) {
-        sidebarGhost.addEventListener('click', openGhostConfirmSheet);
-    }
-
-    if (ghostConfirmBtn) {
-        ghostConfirmBtn.addEventListener('click', async () => {
-            ghostConfirmBtn.disabled = true;
-            try {
-                // نفس ضمان الاتصال قبل الكتابة، حتى لو مفروض إن الشبكة
-                // شغالة عادي، عشان نغطي أي حالة كانت اتقطعت فيها قبل كده.
-                await enableNetwork(db).catch((e) => console.error('فشل استرجاع الاتصال بـ Firestore:', e));
-                await setModeField('ghostModeEnabled', !ghostModeOn);
-                closeSheet('sheet-ghost-confirm');
-                setTimeout(() => window.location.reload(), 350);
-                return;
-            } catch (e) {
-                console.error('فشل تحديث وضع الشبح:', e);
-            }
-            ghostConfirmBtn.disabled = false;
-        });
     }
 
     if (sidebarRestart) {
@@ -954,7 +796,6 @@ import {
             const user = await ensureAuthenticated();
             myUid = user.uid;
             myUidGlobal = user.uid;
-            listenToMyVipState(myUid);
         } catch (e) {
             console.error('فشل تسجيل الدخول في Firebase Auth:', e);
             return;

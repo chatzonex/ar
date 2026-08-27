@@ -494,18 +494,6 @@ html[dir="ltr"] .sidebar {
     color: var(--text-dim);
 }
 
-/* ===== Airplane / Ghost mode rows (VIP toggles) ===== */
-.sidebar-item-toggle {
-    justify-content: space-between;
-}
-
-.sidebar-item-toggle .sidebar-item-text {
-    flex: 1;
-    min-width: 0;
-}
-
-.sidebar-item-icon-air,
-.sidebar-item-icon-ghost,
 .sidebar-item-icon-restart {
     color: var(--text);
 }
