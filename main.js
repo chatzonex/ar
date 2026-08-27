@@ -380,7 +380,12 @@ import {
 
             return `
                 <div class="chat-row${unreadCount > 0 ? ' chat-row-unread' : ''}${entry.pinned ? ' chat-row-pinned' : ''}" data-email="${entry.otherEmail}" data-chat-id="${entry.chatId}" data-pinned="${entry.pinned ? '1' : '0'}">
-                    <div class="chat-row-avatar">${initial}</div>
+                    <div class="chat-row-avatar">
+                        <svg class="chat-row-avatar-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
+                            <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                    </div>
                     <div class="chat-row-text">
                         <h4 class="chat-row-name">${name}</h4>
                         ${previewHtml}

@@ -266,7 +266,7 @@ body {
     height: 50px;
     min-width: 50px;
     border-radius: 50%;
-    background: var(--grad);
+    background: #16181B;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -275,6 +275,14 @@ body {
     font-weight: 700;
     color: #06110C;
     flex-shrink: 0;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+}
+
+.chat-row-avatar-icon {
+    width: 62%;
+    height: 62%;
+    color: #9BA0A6;
 }
 
 .chat-row-text {
@@ -391,26 +399,6 @@ body {
     color: #9BA0A6;
 }
 
-/* لما يبقى فيه اسم مستخدم معروف، الأفاتار يتحول لنفس تدرج chat-row-avatar وأول حرف من الاسم */
-.profile-avatar.has-letter {
-    background: var(--grad);
-}
-
-.profile-avatar.has-letter .profile-avatar-icon {
-    display: none;
-}
-
-.profile-avatar-letter {
-    display: none;
-    font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: 700;
-    color: #06110C;
-}
-
-.profile-avatar.has-letter .profile-avatar-letter {
-    display: block;
-}
 
 .profile-name {
     font-family: var(--font-display);

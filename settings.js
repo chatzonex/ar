@@ -520,18 +520,6 @@
         profileEmail.textContent = savedEmail;
     }
 
-    // نخلي أفاتار صفحة الإعدادات مطابق لأفاتار قائمة الدردشات: نفس التدرج اللوني وأول حرف من الاسم
-    const profileAvatarLetter = document.getElementById('profileAvatarLetter');
-    if (profileAvatar && profileAvatarLetter) {
-        const displayName = (savedName || savedEmail || '').trim();
-        if (displayName) {
-            profileAvatarLetter.textContent = displayName.charAt(0).toUpperCase();
-            profileAvatar.classList.add('has-letter');
-        } else {
-            profileAvatar.classList.remove('has-letter');
-        }
-    }
-
     // ===== قائمة التلت نقط (Dropdown Menu) =====
     const menuBtn = document.getElementById('menuBtn');
     const sidebarMenu = document.getElementById('sidebarMenu');
