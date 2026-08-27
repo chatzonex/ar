@@ -388,12 +388,8 @@ body {
 .profile-avatar-icon {
     width: 62%;
     height: 62%;
+    color: #9BA0A6;
 }
-
-.profile-avatar-icon-l1 { fill: #6B6F74; }
-.profile-avatar-icon-l2 { fill: #82868C; }
-.profile-avatar-icon-l3 { fill: #9BA0A6; }
-.profile-avatar-icon-l4 { fill: #C6C9CD; }
 
 .profile-name {
     font-family: var(--font-display);

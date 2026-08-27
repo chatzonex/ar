@@ -668,10 +668,7 @@ body.theme-white .profile-avatar {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
 }
 
-body.theme-white .profile-avatar-icon-l1 { fill: #B9BDC2; }
-body.theme-white .profile-avatar-icon-l2 { fill: #C7CACE; }
-body.theme-white .profile-avatar-icon-l3 { fill: #DBDDDF; }
-body.theme-white .profile-avatar-icon-l4 { fill: #F4F5F6; }
+body.theme-white .profile-avatar-icon { color: #9BA0A6; }
 
 body.theme-white .sidebar {
     background: rgba(255, 255, 255, 0.88);
