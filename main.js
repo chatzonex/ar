@@ -423,7 +423,8 @@ import {
     }
 
     // =====================================================
-    // ضغطة مطولة على كارت الشات -> قايمة (تثبيت / حذف)
+    // ضغطة مطولة على كارت الشات (أي حتة فيه، بما فيها الصورة) -> بانل
+    // الصورة الكبيرة + 5 دواير الأيقونات
     // =====================================================
     const LONG_PRESS_MS = 450;
 
@@ -447,7 +448,7 @@ import {
             pressTimer = setTimeout(() => {
                 longPressed = true;
                 if (navigator.vibrate) { try { navigator.vibrate(15); } catch (e) {} }
-                openChatCtxMenu(row);
+                openAvatarPanel(row);
             }, LONG_PRESS_MS);
         }
 
@@ -475,7 +476,7 @@ import {
 
         row.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            openChatCtxMenu(row);
+            openAvatarPanel(row);
         });
 
         // بنمنع الـ click العادي (فتح الشات) لو كانت الضغطة طويلة فعلاً
@@ -486,70 +487,6 @@ import {
                 longPressed = false;
             }
         }, true);
-
-        // =====================================================
-        // ضغطة مطولة على صورة البروفايل بس (مش على الصف كله) بتفتح
-        // بانل تاني تمامًا: الصورة في المنتصف + 5 دواير أيقونات
-        // =====================================================
-        const avatarEl = row.querySelector('.chat-row-avatar');
-        if (avatarEl) {
-            let avatarPressTimer = null;
-            let avatarLongPressed = false;
-            let avatarStartX = 0, avatarStartY = 0;
-
-            function cancelAvatarPress() {
-                if (avatarPressTimer) clearTimeout(avatarPressTimer);
-                avatarPressTimer = null;
-            }
-            function startAvatarPress(x, y) {
-                avatarLongPressed = false;
-                avatarStartX = x; avatarStartY = y;
-                avatarPressTimer = setTimeout(() => {
-                    avatarLongPressed = true;
-                    if (navigator.vibrate) { try { navigator.vibrate(15); } catch (e) {} }
-                    openAvatarPanel(row);
-                }, LONG_PRESS_MS);
-            }
-
-            avatarEl.addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-                const touch = e.touches[0];
-                startAvatarPress(touch.clientX, touch.clientY);
-            }, { passive: true });
-            avatarEl.addEventListener('touchmove', (e) => {
-                const touch = e.touches[0];
-                if (Math.abs(touch.clientX - avatarStartX) > 10 || Math.abs(touch.clientY - avatarStartY) > 10) {
-                    cancelAvatarPress();
-                }
-            }, { passive: true });
-            avatarEl.addEventListener('touchend', (e) => {
-                cancelAvatarPress();
-                if (avatarLongPressed) {
-                    e.stopPropagation();
-                    avatarLongPressed = false;
-                }
-            });
-            avatarEl.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-                startAvatarPress(e.clientX, e.clientY);
-            });
-            avatarEl.addEventListener('mouseup', (e) => {
-                cancelAvatarPress();
-            });
-            avatarEl.addEventListener('mouseleave', cancelAvatarPress);
-            avatarEl.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                openAvatarPanel(row);
-            });
-            avatarEl.addEventListener('click', (e) => {
-                if (avatarLongPressed) {
-                    e.stopImmediatePropagation();
-                    e.preventDefault();
-                    avatarLongPressed = false;
-                }
-            }, true);
-        }
     }
 
     // =====================================================
@@ -689,81 +626,10 @@ import {
         });
     }
 
-    // ===== Context menu: تثبيت / حذف =====
-    const chatCtxOverlay = document.getElementById('chatCtxOverlay');
-    const chatCtxMenu = document.getElementById('chatCtxMenu');
-    const chatCtxPin = document.getElementById('chatCtxPin');
-    const chatCtxPinLabel = document.getElementById('chatCtxPinLabel');
-    const chatCtxDelete = document.getElementById('chatCtxDelete');
+    // ===== حالة الشات المستهدف حاليًا (من بانل الصورة) — مستخدمة في
+    // تأكيد الحذف =====
     let ctxTargetChatId = null;
     let ctxTargetEmail = null;
-
-    function openChatCtxMenu(row) {
-        ctxTargetChatId = row.getAttribute('data-chat-id');
-        ctxTargetEmail = row.getAttribute('data-email');
-        const isPinned = row.getAttribute('data-pinned') === '1';
-        if (chatCtxPinLabel) {
-            chatCtxPinLabel.textContent = isPinned
-                ? t('إلغاء تثبيت المحادثة', 'Unpin chat')
-                : t('تثبيت المحادثة', 'Pin chat');
-        }
-
-        if (!chatCtxMenu || !chatCtxOverlay) return;
-        const rect = row.getBoundingClientRect();
-        const isRtl = document.documentElement.dir === 'rtl';
-        let top = rect.bottom + 6;
-        const menuHeightEstimate = 110;
-        if (top + menuHeightEstimate > window.innerHeight) {
-            top = Math.max(10, rect.top - menuHeightEstimate - 6);
-        }
-        chatCtxMenu.style.top = top + 'px';
-        if (isRtl) {
-            chatCtxMenu.style.right = Math.max(10, window.innerWidth - rect.right) + 'px';
-            chatCtxMenu.style.left = 'auto';
-        } else {
-            chatCtxMenu.style.left = Math.max(10, rect.left) + 'px';
-            chatCtxMenu.style.right = 'auto';
-        }
-        chatCtxMenu.classList.add('open');
-        chatCtxOverlay.classList.add('open');
-    }
-
-    function closeChatCtxMenu() {
-        if (chatCtxMenu) chatCtxMenu.classList.remove('open');
-        if (chatCtxOverlay) chatCtxOverlay.classList.remove('open');
-    }
-
-    if (chatCtxOverlay) chatCtxOverlay.addEventListener('click', closeChatCtxMenu);
-
-    if (chatCtxPin) {
-        chatCtxPin.addEventListener('click', async () => {
-            const chatId = ctxTargetChatId;
-            closeChatCtxMenu();
-            if (!chatId || !myUidGlobal) return;
-            const entry = chatsState.get(chatId);
-            const willPin = !(entry && entry.pinned);
-            try {
-                await updateDoc(doc(db, 'chats', chatId), {
-                    ['pinnedFor.' + myUidGlobal]: willPin ? true : deleteField()
-                });
-                if (entry) {
-                    entry.pinned = willPin;
-                    chatsState.set(chatId, entry);
-                    renderChatsList();
-                }
-            } catch (e) {
-                console.error('فشل تحديث تثبيت المحادثة:', e);
-            }
-        });
-    }
-
-    // ===== حذف الشات نهائيًا (من عند الطرفين) =====
-    if (chatCtxDelete) {
-        chatCtxDelete.addEventListener('click', () => {
-            closeChatCtxMenu();
-            openSheet('sheet-delete-chat');
-        });
-    }
 
     // بيمسح كل مستندات مجموعة الرسايل بتاعة الشات على دفعات (حد أقصى
     // 500 عملية لكل batch في Firestore)، ثم يمسح مستند الشات نفسه.
