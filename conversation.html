@@ -459,7 +459,12 @@
             <div class="sheet-close" data-close-sheet="sheet-account-info">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </div>
-            <div class="account-info-avatar" id="accountInfoAvatar">؟</div>
+            <div class="account-info-avatar" id="accountInfoAvatar">
+                <svg class="account-info-avatar-icon" id="accountInfoAvatarIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
+                    <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+            </div>
             <div class="sheet-title" id="accountInfoName">—</div>
             <div class="account-info-email" id="accountInfoEmail">—</div>
 
@@ -480,6 +485,14 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- ===== Fullscreen photo viewer ===== -->
+    <div class="photo-viewer-overlay" id="photoViewerOverlay">
+        <button class="photo-viewer-close" id="photoViewerClose" aria-label="إغلاق">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <img class="photo-viewer-img" id="photoViewerImg" src="" alt="">
     </div>
 
     <script type="module" src="conversation.js"></script>

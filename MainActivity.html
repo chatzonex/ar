@@ -77,6 +77,44 @@
             </div>
         </div>
 
+        <!-- ===== Avatar long-press panel: صورة البروفايل في المنتصف
+             + 5 دواير أيقونات (شات / عرض الصورة / معلومات / حذف / تثبيت) ===== -->
+        <div class="avatar-panel-overlay" id="avatarPanelOverlay">
+            <div class="avatar-panel-box">
+                <div class="avatar-panel-photo" id="avatarPanelPhoto">
+                    <svg class="avatar-panel-photo-icon" id="avatarPanelPhotoIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="avatar-panel-actions">
+                    <button type="button" class="avatar-panel-action" id="avatarPanelOpenChat" aria-label="فتح المحادثة">
+                        <svg viewBox="0 0 96 96" fill="currentColor"><path d="M 14.00 85.34 C14.00,84.45 14.52,79.78 15.17,74.97 L 16.33 66.21 L 12.63 61.88 C5.73,53.82 4.27,41.29 9.07,31.36 C11.69,25.94 20.76,17.43 26.74,14.79 C45.63,6.44 65.90,9.23 79.47,22.06 C87.06,29.24 89.46,34.53 89.41,44.00 C89.36,53.43 86.89,58.92 79.60,65.82 C69.79,75.10 59.22,78.63 44.18,77.65 L 34.87 77.04 L 26.82 81.09 C15.36,86.85 14.00,87.30 14.00,85.34 ZM 27.30 76.05 C34.13,72.30 34.73,72.15 39.00,73.14 C53.67,76.55 73.27,69.73 80.97,58.54 C94.23,39.27 78.60,16.19 51.00,14.27 C32.71,13.00 15.42,22.85 11.35,36.87 C8.71,45.95 11.09,55.16 17.99,62.50 C20.62,65.30 20.75,65.83 19.96,70.50 C18.95,76.48 18.80,80.00 19.55,80.00 C19.85,80.00 23.34,78.22 27.30,76.05 Z"/></svg>
+                    </button>
+                    <button type="button" class="avatar-panel-action" id="avatarPanelViewPhoto" aria-label="عرض الصورة">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                    <button type="button" class="avatar-panel-action" id="avatarPanelInfo" aria-label="معلومات الحساب">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="11"/><line x1="12" y1="7.5" x2="12.01" y2="7.5"/></svg>
+                    </button>
+                    <button type="button" class="avatar-panel-action avatar-panel-action-danger" id="avatarPanelDelete" aria-label="حذف المحادثة">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                    </button>
+                    <button type="button" class="avatar-panel-action" id="avatarPanelPin" aria-label="تثبيت المحادثة">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Fullscreen photo viewer (من برة، لصورة شخص من قائمة الشاتات) ===== -->
+        <div class="photo-viewer-overlay" id="photoViewerOverlay">
+            <button class="photo-viewer-close" id="photoViewerClose" aria-label="إغلاق">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <img class="photo-viewer-img" id="photoViewerImg" src="" alt="">
+        </div>
+
         <!-- ===== Delete chat confirm sheet ===== -->
         <div class="sheet-overlay" id="sheet-delete-chat">
             <div class="sheet-box">

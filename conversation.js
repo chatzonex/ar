@@ -403,6 +403,7 @@ async function saveContact(myEmail, otherEmail) {
     const convAboutToastAvatarEl = document.getElementById('convAboutToastAvatar');
 
     function renderOtherAvatarImage(photoURL) {
+        otherPhotoURL = photoURL || '';
         // البار العلوي
         if (convAvatarEl) {
             let img = convAvatarEl.querySelector('.conv-avatar-img');
@@ -493,8 +494,11 @@ async function saveContact(myEmail, otherEmail) {
     // معلومات الحساب (اسم + إيميل الطرف التاني) — بتتحط في
     // شيت "معلومات الحساب" اللي بيتفتح من قايمة التلت نقط
     // =====================================================
+    let otherPhotoURL = '';
+
     function populateAccountInfo() {
         const avatarEl = document.getElementById('accountInfoAvatar');
+        const avatarIconEl = document.getElementById('accountInfoAvatarIcon');
         const nameEl = document.getElementById('accountInfoName');
         const emailEl = document.getElementById('accountInfoEmail');
         const nameValEl = document.getElementById('accountInfoNameValue');
@@ -502,7 +506,22 @@ async function saveContact(myEmail, otherEmail) {
         const renameInput = document.getElementById('accountInfoRenameInput');
 
         const shownName = currentDisplayName();
-        if (avatarEl) avatarEl.textContent = shownName.trim().charAt(0).toUpperCase() || '؟';
+        if (avatarEl) {
+            let img = avatarEl.querySelector('.account-info-avatar-img');
+            if (otherPhotoURL) {
+                if (!img) {
+                    img = document.createElement('img');
+                    img.className = 'account-info-avatar-img';
+                    img.alt = '';
+                    avatarEl.appendChild(img);
+                }
+                img.src = otherPhotoURL;
+                if (avatarIconEl) avatarIconEl.style.display = 'none';
+            } else {
+                if (img) img.remove();
+                if (avatarIconEl) avatarIconEl.style.display = '';
+            }
+        }
         if (nameEl) nameEl.textContent = shownName;
         if (emailEl) emailEl.textContent = otherEmail;
         if (nameValEl) nameValEl.textContent = shownName;
@@ -516,6 +535,13 @@ async function saveContact(myEmail, otherEmail) {
 
     populateAccountInfo();
     loadOtherRealName();
+
+    // لو جاي من بانل الصورة في الصفحة الرئيسية بضغطة على "معلومات
+    // الحساب"، نفتح الشيت تلقائيًا أول ما الشات يفتح
+    if (localStorage.getItem('cz_open_info_on_load') === '1') {
+        localStorage.removeItem('cz_open_info_on_load');
+        openSheet('sheet-account-info');
+    }
 
     // =====================================================
     // 2.1) تغيير اسم جهة الاتصال — محلي عندي أنا بس، بيتخزن جوه
@@ -697,6 +723,79 @@ async function saveContact(myEmail, otherEmail) {
             openSheet('sheet-account-info');
         });
     }
+
+    // =====================================================
+    // الضغط على صورة/اسم الطرف التاني في البار العلوي بيفتح
+    // شيت "معلومات الحساب" مباشرة (فيه الصورة + الاسم + الإيميل)
+    // =====================================================
+    const convIdentityEl = document.getElementById('convIdentity');
+    if (convIdentityEl) {
+        convIdentityEl.addEventListener('click', () => {
+            openSheet('sheet-account-info');
+        });
+    }
+
+    // =====================================================
+    // Fullscreen photo viewer — بيتفتح بضغطة مطولة على أي صورة
+    // بروفايل (هنا: صورة الطرف التاني جوه شيت "معلومات الحساب")
+    // =====================================================
+    const photoViewerOverlay = document.getElementById('photoViewerOverlay');
+    const photoViewerImg = document.getElementById('photoViewerImg');
+    const photoViewerClose = document.getElementById('photoViewerClose');
+
+    function openPhotoViewer(photoURL) {
+        if (!photoViewerOverlay || !photoViewerImg || !photoURL) return;
+        photoViewerImg.src = photoURL;
+        photoViewerOverlay.classList.add('open');
+    }
+    function closePhotoViewer() {
+        if (!photoViewerOverlay) return;
+        photoViewerOverlay.classList.remove('open');
+    }
+    if (photoViewerClose) photoViewerClose.addEventListener('click', closePhotoViewer);
+    if (photoViewerOverlay) {
+        photoViewerOverlay.addEventListener('click', (e) => {
+            if (e.target === photoViewerOverlay) closePhotoViewer();
+        });
+    }
+
+    function attachLongPressToViewPhoto(el, getPhotoURL) {
+        if (!el) return;
+        const LP_MS = 450;
+        let timer = null;
+        let startX = 0, startY = 0;
+
+        function cancel() {
+            if (timer) clearTimeout(timer);
+            timer = null;
+        }
+        function start(x, y) {
+            startX = x; startY = y;
+            cancel();
+            timer = setTimeout(() => {
+                const url = getPhotoURL();
+                if (url) {
+                    if (navigator.vibrate) { try { navigator.vibrate(15); } catch (e) {} }
+                    openPhotoViewer(url);
+                }
+            }, LP_MS);
+        }
+        el.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            start(touch.clientX, touch.clientY);
+        }, { passive: true });
+        el.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) cancel();
+        }, { passive: true });
+        el.addEventListener('touchend', cancel);
+        el.addEventListener('mousedown', (e) => start(e.clientX, e.clientY));
+        el.addEventListener('mouseup', cancel);
+        el.addEventListener('mouseleave', cancel);
+        el.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+
+    attachLongPressToViewPhoto(document.getElementById('accountInfoAvatar'), () => otherPhotoURL);
 
     // =====================================================
     // 4.2) تخصيص لون الفقاعات — دلوقتي بقى "تابع للشخص" مش

@@ -476,8 +476,8 @@ html[dir="ltr"] .msg-row-reply-icon,
     -webkit-mask-size: contain;
     mask-size: contain;
     background-color: var(--text-faint);
-    width: 12.5px;
-    height: 12.5px;
+    width: 14.4px;
+    height: 14.4px;
 }
 
 .chat-row-tick.tick-offline {
@@ -490,8 +490,8 @@ html[dir="ltr"] .msg-row-reply-icon,
     -webkit-mask-size: contain;
     mask-size: contain;
     background-color: var(--text-faint);
-    width: 14.8px;
-    height: 11.4px;
+    width: 17.0px;
+    height: 13.1px;
 }
 
 .chat-row-tick.tick-unread,
@@ -504,8 +504,8 @@ html[dir="ltr"] .msg-row-reply-icon,
     mask-position: center;
     -webkit-mask-size: contain;
     mask-size: contain;
-    width: 16px;
-    height: 12.5px;
+    width: 18.4px;
+    height: 14.4px;
 }
 
 .chat-row-tick.tick-unread {

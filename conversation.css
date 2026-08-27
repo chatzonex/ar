@@ -244,6 +244,49 @@ html[dir="ltr"] .conv-about-toast {
     word-break: break-word;
 }
 
+/* ===== Fullscreen photo viewer — ضغطة مطولة على أي صورة بروفايل
+   بتفتحها كاملة قدام المستخدم ===== */
+.photo-viewer-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 950;
+    background: rgba(0, 0, 0, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.photo-viewer-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.photo-viewer-img {
+    max-width: 92vw;
+    max-height: 82vh;
+    border-radius: 12px;
+    object-fit: contain;
+}
+
+.photo-viewer-close {
+    position: absolute;
+    top: max(18px, env(safe-area-inset-top));
+    right: 18px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
 /* ===== شريط وضع التحديد المتعدد (بيحل محل الـ topbar العادي) ===== */
 .conv-topbar-select {
     display: none;
@@ -1243,6 +1286,7 @@ html[dir="ltr"] .bubble-color-section-title {
 
 /* Account info sheet */
 .account-info-avatar {
+    position: relative;
     width: 68px;
     height: 68px;
     border-radius: 50%;
@@ -1254,6 +1298,21 @@ html[dir="ltr"] .bubble-color-section-title {
     font-weight: 700;
     color: #06110C;
     margin: 0 auto 12px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.account-info-avatar-icon {
+    width: 55%;
+    height: 55%;
+    color: #06110C;
+}
+
+.account-info-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 
 .account-info-email {

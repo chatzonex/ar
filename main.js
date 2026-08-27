@@ -486,6 +486,207 @@ import {
                 longPressed = false;
             }
         }, true);
+
+        // =====================================================
+        // ضغطة مطولة على صورة البروفايل بس (مش على الصف كله) بتفتح
+        // بانل تاني تمامًا: الصورة في المنتصف + 5 دواير أيقونات
+        // =====================================================
+        const avatarEl = row.querySelector('.chat-row-avatar');
+        if (avatarEl) {
+            let avatarPressTimer = null;
+            let avatarLongPressed = false;
+            let avatarStartX = 0, avatarStartY = 0;
+
+            function cancelAvatarPress() {
+                if (avatarPressTimer) clearTimeout(avatarPressTimer);
+                avatarPressTimer = null;
+            }
+            function startAvatarPress(x, y) {
+                avatarLongPressed = false;
+                avatarStartX = x; avatarStartY = y;
+                avatarPressTimer = setTimeout(() => {
+                    avatarLongPressed = true;
+                    if (navigator.vibrate) { try { navigator.vibrate(15); } catch (e) {} }
+                    openAvatarPanel(row);
+                }, LONG_PRESS_MS);
+            }
+
+            avatarEl.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+                const touch = e.touches[0];
+                startAvatarPress(touch.clientX, touch.clientY);
+            }, { passive: true });
+            avatarEl.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                if (Math.abs(touch.clientX - avatarStartX) > 10 || Math.abs(touch.clientY - avatarStartY) > 10) {
+                    cancelAvatarPress();
+                }
+            }, { passive: true });
+            avatarEl.addEventListener('touchend', (e) => {
+                cancelAvatarPress();
+                if (avatarLongPressed) {
+                    e.stopPropagation();
+                    avatarLongPressed = false;
+                }
+            });
+            avatarEl.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                startAvatarPress(e.clientX, e.clientY);
+            });
+            avatarEl.addEventListener('mouseup', (e) => {
+                cancelAvatarPress();
+            });
+            avatarEl.addEventListener('mouseleave', cancelAvatarPress);
+            avatarEl.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openAvatarPanel(row);
+            });
+            avatarEl.addEventListener('click', (e) => {
+                if (avatarLongPressed) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    avatarLongPressed = false;
+                }
+            }, true);
+        }
+    }
+
+    // =====================================================
+    // بانل الصورة الكبيرة + 5 دواير الأيقونات
+    // =====================================================
+    const avatarPanelOverlay = document.getElementById('avatarPanelOverlay');
+    const avatarPanelPhoto = document.getElementById('avatarPanelPhoto');
+    const avatarPanelPhotoIcon = document.getElementById('avatarPanelPhotoIcon');
+    let avatarPanelTargetRow = null;
+
+    function openAvatarPanel(row) {
+        if (!avatarPanelOverlay) return;
+        avatarPanelTargetRow = row;
+
+        const avatarSourceEl = row.querySelector('.chat-row-avatar');
+        const img = avatarSourceEl ? avatarSourceEl.querySelector('.chat-row-avatar-img') : null;
+
+        let existingImg = avatarPanelPhoto.querySelector('.avatar-panel-photo-img');
+        if (img) {
+            if (!existingImg) {
+                existingImg = document.createElement('img');
+                existingImg.className = 'avatar-panel-photo-img';
+                existingImg.alt = '';
+                avatarPanelPhoto.appendChild(existingImg);
+            }
+            existingImg.src = img.src;
+            if (avatarPanelPhotoIcon) avatarPanelPhotoIcon.style.display = 'none';
+        } else {
+            if (existingImg) existingImg.remove();
+            if (avatarPanelPhotoIcon) avatarPanelPhotoIcon.style.display = '';
+        }
+
+        const isPinned = row.getAttribute('data-pinned') === '1';
+        const pinBtn = document.getElementById('avatarPanelPin');
+        if (pinBtn) {
+            pinBtn.setAttribute('aria-label', isPinned ? t('إلغاء تثبيت المحادثة', 'Unpin chat') : t('تثبيت المحادثة', 'Pin chat'));
+        }
+
+        avatarPanelOverlay.classList.add('open');
+    }
+
+    function closeAvatarPanel() {
+        if (!avatarPanelOverlay) return;
+        avatarPanelOverlay.classList.remove('open');
+    }
+
+    if (avatarPanelOverlay) {
+        avatarPanelOverlay.addEventListener('click', (e) => {
+            if (e.target === avatarPanelOverlay) closeAvatarPanel();
+        });
+    }
+
+    const avatarPanelOpenChat = document.getElementById('avatarPanelOpenChat');
+    if (avatarPanelOpenChat) {
+        avatarPanelOpenChat.addEventListener('click', () => {
+            if (!avatarPanelTargetRow) return;
+            const email = avatarPanelTargetRow.getAttribute('data-email');
+            closeAvatarPanel();
+            goToConversation(email);
+        });
+    }
+
+    const avatarPanelViewPhoto = document.getElementById('avatarPanelViewPhoto');
+    if (avatarPanelViewPhoto) {
+        avatarPanelViewPhoto.addEventListener('click', () => {
+            const img = avatarPanelPhoto.querySelector('.avatar-panel-photo-img');
+            if (img) openPhotoViewer(img.src);
+        });
+    }
+
+    const avatarPanelInfo = document.getElementById('avatarPanelInfo');
+    if (avatarPanelInfo) {
+        avatarPanelInfo.addEventListener('click', () => {
+            if (!avatarPanelTargetRow) return;
+            const email = avatarPanelTargetRow.getAttribute('data-email');
+            closeAvatarPanel();
+            // بنفتح الشات ومعاه نفس شيت "معلومات الحساب" اللي جوه المحادثة
+            localStorage.setItem('cz_open_info_on_load', '1');
+            goToConversation(email);
+        });
+    }
+
+    const avatarPanelDelete = document.getElementById('avatarPanelDelete');
+    if (avatarPanelDelete) {
+        avatarPanelDelete.addEventListener('click', () => {
+            if (!avatarPanelTargetRow) return;
+            ctxTargetChatId = avatarPanelTargetRow.getAttribute('data-chat-id');
+            ctxTargetEmail = avatarPanelTargetRow.getAttribute('data-email');
+            closeAvatarPanel();
+            openSheet('sheet-delete-chat');
+        });
+    }
+
+    const avatarPanelPin = document.getElementById('avatarPanelPin');
+    if (avatarPanelPin) {
+        avatarPanelPin.addEventListener('click', async () => {
+            if (!avatarPanelTargetRow || !myUidGlobal) return;
+            const chatId = avatarPanelTargetRow.getAttribute('data-chat-id');
+            closeAvatarPanel();
+            const entry = chatsState.get(chatId);
+            const willPin = !(entry && entry.pinned);
+            try {
+                await updateDoc(doc(db, 'chats', chatId), {
+                    ['pinnedFor.' + myUidGlobal]: willPin ? true : deleteField()
+                });
+                if (entry) {
+                    entry.pinned = willPin;
+                    chatsState.set(chatId, entry);
+                    renderChatsList();
+                }
+            } catch (e) {
+                console.error('فشل تحديث تثبيت المحادثة:', e);
+            }
+        });
+    }
+
+    // =====================================================
+    // Fullscreen photo viewer (من صفحة الرئيسية)
+    // =====================================================
+    const photoViewerOverlay = document.getElementById('photoViewerOverlay');
+    const photoViewerImg = document.getElementById('photoViewerImg');
+    const photoViewerClose = document.getElementById('photoViewerClose');
+
+    function openPhotoViewer(photoURL) {
+        if (!photoViewerOverlay || !photoViewerImg || !photoURL) return;
+        photoViewerImg.src = photoURL;
+        photoViewerOverlay.classList.add('open');
+    }
+    function closePhotoViewer() {
+        if (!photoViewerOverlay) return;
+        photoViewerOverlay.classList.remove('open');
+    }
+    if (photoViewerClose) photoViewerClose.addEventListener('click', closePhotoViewer);
+    if (photoViewerOverlay) {
+        photoViewerOverlay.addEventListener('click', (e) => {
+            if (e.target === photoViewerOverlay) closePhotoViewer();
+        });
     }
 
     // ===== Context menu: تثبيت / حذف =====
