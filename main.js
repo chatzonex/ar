@@ -854,21 +854,23 @@ import {
         await updateDoc(doc(db, 'users', savedEmailLower), { [field]: value });
     }
 
-    if (sidebarAirplane) {
-        sidebarAirplane.addEventListener('click', () => {
-            closeSidebarMenuIfOpen();
-            if (blockIfOtherModeOn(!airplaneModeOn, ghostModeOn, 'وضع الشبح', 'Ghost Mode')) return;
-            if (airplaneConfirmTitle && airplaneConfirmSub && airplaneConfirmBtn) {
-                if (airplaneModeOn) {
-                    airplaneConfirmTitle.textContent = t('إلغاء وضع الطيران؟', 'Turn off Airplane Mode?');
-                    airplaneConfirmSub.textContent = t('هترجع تتصل بالإنترنت جوه التطبيق عادي وهتوصلك الرسايل تاني', "You'll reconnect to the internet in-app normally and start receiving messages again");
-                } else {
-                    airplaneConfirmTitle.textContent = t('تفعيل وضع الطيران؟', 'Turn on Airplane Mode?');
-                    airplaneConfirmSub.textContent = t('هتتقطع عن الإنترنت جوه التطبيق تمامًا، ومش هتوصلك أي رسايل جديدة لحد ما تلغيه', "You'll be disconnected from the internet in-app entirely, and won't receive any new messages until you turn it off");
-                }
+    function openAirplaneConfirmSheet() {
+        closeSidebarMenuIfOpen();
+        if (blockIfOtherModeOn(!airplaneModeOn, ghostModeOn, 'وضع الشبح', 'Ghost Mode')) return;
+        if (airplaneConfirmTitle && airplaneConfirmSub && airplaneConfirmBtn) {
+            if (airplaneModeOn) {
+                airplaneConfirmTitle.textContent = t('إلغاء وضع الطيران؟', 'Turn off Airplane Mode?');
+                airplaneConfirmSub.textContent = t('هترجع تتصل بالإنترنت جوه التطبيق عادي وهتوصلك الرسايل تاني', "You'll reconnect to the internet in-app normally and start receiving messages again");
+            } else {
+                airplaneConfirmTitle.textContent = t('تفعيل وضع الطيران؟', 'Turn on Airplane Mode?');
+                airplaneConfirmSub.textContent = t('هتتقطع عن الإنترنت جوه التطبيق تمامًا، ومش هتوصلك أي رسايل جديدة لحد ما تلغيه', "You'll be disconnected from the internet in-app entirely, and won't receive any new messages until you turn it off");
             }
-            openSheet('sheet-airplane-confirm');
-        });
+        }
+        openSheet('sheet-airplane-confirm');
+    }
+
+    if (sidebarAirplane) {
+        sidebarAirplane.addEventListener('click', openAirplaneConfirmSheet);
     }
 
     if (airplaneConfirmBtn) {
@@ -893,21 +895,23 @@ import {
         });
     }
 
-    if (sidebarGhost) {
-        sidebarGhost.addEventListener('click', () => {
-            closeSidebarMenuIfOpen();
-            if (blockIfOtherModeOn(!ghostModeOn, airplaneModeOn, 'وضع الطيران', 'Airplane Mode')) return;
-            if (ghostConfirmTitle && ghostConfirmSub && ghostConfirmBtn) {
-                if (ghostModeOn) {
-                    ghostConfirmTitle.textContent = t('إلغاء وضع الشبح؟', 'Turn off Ghost Mode?');
-                    ghostConfirmSub.textContent = t('هتفضل الرسايل تظهر تيكين زرقاء عادي زي ما هي في الأصل', 'Messages will go back to showing normal blue double checks');
-                } else {
-                    ghostConfirmTitle.textContent = t('تفعيل وضع الشبح؟', 'Turn on Ghost Mode?');
-                    ghostConfirmSub.textContent = t('ردودك هتوصل عادي، لكن هتفضل ظاهر عند الطرف التاني تيك واحد بس لحد ما تلغي الوضع', 'Your replies will go through normally, but the other side will only see a single check mark until you turn this off');
-                }
+    function openGhostConfirmSheet() {
+        closeSidebarMenuIfOpen();
+        if (blockIfOtherModeOn(!ghostModeOn, airplaneModeOn, 'وضع الطيران', 'Airplane Mode')) return;
+        if (ghostConfirmTitle && ghostConfirmSub && ghostConfirmBtn) {
+            if (ghostModeOn) {
+                ghostConfirmTitle.textContent = t('إلغاء وضع الشبح؟', 'Turn off Ghost Mode?');
+                ghostConfirmSub.textContent = t('هتفضل الرسايل تظهر تيكين زرقاء عادي زي ما هي في الأصل', 'Messages will go back to showing normal blue double checks');
+            } else {
+                ghostConfirmTitle.textContent = t('تفعيل وضع الشبح؟', 'Turn on Ghost Mode?');
+                ghostConfirmSub.textContent = t('ردودك هتوصل عادي، لكن هتفضل ظاهر عند الطرف التاني تيك واحد بس لحد ما تلغي الوضع', 'Your replies will go through normally, but the other side will only see a single check mark until you turn this off');
             }
-            openSheet('sheet-ghost-confirm');
-        });
+        }
+        openSheet('sheet-ghost-confirm');
+    }
+
+    if (sidebarGhost) {
+        sidebarGhost.addEventListener('click', openGhostConfirmSheet);
     }
 
     if (ghostConfirmBtn) {
