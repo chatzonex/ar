@@ -176,24 +176,18 @@
             <div class="settings-page-list">
 
                 <div class="settings-card">
-                    <div class="profile-row">
+                    <div class="profile-row" id="openYourProfile">
                         <div class="profile-avatar" id="profileAvatar">
                             <svg class="profile-avatar-icon" id="profileAvatarIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
                                 <path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
                             </svg>
-                            <button type="button" class="profile-avatar-upload-btn" id="avatarUploadBtn" aria-label="تغيير صورة البروفايل">
-                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4 8a2 2 0 0 1 2-2h1.2l.9-1.4A1.5 1.5 0 0 1 9.35 4h5.3a1.5 1.5 0 0 1 1.25.6L16.8 6H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                                    <circle cx="12" cy="13" r="3.2" stroke="currentColor" stroke-width="1.6"/>
-                                </svg>
-                            </button>
-                            <input type="file" id="avatarFileInput" accept="image/*" hidden>
                         </div>
                         <div class="profile-row-text">
                             <h2 class="profile-name" id="profileName">اسم المستخدم</h2>
                             <p class="profile-email" id="profileEmail"></p>
                         </div>
+                        <svg class="settings-card-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </div>
                     <div class="settings-card-divider"></div>
                     <div class="settings-row" id="openThemes">

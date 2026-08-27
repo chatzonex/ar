@@ -394,6 +394,79 @@ async function saveContact(myEmail, otherEmail) {
         convNameEl.textContent = currentDisplayName();
     }
 
+    // =====================================================
+    // صورة بروفايل الطرف التاني — بتتحط جمب اسمه في البار العلوي،
+    // وجوه بابل الـ About كمان
+    // =====================================================
+    const convAvatarEl = document.getElementById('convAvatar');
+    const convAvatarIconEl = document.getElementById('convAvatarIcon');
+    const convAboutToastAvatarEl = document.getElementById('convAboutToastAvatar');
+
+    function renderOtherAvatarImage(photoURL) {
+        // البار العلوي
+        if (convAvatarEl) {
+            let img = convAvatarEl.querySelector('.conv-avatar-img');
+            if (photoURL) {
+                if (!img) {
+                    img = document.createElement('img');
+                    img.className = 'conv-avatar-img';
+                    img.alt = '';
+                    convAvatarEl.appendChild(img);
+                }
+                img.src = photoURL;
+                if (convAvatarIconEl) convAvatarIconEl.style.display = 'none';
+            } else {
+                if (img) img.remove();
+                if (convAvatarIconEl) convAvatarIconEl.style.display = '';
+            }
+        }
+        // بابل الـ About
+        if (convAboutToastAvatarEl) {
+            let img2 = convAboutToastAvatarEl.querySelector('img');
+            const iconSvg = convAboutToastAvatarEl.querySelector('svg');
+            if (photoURL) {
+                if (!img2) {
+                    img2 = document.createElement('img');
+                    img2.alt = '';
+                    convAboutToastAvatarEl.appendChild(img2);
+                }
+                img2.src = photoURL;
+                if (iconSvg) iconSvg.style.display = 'none';
+            } else {
+                if (img2) img2.remove();
+                if (iconSvg) iconSvg.style.display = '';
+            }
+        }
+    }
+
+    // =====================================================
+    // بابل About — بتظهر مرة واحدة بس في أول مرة يتفتح فيها الشات
+    // ده على الجهاز ده (مش كل مرة يفتح فيها الشات)، وبتنزل من تحت
+    // البار العلوي جنب زرار الرجوع، وتختفي لوحدها بعد كام ثانية.
+    // =====================================================
+    function maybeShowAboutToast(aboutText) {
+        const toastEl = document.getElementById('convAboutToast');
+        const nameEl = document.getElementById('convAboutToastName');
+        const bodyEl = document.getElementById('convAboutToastBody');
+        if (!toastEl || !aboutText) return;
+
+        const seenKey = 'cz_about_seen_' + myEmail.toLowerCase() + '_' + otherEmail.toLowerCase();
+        if (localStorage.getItem(seenKey)) return;
+
+        if (nameEl) nameEl.textContent = currentDisplayName();
+        if (bodyEl) bodyEl.textContent = aboutText;
+
+        requestAnimationFrame(() => {
+            toastEl.classList.add('show');
+        });
+
+        localStorage.setItem(seenKey, '1');
+
+        setTimeout(() => {
+            toastEl.classList.remove('show');
+        }, 4500);
+    }
+
     async function loadOtherRealName() {
         try {
             const otherUserRef = doc(db, 'users', otherEmail.toLowerCase());
@@ -405,6 +478,8 @@ async function saveContact(myEmail, otherEmail) {
                     refreshTopBarName();
                     if (typeof refreshTheirsBubbleLabel === 'function') refreshTheirsBubbleLabel();
                 }
+                if (data.photoURL) renderOtherAvatarImage(data.photoURL);
+                if (data.about) maybeShowAboutToast(data.about);
             }
         } catch (e) {
             // لو فشل الجلب لأي سبب، بيفضل الاسم المشتق من الإيميل كبديل

@@ -75,6 +75,12 @@
     align-items: center;
     gap: 14px;
     padding: 16px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.profile-row:hover {
+    background: var(--glass-strong);
 }
 
 .profile-row-text {
