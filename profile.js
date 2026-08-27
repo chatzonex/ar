@@ -6,6 +6,63 @@ import { db, doc, getDoc, setDoc, serverTimestamp, ensureAuthenticated } from ".
     const saveNameBtn = document.getElementById('saveNameBtn');
     const toast = document.getElementById('toast');
 
+    // ===== صورة البروفايل (اختياري) =====
+    const CLOUDINARY_CLOUD_NAME = 'rkeddyph';
+    const CLOUDINARY_UPLOAD_PRESET = 'chatzone_upload_image';
+    const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+    const profilePicPicker = document.getElementById('profilePicPicker');
+    const profilePicInput = document.getElementById('profilePicInput');
+    const profilePicPreview = document.getElementById('profilePicPreview');
+    const noPhotoOverlay = document.getElementById('noPhotoOverlay');
+    const noPhotoUploadBtn = document.getElementById('noPhotoUploadBtn');
+    const noPhotoContinueBtn = document.getElementById('noPhotoContinueBtn');
+
+    // الملف اللي المستخدم اختاره لسه ما اترفعش لـ Cloudinary؛ بنأجل
+    // الرفع الفعلي لحد لحظة الحفظ عشان لو غيّر رأيه أو اختار صورة
+    // غلط منرفعش حاجة على الفاضي.
+    let selectedPhotoFile = null;
+
+    if (profilePicPicker && profilePicInput) {
+        profilePicPicker.addEventListener('click', () => profilePicInput.click());
+
+        profilePicInput.addEventListener('change', () => {
+            const file = profilePicInput.files && profilePicInput.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showToast('من فضلك اختر ملف صورة صالح', true);
+                profilePicInput.value = '';
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('حجم الصورة كبير جدًا (الحد الأقصى 5 ميجا)', true);
+                profilePicInput.value = '';
+                return;
+            }
+
+            selectedPhotoFile = file;
+            const reader = new FileReader();
+            reader.onload = () => {
+                profilePicPreview.src = reader.result;
+                profilePicPreview.hidden = false;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function uploadSelectedPhoto() {
+        const formData = new FormData();
+        formData.append('file', selectedPhotoFile);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+        const uploadRes = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
+        if (!uploadRes.ok) throw new Error('فشل الرفع إلى Cloudinary');
+        const uploadData = await uploadRes.json();
+        if (!uploadData.secure_url) throw new Error('لم يتم استلام رابط الصورة');
+        return uploadData.secure_url;
+    }
+
     // لازم يكون المستخدم عدّى مرحلة التأكيد الأول
     const verifiedEmail = localStorage.getItem('cz_verified_email');
 
@@ -46,22 +103,29 @@ import { db, doc, getDoc, setDoc, serverTimestamp, ensureAuthenticated } from ".
 
     nameInput.addEventListener('input', clearError);
 
-    async function handleSave() {
-        const name = nameInput.value.trim();
+    function openNoPhotoOverlay() {
+        if (noPhotoOverlay) noPhotoOverlay.classList.add('open');
+    }
+    function closeNoPhotoOverlay() {
+        if (noPhotoOverlay) noPhotoOverlay.classList.remove('open');
+    }
 
-        if (!name) {
-            showError('من فضلك اكتب اسمك');
-            return;
-        }
-        if (name.length < 2) {
-            showError('الاسم قصير جدًا');
-            return;
-        }
-
+    async function performSave() {
         clearError();
         setLoading(true);
+        const name = nameInput.value.trim();
 
         try {
+            let photoURL = '';
+            if (selectedPhotoFile) {
+                if (profilePicPicker) profilePicPicker.classList.add('uploading');
+                try {
+                    photoURL = await uploadSelectedPhoto();
+                } finally {
+                    if (profilePicPicker) profilePicPicker.classList.remove('uploading');
+                }
+            }
+
             // لازم يكون فيه جلسة Firebase Auth حقيقية (anonymous) قبل أي
             // كتابة في Firestore، عشان الـ Rules تقدر تتحقق من request.auth.
             const user = await ensureAuthenticated();
@@ -83,12 +147,15 @@ import { db, doc, getDoc, setDoc, serverTimestamp, ensureAuthenticated } from ".
                 return;
             }
 
-            await setDoc(userDocRef, {
+            const dataToSave = {
                 name: name,
                 email: verifiedEmailLower,
                 uid: user.uid,
                 createdAt: serverTimestamp()
-            }, { merge: true });
+            };
+            if (photoURL) dataToSave.photoURL = photoURL;
+
+            await setDoc(userDocRef, dataToSave, { merge: true });
 
             localStorage.setItem('cz_user_name', name);
             localStorage.setItem('cz_uid', user.uid);
@@ -103,6 +170,50 @@ import { db, doc, getDoc, setDoc, serverTimestamp, ensureAuthenticated } from ".
             showToast('حصل خطأ أثناء حفظ الاسم، حاول تاني', true);
             setLoading(false);
         }
+    }
+
+    async function handleSave() {
+        const name = nameInput.value.trim();
+
+        if (!name) {
+            showError('من فضلك اكتب اسمك');
+            return;
+        }
+        if (name.length < 2) {
+            showError('الاسم قصير جدًا');
+            return;
+        }
+
+        clearError();
+
+        // لو المستخدم اختار صورة بالفعل، نكمل مباشرة من غير أي تحذير.
+        // لو مفيش صورة، نوقفه بمودال يخيّره: يرفع دلوقتي أو يكمل من غيرها.
+        if (!selectedPhotoFile) {
+            openNoPhotoOverlay();
+            return;
+        }
+
+        await performSave();
+    }
+
+    if (noPhotoUploadBtn) {
+        noPhotoUploadBtn.addEventListener('click', () => {
+            closeNoPhotoOverlay();
+            if (profilePicInput) profilePicInput.click();
+        });
+    }
+
+    if (noPhotoContinueBtn) {
+        noPhotoContinueBtn.addEventListener('click', async () => {
+            closeNoPhotoOverlay();
+            await performSave();
+        });
+    }
+
+    if (noPhotoOverlay) {
+        noPhotoOverlay.addEventListener('click', (e) => {
+            if (e.target === noPhotoOverlay) closeNoPhotoOverlay();
+        });
     }
 
     saveNameBtn.addEventListener('click', handleSave);

@@ -503,3 +503,142 @@ body.theme-white .auth-card {
         gap: 7px;
     }
 }
+
+/* ===== صورة البروفايل (صفحة الاسم) ===== */
+.profile-avatar-field {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.profile-pic-picker {
+    position: relative;
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: var(--glass-strong);
+    border: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.profile-pic-placeholder-icon {
+    width: 42%;
+    height: 42%;
+    color: var(--text-dim);
+}
+
+.profile-pic-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.profile-pic-camera {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--grad);
+    border: 2px solid var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #06110C;
+}
+
+.profile-pic-camera svg {
+    width: 60%;
+    height: 60%;
+}
+
+.profile-pic-hint {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.profile-pic-picker.uploading {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+/* ===== مودال "نسيت ترفع صورة" ===== */
+.confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+}
+
+.confirm-overlay.open {
+    display: flex;
+}
+
+.confirm-card {
+    width: 100%;
+    max-width: 340px;
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
+    border: 1px solid var(--glass-border-strong);
+    border-radius: var(--radius-lg);
+    padding: 24px 22px;
+    backdrop-filter: blur(22px) saturate(1.6);
+    -webkit-backdrop-filter: blur(22px) saturate(1.6);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    text-align: center;
+}
+
+body.theme-white .confirm-card {
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.45));
+}
+
+.confirm-title {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.confirm-sub {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.confirm-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.secondary-btn {
+    width: 100%;
+    padding: 13px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.secondary-btn:hover {
+    background: var(--glass);
+    color: var(--text);
+}
