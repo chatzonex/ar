@@ -81,11 +81,15 @@ import { db, doc, getDoc, updateDoc, ensureAuthenticated } from "./firebase-init
     applyLgState();
 
     // ===== Privacy Toggles =====
-    // إخفاء الأونلاين، تثبيت آخر ظهور، إخفاء الصح الزرقاء.
-    // كل خيار بيتحفظ في localStorage وبيتفعّل فوراً بدون ما يحتاج إعادة تحميل.
+    // خياران بس في سيكشن الخصوصية دلوقتي:
+    //  1) منع الصح الزرقاء — إعداد محلي (localStorage)، بيتحقق منه
+    //     كل طرف من عنده هو، فلو أي واحد في الشات مفعّلها الصح
+    //     الزرقاء متظهرش خالص لا عنده ولا عند الطرف التاني.
+    //  2) إخفاء صورة البروفايل عن الآخرين — ده حقل على مستند
+    //     المستخدم نفسه في Firestore (مش محلي)، اتربط بعدين تحت
+    //     (initHidePhotoToggle) لأنه محتاج الإيميل المتحقق منه اللي
+    //     بيتجهز لاحقًا في الملف ده.
     const PRIVACY_OPTIONS = {
-        hideOnline: 'cz_privacy_hide_online',
-        pinLastSeen: 'cz_privacy_pin_lastseen',
         hideReadReceipts: 'cz_privacy_hide_read_receipts'
     };
 
@@ -94,40 +98,14 @@ import { db, doc, getDoc, updateDoc, ensureAuthenticated } from "./firebase-init
         privacyState[key] = localStorage.getItem(PRIVACY_OPTIONS[key]) === 'on';
     });
 
-    // لو المستخدم فعّل "تثبيت آخر ظهور"، بنسجل القيمة الحالية (لو مفيش قيمة
-    // مسجّلة قبل كده) عشان تفضل ثابتة ومتتحدثش تلقائياً حتى وهو أونلاين.
-    function pinCurrentLastSeenIfNeeded() {
-        if (!privacyState.pinLastSeen) return;
-        if (!localStorage.getItem('cz_last_seen_pinned_value')) {
-            const now = new Date().toISOString();
-            localStorage.setItem('cz_last_seen_pinned_value', now);
-        }
-    }
-
-    // نقطة الدخول اللي أي كود تاني في الأبب (شاشة الشات، حالة الاتصال...)
-    // المفروض يستخدمها قبل ما يحدّث "آخر ظهور" الفعلي، عشان لو كان مفعّل
-    // "تثبيت آخر ظهور" منمنعش التحديث خالص.
+    // نقطة الدخول اللي كود المحادثة (conversation.js) بيستخدمها عشان
+    // يعرف هل يبعت status: 'read' فعليًا ولا لأ.
     window.CZPrivacy = {
-        isOnlineHidden: () => !!privacyState.hideOnline,
-        isLastSeenPinned: () => !!privacyState.pinLastSeen,
-        areReadReceiptsHidden: () => !!privacyState.hideReadReceipts,
-        getPinnedLastSeen: () => localStorage.getItem('cz_last_seen_pinned_value'),
-        // بيتنادى قبل أي تحديث لـ "آخر ظهور": لو التثبيت مفعّل، بيرجّع
-        // القيمة المثبّتة بدل السماح بتحديثها؛ لو مش مفعّل، بيرجع null
-        // (يعني حدّث عادي).
-        resolveLastSeenUpdate: () => {
-            if (privacyState.pinLastSeen) {
-                return localStorage.getItem('cz_last_seen_pinned_value');
-            }
-            return null;
-        }
+        areReadReceiptsHidden: () => !!privacyState.hideReadReceipts
     };
 
     function applyPrivacyState() {
-        document.body.classList.toggle('privacy-hide-online', !!privacyState.hideOnline);
-        document.body.classList.toggle('privacy-pin-lastseen', !!privacyState.pinLastSeen);
         document.body.classList.toggle('privacy-hide-read-receipts', !!privacyState.hideReadReceipts);
-        pinCurrentLastSeenIfNeeded();
     }
 
     Object.keys(PRIVACY_OPTIONS).forEach(key => {
@@ -137,11 +115,15 @@ import { db, doc, getDoc, updateDoc, ensureAuthenticated } from "./firebase-init
         input.addEventListener('change', () => {
             privacyState[key] = input.checked;
             localStorage.setItem(PRIVACY_OPTIONS[key], input.checked ? 'on' : 'off');
-            // لو بيلغي تثبيت آخر ظهور، نمسح القيمة المثبتة عشان ترجع تتحدث عادي
-            if (key === 'pinLastSeen' && !input.checked) {
-                localStorage.removeItem('cz_last_seen_pinned_value');
-            }
             applyPrivacyState();
+            // بنمرّر نفس القيمة لمستند المستخدم في Firestore كمان، عشان
+            // الطرف التاني في أي شات يقدر يتأكد إني أنا مفعّلها هو
+            // كمان قبل ما يبعت status:'read' على رسايلي — بكده الخاصية
+            // بتبقى ثنائية فعليًا مش بس عندي أنا محليًا.
+            if (key === 'hideReadReceipts' && savedEmailLowerForAvatar) {
+                updateDoc(doc(db, 'users', savedEmailLowerForAvatar), { hideReadReceipts: input.checked })
+                    .catch((e) => console.warn('تعذّر مزامنة إعداد منع الصح الزرقاء:', e));
+            }
             if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
         });
     });
@@ -307,12 +289,10 @@ import { db, doc, getDoc, updateDoc, ensureAuthenticated } from "./firebase-init
         privacy_row: 'الخصوصية',
         privacy_title: 'الخصوصية',
         privacy_body: 'بنحترم خصوصيتك، وبيانات محادثاتك متشفّرة ومتخزنة بأمان. مش بنشارك بياناتك مع أي طرف تالت.',
-        privacy_hide_online_title: 'إخفاء ظهورك أونلاين',
-        privacy_hide_online_sub: 'محدش هيقدر يشوفك متصل دلوقتي',
-        privacy_pin_lastseen_title: 'تثبيت آخر ظهور',
-        privacy_pin_lastseen_sub: 'آخر ظهورك يفضل ثابت، حتى لو كنت أونلاين',
+        privacy_hide_photo_title: 'إخفاء صورة البروفايل عن الآخرين',
+        privacy_hide_photo_sub: 'اللي بتتكلم معاهم مش هيشوفوا صورة البروفايل بتاعتك',
         privacy_hide_readreceipts_title: 'منع الصح الزرقاء',
-        privacy_hide_readreceipts_sub: 'علامات القراءة الزرقاء مش هتظهر في الشات',
+        privacy_hide_readreceipts_sub: 'علامات القراءة الزرقاء مش هتظهر عندك ولا عند الطرف التاني',
         ctx_pin: 'تثبيت المحادثة',
         ctx_delete_chat: 'حذف المحادثة',
         delete_chat_title: 'حذف المحادثة؟',
@@ -397,12 +377,10 @@ import { db, doc, getDoc, updateDoc, ensureAuthenticated } from "./firebase-init
         privacy_row: 'Privacy',
         privacy_title: 'Privacy',
         privacy_body: 'We respect your privacy. Your chat data is encrypted and stored securely. We never share your data with third parties.',
-        privacy_hide_online_title: 'Hide online status',
-        privacy_hide_online_sub: 'No one will be able to see when you\'re online',
-        privacy_pin_lastseen_title: 'Pin last seen',
-        privacy_pin_lastseen_sub: 'Your last seen stays fixed, even while you\'re online',
+        privacy_hide_photo_title: 'Hide profile photo from others',
+        privacy_hide_photo_sub: 'People you chat with won\'t see your profile photo',
         privacy_hide_readreceipts_title: 'Hide read receipts',
-        privacy_hide_readreceipts_sub: 'Blue read receipts won\'t appear in chat',
+        privacy_hide_readreceipts_sub: 'Blue read receipts won\'t appear for you or the other person',
         ctx_pin: 'Pin chat',
         ctx_delete_chat: 'Delete chat',
         delete_chat_title: 'Delete this chat?',
@@ -530,6 +508,36 @@ import { db, doc, getDoc, updateDoc, ensureAuthenticated } from "./firebase-init
     // your-profile.html بس، مش من شاشة الإعدادات) =====
     const profileAvatarIcon = document.getElementById('profileAvatarIcon');
     const savedEmailLowerForAvatar = savedEmail ? savedEmail.toLowerCase() : '';
+
+    // ===== إخفاء صورة البروفايل عن الآخرين =====
+    // مخزّنة كحقل على مستند المستخدم نفسه (users/{email}.hidePhotoFromOthers)
+    // في Firestore، مش localStorage — عشان أي حد تاني بيفتح شات مع
+    // المستخدم ده يقدر يتأكد من الحقل ده قبل ما يعرض صورته.
+    (async function initHidePhotoToggle() {
+        const input = document.getElementById('privacySwitch-hidePhotoFromOthers');
+        if (!input || !savedEmailLowerForAvatar) return;
+
+        try {
+            const snap = await getDoc(doc(db, 'users', savedEmailLowerForAvatar));
+            input.checked = snap.exists() && snap.data().hidePhotoFromOthers === true;
+        } catch (e) {
+            console.warn('تعذّر تحميل حالة إخفاء صورة البروفايل:', e);
+        }
+
+        input.addEventListener('change', async () => {
+            const wantHidden = input.checked;
+            input.disabled = true;
+            try {
+                await updateDoc(doc(db, 'users', savedEmailLowerForAvatar), { hidePhotoFromOthers: wantHidden });
+                if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
+            } catch (e) {
+                console.error('فشل تحديث إخفاء صورة البروفايل:', e);
+                input.checked = !wantHidden; // رجوع للحالة القديمة لو الحفظ فشل
+            } finally {
+                input.disabled = false;
+            }
+        });
+    })();
 
     // بيعرض الصورة الحالية جوه دايرة البروفايل، أو يرجّع الأيقونة
     // الافتراضية لو مفيش صورة محفوظة أصلاً.

@@ -479,8 +479,11 @@ async function saveContact(myEmail, otherEmail) {
                     refreshTopBarName();
                     if (typeof refreshTheirsBubbleLabel === 'function') refreshTheirsBubbleLabel();
                 }
-                if (data.photoURL) renderOtherAvatarImage(data.photoURL);
+                // لو الطرف التاني مفعّل "إخفاء صورة البروفايل عن الآخرين"،
+                // منعرضش صورته عندنا خالص (حتى لو موجودة في مستنده).
+                if (data.photoURL && data.hidePhotoFromOthers !== true) renderOtherAvatarImage(data.photoURL);
                 if (data.about) maybeShowAboutToast(data.about);
+                otherHidesReadReceipts = data.hideReadReceipts === true;
             }
         } catch (e) {
             // لو فشل الجلب لأي سبب، بيفضل الاسم المشتق من الإيميل كبديل
@@ -495,6 +498,11 @@ async function saveContact(myEmail, otherEmail) {
     // شيت "معلومات الحساب" اللي بيتفتح من قايمة التلت نقط
     // =====================================================
     let otherPhotoURL = '';
+    // لو الطرف التاني مفعّل "منع الصح الزرقاء" عنده هو (بنجيبها من
+    // مستنده في loadOtherRealName)، وقتها منبعتش status:'read' خالص
+    // على رسايله — عشان الخاصية تبقى ثنائية (bilateral): محدش من
+    // الاتنين يشوف صح زرقاء في الشات ده لو أي طرف مفعّلها.
+    let otherHidesReadReceipts = false;
 
     function populateAccountInfo() {
         const avatarEl = document.getElementById('accountInfoAvatar');
@@ -2416,6 +2424,14 @@ async function saveContact(myEmail, otherEmail) {
     const myEmailLower = myEmail.toLowerCase();
 
     function markIncomingMessagesAsRead(docs) {
+        // منع الصح الزرقاء بيبقى ثنائي: لو أنا مفعّلها عندي، أو الطرف
+        // التاني مفعّلها عنده هو، مبعتش status:'read' خالص على رسايله —
+        // فتفضل الصح رمادية عند الاتنين، مش بس عند اللي فعّل الخاصية.
+        const myHideReceipts = window.CZPrivacy && window.CZPrivacy.areReadReceiptsHidden
+            ? window.CZPrivacy.areReadReceiptsHidden()
+            : false;
+        if (myHideReceipts || otherHidesReadReceipts) return;
+
         docs.forEach(d => {
             const data = d.data();
             const isFromOther = (data.senderEmail || '').toLowerCase() !== myEmailLower;

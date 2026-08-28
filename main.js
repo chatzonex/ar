@@ -252,9 +252,13 @@ import {
         try {
             const snap = await getDoc(doc(db, 'users', key));
             const data = snap.exists() ? snap.data() : null;
+            // لو صاحب الحساب ده مفعّل "إخفاء صورة البروفايل عن الآخرين"،
+            // منرجعش رابط صورته خالص هنا، فتفضل الأيقونة الافتراضية
+            // ظاهرة في كارت الشات بدلها.
+            const photoHidden = !!(data && data.hidePhotoFromOthers === true);
             const profile = {
                 name: (data && data.name) ? data.name : displayNameFromEmail(email),
-                photoURL: (data && data.photoURL) ? data.photoURL : ''
+                photoURL: (data && !photoHidden && data.photoURL) ? data.photoURL : ''
             };
             nameCache.set(key, profile);
             return profile;
