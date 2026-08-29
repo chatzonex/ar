@@ -473,12 +473,17 @@ import { db, doc, getDoc, updateDoc, ensureAuthenticated } from "./firebase-init
     const tabPill = document.getElementById('tabPill');
     const bottomNav = document.getElementById('bottomNav');
 
+    // الدايرة اتصغرت بنسبة 18% عن عرض الزرار الأصلي، وبتفضل متمركزة
+    // تحت الزرار (مش ملاصقة الحافة) عشان تبقى دايرة عادية واضحة.
+    const PILL_SHRINK = 0.82; // 100% - 18%
+
     function movePillTo(btn, animate) {
         if (!tabPill || !bottomNav || !btn) return;
         const navRect = bottomNav.getBoundingClientRect();
         const btnRect = btn.getBoundingClientRect();
-        const left = btnRect.left - navRect.left;
-        const width = btnRect.width;
+        const fullWidth = btnRect.width;
+        const width = fullWidth * PILL_SHRINK;
+        const left = (btnRect.left - navRect.left) + (fullWidth - width) / 2;
         if (!animate) {
             tabPill.style.transition = 'none';
         }
