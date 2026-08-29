@@ -306,7 +306,26 @@ import { db, doc, getDoc, updateDoc, ensureAuthenticated } from "./firebase-init
         add_choice_new_title: 'تحدث مع شخص جديد',
         add_choice_new_sub: 'ابدأ محادثة بإيميل جديد',
         contacts_sub: 'جهات الاتصال اللي اتكلمت معاها قبل كده',
-        contacts_empty: 'لسه مفيش جهات اتصال سابقة'
+        contacts_empty: 'لسه مفيش جهات اتصال سابقة',
+        nav_groups: 'الجروبات',
+        groups_title: 'الجروبات',
+        groups_search_placeholder: 'ابحث عن جروب',
+        groups_empty_title: 'مفيش جروبات لسه',
+        groups_empty_sub: 'دوس على علامة + وابدأ أول جروب',
+        group_pick_members_sub: 'اختار الناس اللي عايز تعمل معاهم الجروب',
+        group_pick_members_empty: 'لازم تتكلم مع حد الأول عشان تضيفه لجروب',
+        group_details_sub: 'اختار اسم وصورة للجروب',
+        group_name_placeholder: 'اسم الجروب',
+        btn_next: 'التالي',
+        btn_back: 'رجوع',
+        btn_create_group: 'إنشاء',
+        conv_menu_group_members: 'أعضاء الجروب',
+        conv_menu_group_members_sub: 'شوف كل الأعضاء في الجروب ده',
+        group_info_title: 'معلومات الجروب',
+        group_members_count: 'الأعضاء',
+        bubbles_body_group: 'لون فقاعتك بيفضل معاك في كل الشاتات والجروبات اللي ليك.',
+        ctx_delete_everyone_group: 'حذف من عند الجميع',
+        delete_selected_body_group: 'رسائلك هتتحذف نهائيًا من عند الجميع، ورسائل الأعضاء التانيين هتتخفي من عندك بس.'
     };
 
     const EN_TEXT = {
@@ -394,7 +413,26 @@ import { db, doc, getDoc, updateDoc, ensureAuthenticated } from "./firebase-init
         add_choice_new_title: 'Chat with someone new',
         add_choice_new_sub: 'Start a chat with a new email',
         contacts_sub: 'People you have previously chatted with',
-        contacts_empty: 'No previous contacts yet'
+        contacts_empty: 'No previous contacts yet',
+        nav_groups: 'Groups',
+        groups_title: 'Groups',
+        groups_search_placeholder: 'Search groups',
+        groups_empty_title: 'No groups yet',
+        groups_empty_sub: 'Tap the + button to start your first group',
+        group_pick_members_sub: 'Pick the people you want in the group',
+        group_pick_members_empty: 'You need to chat with someone first before adding them to a group',
+        group_details_sub: 'Choose a name and photo for the group',
+        group_name_placeholder: 'Group name',
+        btn_next: 'Next',
+        btn_back: 'Back',
+        btn_create_group: 'Create',
+        conv_menu_group_members: 'Group members',
+        conv_menu_group_members_sub: 'See everyone in this group',
+        group_info_title: 'Group info',
+        group_members_count: 'Members',
+        bubbles_body_group: 'Your bubble color follows you across all your chats and groups.',
+        ctx_delete_everyone_group: 'Delete for everyone',
+        delete_selected_body_group: 'Your selected messages will be permanently deleted for everyone, and other members\' selected messages will be hidden for you only.'
     };
 
     let currentLang = localStorage.getItem('cz_lang') || 'ar';

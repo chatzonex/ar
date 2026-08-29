@@ -722,6 +722,9 @@ body.theme-custom .modal-box .field-group input:focus {
 
 /* ===================================================
    ADD-CHAT CHOICE MODAL (اكونت قديم / شخص جديد)
+   ثابت Liquid Glass دايمًا (مش مرتبط بإعداد "Liquid Glass من
+   الأيقونات")، بتدرّج نحو الأسود، وحواف ناعمة جداً على كل حاجة
+   جواه: الكارت نفسه، عناصر الاختيار، حقل الإيميل، الأزرار.
 =================================================== */
 .add-choice-list {
     display: flex;
@@ -736,14 +739,17 @@ body.theme-custom .modal-box .field-group input:focus {
     gap: 12px;
     width: 100%;
     padding: 14px;
-    border-radius: var(--radius-md);
-    background: var(--glass-strong);
-    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(18px) saturate(1.6) brightness(1.06);
+    -webkit-backdrop-filter: blur(18px) saturate(1.6) brightness(1.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.10);
     cursor: pointer;
     text-align: start;
     font-family: inherit;
     color: var(--text);
-    transition: transform 0.15s ease, background 0.15s ease;
+    transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .add-choice-item:active {
@@ -751,7 +757,8 @@ body.theme-custom .modal-box .field-group input:focus {
 }
 
 .add-choice-item:hover {
-    background: var(--glass);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
 .add-choice-icon {
@@ -762,7 +769,10 @@ body.theme-custom .modal-box .field-group input:focus {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--glass);
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
     color: var(--accent, #25D9A0);
 }
 
@@ -808,14 +818,16 @@ body.theme-custom .modal-box .field-group input:focus {
     align-items: center;
     gap: 12px;
     padding: 11px 10px;
-    border-radius: var(--radius-md);
+    border-radius: 16px;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background 0.2s ease;
 }
 
 .contact-row:hover,
 .contact-row:active {
-    background: var(--glass-strong);
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .contact-row-avatar {
