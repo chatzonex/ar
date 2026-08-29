@@ -1184,19 +1184,17 @@ html[dir="rtl"] .group-photo-picker-badge {
     gap: 4px;
     padding: 7px;
     height: 62px;
-    /* Bottom nav is now ALWAYS 100% Liquid Glass, independent of the
-       lg-bottombar-on setting toggle in Settings. That toggle's
-       switch/class still exist and can be reused elsewhere, but no
-       longer changes anything about this bar. */
-    background: rgba(27, 32, 39, 0.55);
-    backdrop-filter: blur(26px) saturate(1.7) brightness(1.12);
-    -webkit-backdrop-filter: blur(26px) saturate(1.7) brightness(1.12);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    /* Bottom nav is ALWAYS 100% real Liquid Glass — true backdrop blur
+       of everything behind it, no dark solid tint, pure translucent
+       white glass. Independent of the lg-bottombar-on setting toggle. */
+    background: rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(40px) saturate(2) brightness(1.25);
+    -webkit-backdrop-filter: blur(40px) saturate(2) brightness(1.25);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 999px;
-    box-shadow: 0 16px 46px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    box-shadow: 0 16px 46px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -1px 0 rgba(255, 255, 255, 0.08);
     z-index: 100;
     isolation: isolate;
-    transition: background 0.5s ease, backdrop-filter 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
 }
 
 .bottom-nav::before {
@@ -1204,16 +1202,15 @@ html[dir="rtl"] .group-photo-picker-badge {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 45%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 50%);
     pointer-events: none;
     z-index: 0;
     opacity: 1;
 }
 
-/* Sliding pill hugging the active tab — plain neutral gray/transparent
-   circle (no accent gradient), width reduced 18% vs the original. JS
-   computes width from the button's rect then applies this factor via
-   the --pill-shrink variable, see movePillTo() in settings.js. */
+/* Sliding pill hugging the active tab — plain neutral transparent-white
+   circle, no accent color at all, width reduced 18% vs the original,
+   and matching the same real-glass treatment as the bar itself. */
 .tab-pill {
     position: absolute;
     top: 7px;
@@ -1221,11 +1218,13 @@ html[dir="rtl"] .group-photo-picker-badge {
     left: 7px;
     width: 48px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     z-index: 1;
     pointer-events: none;
     transition: transform 0.42s cubic-bezier(0.22, 1.18, 0.32, 1), width 0.32s cubic-bezier(0.22, 1.18, 0.32, 1);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 2px 12px rgba(0, 0, 0, 0.25);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 12px rgba(0, 0, 0, 0.2);
     will-change: transform, width;
 }
 
@@ -1234,8 +1233,8 @@ html[dir="rtl"] .group-photo-picker-badge {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: radial-gradient(ellipse at 50% 12%, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 60%);
-    opacity: 0.55;
+    background: radial-gradient(ellipse at 50% 12%, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0) 60%);
+    opacity: 0.6;
     mix-blend-mode: screen;
     pointer-events: none;
 }
