@@ -41,19 +41,6 @@
                 <input type="text" class="search-input" id="chatSearch" data-i18n-placeholder="search_placeholder" placeholder="ابحث عن الشتات">
             </div>
 
-            <div class="chat-row chatzone-ai-row" id="chatzoneAiRow">
-                <div class="chat-row-avatar chatzone-ai-avatar">
-                    <img src="chatzone_AI_final_nobg_square.svg" alt="ChatZone Ai" class="chatzone-ai-avatar-img">
-                </div>
-                <div class="chat-row-text">
-                    <h4 class="chat-row-name">ChatZone Ai</h4>
-                    <p class="chat-row-preview" data-i18n="ai_row_preview">اسأل أي حاجة، جاهز أساعدك دايمًا</p>
-                </div>
-                <div class="chat-row-meta">
-                    <span class="chatzone-ai-badge" data-i18n="ai_row_badge">AI</span>
-                </div>
-            </div>
-
             <div class="chats-list" id="chatsList">
                 <div class="empty-state">
                     <div class="empty-icon">💬</div>
@@ -61,6 +48,11 @@
                     <p class="empty-sub" data-i18n="empty_sub">دوس على علامة + وابدأ أول محادثة</p>
                 </div>
             </div>
+
+            <!-- ===== ChatZone Ai — دايرة عايمة ثابتة، بتفتح شات الذكاء الاصطناعي ===== -->
+            <button class="chatzone-ai-fab" id="chatzoneAiFab" aria-label="ChatZone Ai">
+                <img src="chatzone_AI_final_nobg_square.svg" alt="ChatZone Ai" class="chatzone-ai-fab-img">
+            </button>
 
         </section>
 

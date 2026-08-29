@@ -104,10 +104,10 @@ import {
         goToConversation(email);
     }
 
-    // ===== ChatZone Ai: فتح شات الذكاء الاصطناعي =====
-    const chatzoneAiRow = document.getElementById('chatzoneAiRow');
-    if (chatzoneAiRow) {
-        chatzoneAiRow.addEventListener('click', () => {
+    // ===== ChatZone Ai: فتح شات الذكاء الاصطناعي (دايرة عايمة) =====
+    const chatzoneAiFab = document.getElementById('chatzoneAiFab');
+    if (chatzoneAiFab) {
+        chatzoneAiFab.addEventListener('click', () => {
             window.location.href = 'ai-chat.html';
         });
     }
