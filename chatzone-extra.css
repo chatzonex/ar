@@ -555,3 +555,52 @@ html[dir="ltr"] .msg-row-reply-icon,
 .cz-weak-conn-box svg {
     flex-shrink: 0;
 }
+
+/* ===================================================
+   ChatZone Ai — صف ثابت فوق قائمة الشاتس في صفحة الدردشات
+=================================================== */
+.chatzone-ai-row {
+    margin: 4px 20px 6px;
+    padding: 12px 10px;
+    border-radius: 16px;
+    background: linear-gradient(120deg, rgba(37, 217, 160, 0.10), rgba(91, 127, 255, 0.10));
+    border: 1px solid rgba(37, 217, 160, 0.18);
+    position: relative;
+}
+
+.chatzone-ai-row:active,
+.chatzone-ai-row:hover {
+    background: linear-gradient(120deg, rgba(37, 217, 160, 0.16), rgba(91, 127, 255, 0.16));
+}
+
+.chatzone-ai-avatar {
+    background: #0B0F12;
+    box-shadow: 0 0 0 2px rgba(37, 217, 160, 0.35), 0 6px 18px rgba(0, 0, 0, 0.45);
+    position: relative;
+}
+
+.chatzone-ai-avatar-img {
+    width: 78%;
+    height: 78%;
+    object-fit: contain;
+    border-radius: 0;
+    filter: drop-shadow(0 0 6px rgba(37, 217, 160, 0.45));
+}
+
+.chatzone-ai-row .chat-row-name {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+}
+
+.chatzone-ai-badge {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: var(--grad);
+    color: #06110C;
+}

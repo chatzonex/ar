@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ChatZone Ai</title>
+<script>
+    if (!localStorage.getItem('cz_verified_email')) {
+        window.location.replace('index.html');
+    }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&family=Reem+Kufi:wght@400;600&family=Lobster&family=Pacifico&family=Dancing+Script:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="main.css">
+<link rel="stylesheet" href="settings.css">
+<link rel="stylesheet" href="conversation.css">
+<link rel="stylesheet" href="chatzone-extra.css">
+<link rel="stylesheet" href="ai-chat.css">
+</head>
+<body>
+
+    <div class="conv-shell ai-chat-shell">
+
+        <!-- ===== Top Bar ===== -->
+        <header class="conv-topbar" id="convTopbarNormal">
+            <button class="conv-back-btn" id="convBackBtn" aria-label="رجوع">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+
+            <div class="conv-identity">
+                <div class="conv-avatar ai-topbar-avatar">
+                    <img src="chatzone_AI_final_nobg_square.svg" alt="ChatZone Ai" class="ai-topbar-avatar-img">
+                </div>
+                <div class="conv-identity-text">
+                    <h1 class="conv-name">ChatZone Ai</h1>
+                    <p class="conv-status" id="aiStatusText">متصل الآن</p>
+                </div>
+            </div>
+
+            <button class="conv-menu-btn" id="convMenuBtn" aria-label="خيارات">
+                <span class="dots">
+                    <span></span><span></span><span></span>
+                </span>
+            </button>
+        </header>
+
+        <!-- ===== منطقة الرسائل + شاشة الترحيب باللوجو المتحرك ===== -->
+        <div class="conv-messages" id="convMessages">
+            <div class="ai-welcome" id="aiWelcome">
+                <div class="ai-welcome-logo-wrap">
+                    <img src="chatzone_AI_final_nobg_square.svg" alt="ChatZone Ai" class="ai-welcome-logo">
+                    <div class="ai-welcome-ring ring-1"></div>
+                    <div class="ai-welcome-ring ring-2"></div>
+                    <div class="ai-welcome-ring ring-3"></div>
+                </div>
+                <h2 class="ai-welcome-title">ChatZone Ai</h2>
+                <p class="ai-welcome-sub">اسألني أي حاجة، هساعدك دلوقتي</p>
+            </div>
+        </div>
+
+        <!-- ===== بار الكتابة السفلي: نفس نظام Liquid Glass بتاع الشات العادي ===== -->
+        <div class="conv-input-area" id="convInputArea">
+            <div class="conv-input-bar" id="convInputBar">
+                <textarea
+                    class="conv-textarea"
+                    id="aiTextarea"
+                    rows="1"
+                    placeholder="اكتب رسالة..."
+                ></textarea>
+                <button class="conv-send-btn" id="aiSendBtn" aria-label="إرسال">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== Conversation 3-dot Dropdown Menu (مبسّطة لصفحة الـ Ai) ===== -->
+    <div class="sidebar-overlay" id="convSidebarOverlay"></div>
+    <div class="sidebar" id="convSidebarMenu">
+        <div class="sidebar-item" id="aiClearChatBtn">
+            <div class="sidebar-item-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+            </div>
+            <div class="sidebar-item-text">
+                <h4>مسح المحادثة</h4>
+                <p>يبدأ شات جديد من الأول</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="ai-chat.js"></script>
+</body>
+</html>

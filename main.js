@@ -104,6 +104,14 @@ import {
         goToConversation(email);
     }
 
+    // ===== ChatZone Ai: فتح شات الذكاء الاصطناعي =====
+    const chatzoneAiRow = document.getElementById('chatzoneAiRow');
+    if (chatzoneAiRow) {
+        chatzoneAiRow.addEventListener('click', () => {
+            window.location.href = 'ai-chat.html';
+        });
+    }
+
     // ===== خطوة 1: زرار + بيفتح اختيار (اكونت قديم / شخص جديد) =====
     function openAddChoiceModal() {
         if (addChoiceOverlay) addChoiceOverlay.classList.remove('hidden');
