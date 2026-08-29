@@ -620,6 +620,15 @@ body.theme-white .nav-btn.active {
     color: var(--text);
 }
 
+/* نفس الزجاج الحقيقي بتاع الشريط السفلي، لكن بألوان فاتحة تناسب
+   الوضع الأبيض — بار "الإعدادات" بقى بلور حقيقي هنا كمان. */
+body.theme-white .topbar-simple {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(40px) saturate(2) brightness(1.05);
+    -webkit-backdrop-filter: blur(40px) saturate(2) brightness(1.05);
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
 body.theme-white .search-input,
 body.theme-white .modal-box .field-group input {
     color: var(--text);
