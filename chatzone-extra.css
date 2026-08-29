@@ -30,6 +30,18 @@
     mask-size: contain;
 }
 
+/* ===== ذيل فقاعة ChatZone Ai ===== */
+/* ذيل فقاعة الـ AI (bubble-left مع كلاس bubble-ai) لازم ياخد نفس
+   لون خلفية bubble-ai بالظبط (#1B2027 / أبيض في الثيم الفاتح)،
+   مش لون بابل الطرف التاني العادي، عشان يندمج مع الفقاعة بدل
+   ما يبان بلون مختلف واضح زي ما كان بيحصل قبل كده */
+.bubble.bubble-ai::after {
+    background: #1B2027;
+}
+body.theme-white .bubble.bubble-ai::after {
+    background: #F0F4F2;
+}
+
 /* ===== Pinned chat row indicator ===== */
 .chat-row-pinned {
     order: -1;
@@ -562,21 +574,27 @@ html[dir="ltr"] .msg-row-reply-icon,
 =================================================== */
 .chatzone-ai-fab {
     position: fixed;
-    left: 18px;
+    /* افتراضيًا (LTR / إنجليزي): يمين الشاشة. في RTL / عربي بتتقلب
+       لشمال الشاشة عن طريق القاعدة تحت. مفيش أي أنيميشن نبض أو موج
+       هنا خالص — دايرة زجاجية ثابتة بس */
+    right: 18px;
+    left: auto;
     bottom: 96px; /* فوق شريط التنقل السفلي */
     width: 58px;
     height: 58px;
     border-radius: 50%;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.16);
     padding: 0;
-    background: #0B0F12;
+    background: rgba(20, 26, 32, 0.55);
+    backdrop-filter: blur(18px) saturate(1.5);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 0 2px rgba(37, 217, 160, 0.4), 0 10px 26px rgba(0, 0, 0, 0.55);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.16);
     cursor: pointer;
     z-index: 40;
-    animation: chatzoneAiFabPulse 2.6s ease-in-out infinite;
+    transition: transform 0.15s ease;
 }
 
 .chatzone-ai-fab:active {
@@ -587,16 +605,16 @@ html[dir="ltr"] .msg-row-reply-icon,
     width: 68%;
     height: 68%;
     object-fit: contain;
-    filter: drop-shadow(0 0 6px rgba(37, 217, 160, 0.5));
 }
 
-@keyframes chatzoneAiFabPulse {
-    0%, 100% { box-shadow: 0 0 0 2px rgba(37, 217, 160, 0.4), 0 10px 26px rgba(0, 0, 0, 0.55); }
-    50%      { box-shadow: 0 0 0 5px rgba(37, 217, 160, 0.18), 0 10px 26px rgba(0, 0, 0, 0.55); }
+body.theme-white .chatzone-ai-fab {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
-/* في وضع RTL الأيقونة العايمة تفضل شمال الشاشة برضو (زي المتفق عليه)،
-   لو حبيت تخليها يمين شيل السطر ده */
+/* في وضع RTL (عربي) الأيقونة العايمة تتقلب لشمال الشاشة، عكس
+   وضعها الافتراضي في LTR (إنجليزي) اللي بيكون يمين الشاشة */
 html[dir="rtl"] .chatzone-ai-fab {
     left: 18px;
     right: auto;

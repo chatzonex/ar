@@ -16,8 +16,8 @@
 }
 
 /* ===================================================
-   شاشة الترحيب — لوجو في نص الشاشة مع أنيميشن نبض/توهج
-   لحد ما المستخدم يبعت أول رسالة
+   شاشة الترحيب — لوجو ثابت في نص الشاشة، من غير أي نبض أو
+   حلقات متوهجة، بيدور بس ببطء شديد زي الـ spinner
 =================================================== */
 .ai-welcome {
     margin: auto;
@@ -55,32 +55,12 @@
     object-fit: contain;
     position: relative;
     z-index: 3;
-    filter: drop-shadow(0 0 14px rgba(37, 217, 160, 0.55));
-    animation: aiLogoPulse 2.4s ease-in-out infinite;
+    animation: aiLogoSlowSpin 7s linear infinite;
 }
 
-@keyframes aiLogoPulse {
-    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 14px rgba(37, 217, 160, 0.55)); }
-    50%      { transform: scale(1.07); filter: drop-shadow(0 0 22px rgba(91, 127, 255, 0.65)); }
-}
-
-/* حلقات متوهجة بتتمدد وتختفي حوالين اللوجو — إحساس "الذكاء شغال" */
-.ai-welcome-ring {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    border: 1.5px solid rgba(37, 217, 160, 0.45);
-    opacity: 0;
-    animation: aiRingExpand 2.8s ease-out infinite;
-}
-
-.ai-welcome-ring.ring-2 { animation-delay: 0.9s; border-color: rgba(91, 127, 255, 0.4); }
-.ai-welcome-ring.ring-3 { animation-delay: 1.8s; border-color: rgba(37, 217, 160, 0.35); }
-
-@keyframes aiRingExpand {
-    0%   { transform: scale(0.55); opacity: 0; }
-    30%  { opacity: 0.9; }
-    100% { transform: scale(1.5); opacity: 0; }
+@keyframes aiLogoSlowSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
 }
 
 .ai-welcome-title {
@@ -99,35 +79,37 @@
     color: var(--text-dim);
 }
 
-/* لما المستخدم يبدأ يكتب في التكست إريا، اللوجو يهدى شوية (اختياري: تأثير خفيف) */
-.ai-chat-shell.ai-typing-active .ai-welcome-logo {
-    animation-duration: 1.1s;
-}
-
 /* ===================================================
-   فقاعات رسائل الـ AI — نفس شكل فقاعة "التاني" العادية
-   بس بحدود خفيفة ملونة تميّزها كذكاء اصطناعي
+   فقاعات رسائل الـ AI — بتاخد لونها من متغيّر --ai-bubble-bg
+   (لو المستخدم غيّره من "تخصيص لون الفقاعات")، وبترجع للون
+   الداكن الافتراضي لو محدش غيّر حاجة
 =================================================== */
 .bubble.bubble-ai {
-    background: #1B2027;
+    background: var(--ai-bubble-bg, #1B2027);
     border: 1px solid rgba(37, 217, 160, 0.18);
 }
 
 .bubble.bubble-ai .bubble-text {
-    color: #E9EDEF;
+    color: var(--ai-bubble-text, #E9EDEF);
 }
 
 .bubble.bubble-ai .bubble-time {
-    color: rgba(233, 237, 239, 0.5);
+    color: var(--ai-bubble-time, rgba(233, 237, 239, 0.5));
+}
+
+/* ذيل الفقاعة بياخد نفس اللون بالظبط عن طريق --ai-bubble-bg،
+   عشان يندمج مع الفقاعة بدل ما يبان بلون مختلف */
+.bubble.bubble-ai::after {
+    background: var(--ai-bubble-bg, #1B2027) !important;
 }
 
 body.theme-white .bubble.bubble-ai {
-    background: #F0F4F2;
+    background: var(--ai-bubble-bg, #F0F4F2);
     border: 1px solid rgba(37, 217, 160, 0.25);
 }
 
 body.theme-white .bubble.bubble-ai .bubble-text {
-    color: #10161A;
+    color: var(--ai-bubble-text, #10161A);
 }
 
 /* ===== مؤشر "بيكتب..." أثناء انتظار رد الـ AI ===== */
@@ -167,3 +149,33 @@ body.theme-white .bubble.bubble-ai .bubble-text {
     text-align: center;
     margin: 10px 0;
 }
+
+/* ===== توست صغير (نسخ/حذف...) — نفس شكل الشات العادي ===== */
+.cz-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 100px;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(20, 26, 32, 0.92);
+    color: #E9EDEF;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    z-index: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.cz-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+body.theme-white .cz-toast {
+    background: rgba(255, 255, 255, 0.95);
+    color: #10161A;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
