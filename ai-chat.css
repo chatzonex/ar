@@ -112,6 +112,43 @@ body.theme-white .bubble.bubble-ai .bubble-text {
     color: var(--ai-bubble-text, #10161A);
 }
 
+/* ===== روابط المصادر تحت رد الـ AI (لو استخدم البحث في الإنترنت) ===== */
+.bubble-sources {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(37, 217, 160, 0.18);
+}
+
+.bubble-source-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #25D9A0;
+    text-decoration: none;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bubble-source-link::before {
+    content: "🔗";
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.bubble-source-link:hover {
+    text-decoration: underline;
+}
+
+body.theme-white .bubble-sources {
+    border-top: 1px solid rgba(37, 217, 160, 0.25);
+}
+
 /* ===== مؤشر "بيكتب..." أثناء انتظار رد الـ AI ===== */
 .ai-typing-bubble {
     display: flex;
@@ -178,4 +215,3 @@ body.theme-white .cz-toast {
     color: #10161A;
     border: 1px solid rgba(0, 0, 0, 0.08);
 }
-
