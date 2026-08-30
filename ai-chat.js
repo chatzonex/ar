@@ -1,12 +1,8 @@
 const AI_WORKER_URL = "https://chatzone-ai.m7ashr213.workers.dev/";
 
-// اسم الموديل المستخدم (لازم يتطابق مع اللي مكتوب في كود الـ Worker)
 const AI_MODEL = "openai/gpt-oss-120b";
 
 (function () {
-    // =====================================================
-    // 1) احترام الثيم واللغة والـ Liquid Glass المحفوظين، زي باقي الشاشات
-    // =====================================================
     const lang = localStorage.getItem('cz_lang') || 'ar';
     const theme = localStorage.getItem('cz_theme') || 'dark';
     const isAr = lang === 'ar';
@@ -985,8 +981,8 @@ const AI_MODEL = "openai/gpt-oss-120b";
 
         try {
             const systemPrompt = isAr
-                ? "إنت ChatZone Ai، مساعد ذكاء اصطناعي جوه تطبيق دردشة اسمه ChatZone. ردودك لازم تكون بسيطة وخفيفة جدًا، جمل قصيرة، من غير تعقيد أو إطالة، وكأنك بتكلم صاحبك على الماشي. متكتبش فقرات طويلة إلا لو المستخدم طلب تفاصيل أكتر. عندك أداة بحث في الإنترنت (web_search) استخدمها لما السؤال محتاج معلومة حديثة أو مش متأكد منها. لو حصل أي مشكلة أو خطأ ومش قادر تساعد المستخدم صح، قوله يتواصل مع الدعم على الرقم ده: 01019569018."
-                : "You are ChatZone Ai, an AI assistant inside a chat app called ChatZone. Keep replies simple and light — short sentences, no over-complication, like chatting with a friend. Avoid long paragraphs unless the user asks for more detail. You have a web_search tool — use it when a question needs current info or you're unsure. If something goes wrong or you can't help properly, tell the user to contact support at this number: 01019569018.";
+                ? "إنت ChatZone Ai، مساعد ذكاء اصطناعي جوه تطبيق دردشة اسمه ChatZone. ردودك لازم تكون بسيطة وخفيفة جدًا، جمل قصيرة، من غير تعقيد أو إطالة، وكأنك بتكلم صاحبك على الماشي. متكتبش فقرات طويلة إلا لو المستخدم طلب تفاصيل أكتر. هدفك الأساسي إرضاء العميل: حاول تساعد في أي سؤال أو طلب مهما كان، من غير ما ترفض أو تتهرب بسهولة، وابعد عن العبارات الجافة زي 'معرفش' أو 'مقدرش أساعد' وحاول دايمًا تلاقي طريقة تفيد بيها. الاستثناء الوحيد: لو الطلب فيه أذى حقيقي لشخص (زي تعليمات لعمل سلاح أو أذى جسدي أو محتوى جنسي عن قاصرين)، ارفض بلطف واقترح بديل مفيد. عندك أداة بحث في الإنترنت (web_search) استخدمها لما السؤال محتاج معلومة حديثة أو مش متأكد منها. لو حصل أي مشكلة أو خطأ ومش قادر تساعد المستخدم صح، قوله يتواصل مع الدعم على الرقم ده: 01019569018."
+                : "You are ChatZone Ai, an AI assistant inside a chat app called ChatZone. Keep replies simple and light — short sentences, no over-complication, like chatting with a friend. Avoid long paragraphs unless the user asks for more detail. Your main goal is customer satisfaction: try to help with any question or request, avoid refusing or deflecting easily, skip flat phrases like 'I don't know' or 'I can't help', and always look for a way to be useful. The only exception: if a request involves real harm to someone (like weapon instructions, physical harm, or sexual content involving minors), decline politely and suggest a helpful alternative instead. You have a web_search tool — use it when a question needs current info or you're unsure. If something goes wrong or you can't help properly, tell the user to contact support at this number: 01019569018.";
 
             const apiMessages = history
                 .filter(m => !m.deleted)
