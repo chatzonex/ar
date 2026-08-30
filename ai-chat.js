@@ -3,6 +3,7 @@ const AI_WORKER_URL = "https://chatzone-ai.m7ashr213.workers.dev/";
 const AI_MODEL = "openai/gpt-oss-120b";
 
 (function () {
+
     const lang = localStorage.getItem('cz_lang') || 'ar';
     const theme = localStorage.getItem('cz_theme') || 'dark';
     const isAr = lang === 'ar';
@@ -21,9 +22,6 @@ const AI_MODEL = "openai/gpt-oss-120b";
         document.body.classList.add('lg-chat-on');
     }
 
-    // =====================================================
-    // 2) ترجمة واجهة الصفحة بالكامل (تبع لغة التطبيق المحفوظة)
-    // =====================================================
     const I18N = {
         ar: {
             status_online: 'متصل الآن',
@@ -193,7 +191,6 @@ const AI_MODEL = "openai/gpt-oss-120b";
     }
     applyStaticTranslations();
 
-    // ===== عناصر الصفحة =====
     const convMessages = document.getElementById('convMessages');
     const aiWelcome = document.getElementById('aiWelcome');
     const aiTextarea = document.getElementById('aiTextarea');
@@ -217,7 +214,6 @@ const AI_MODEL = "openai/gpt-oss-120b";
     const convSelectCount = document.getElementById('convSelectCount');
     const convSelectDeleteBtn = document.getElementById('convSelectDeleteBtn');
 
-    // ===== تخزين محلي لتاريخ المحادثة (بيتفتح تاني لو رجعت للصفحة) =====
     const STORAGE_KEY = 'cz_ai_chat_history';
 
     function loadHistory() {
@@ -232,29 +228,24 @@ const AI_MODEL = "openai/gpt-oss-120b";
     function saveHistory(history) {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-        } catch (e) { /* تجاهل لو الملف كبير أوي */ }
+        } catch (e) {  }
     }
 
-    // كل رسالة: { id, role: 'user'|'assistant', content, ts, replyTo?: {id, text, senderName}, deleted?: bool }
     let history = loadHistory();
     let msgIdCounter = Date.now();
     function nextMsgId() {
         msgIdCounter += 1;
         return 'm' + msgIdCounter;
     }
-    // بنضمن إن كل رسالة قديمة معاها id (لو كانت متخزنة بنسخة قديمة من غير id)
+
     history.forEach((m) => { if (!m.id) m.id = nextMsgId(); });
 
-    // ===== رجوع =====
     if (convBackBtn) {
         convBackBtn.addEventListener('click', () => {
             window.location.href = 'MainActivity.html';
         });
     }
 
-    // =====================================================
-    // قايمة التلت نقط (نفس منطق conversation.js بالظبط)
-    // =====================================================
     function openConvMenu() {
         if (!convSidebarMenu || !convSidebarOverlay || !convMenuBtn) return;
         const isRtl = document.documentElement.dir === 'rtl';
@@ -311,7 +302,6 @@ const AI_MODEL = "openai/gpt-oss-120b";
         });
     }
 
-    // ===== توست صغير =====
     let toastTimer = null;
     function showToast(message) {
         let toastEl = document.getElementById('czToast');
@@ -327,10 +317,6 @@ const AI_MODEL = "openai/gpt-oss-120b";
         toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
     }
 
-    // =====================================================
-    // تخصيص لون الفقاعات — خاص بشات الـ AI بس، متخزن محليًا
-    // (نفس آلية conversation.js: بيغيّر CSS variables على الشِل)
-    // =====================================================
     const BUBBLE_MINE_KEY = 'cz_ai_bubble_mine';
     const BUBBLE_MINE_DARK_KEY = 'cz_ai_bubble_mine_dark';
     const BUBBLE_THEIRS_KEY = 'cz_ai_bubble_theirs';
@@ -427,7 +413,7 @@ const AI_MODEL = "openai/gpt-oss-120b";
     const presetsSaveBtn = document.getElementById('presetsSaveBtn');
     const presetsCancelBtn = document.getElementById('presetsCancelBtn');
 
-    let activeColorTarget = null; // 'mine' | 'theirs'
+    let activeColorTarget = null;
     let pendingEditorColor = null;
     let pendingEditorIsDark = '1';
     let pendingPresetChoice = null;
@@ -537,7 +523,6 @@ const AI_MODEL = "openai/gpt-oss-120b";
     applyBubbleColors();
     refreshBubblePreview();
 
-    // ===== إظهار/إخفاء شاشة الترحيب باللوجو =====
     function showWelcome() {
         aiWelcome.classList.remove('ai-welcome-hidden');
     }
@@ -545,7 +530,6 @@ const AI_MODEL = "openai/gpt-oss-120b";
         aiWelcome.classList.add('ai-welcome-hidden');
     }
 
-    // ===== رسم فقاعة رسالة (مستخدم أو AI)، بنفس بنية conversation.js =====
     function formatTime(date) {
         let h = date.getHours();
         const m = date.getMinutes().toString().padStart(2, '0');
@@ -563,7 +547,7 @@ const AI_MODEL = "openai/gpt-oss-120b";
     const LONG_PRESS_MSG_MS = 420;
     let selectModeOn = false;
     let selectedMessages = new Map();
-    let activeReply = null; // { id, text, senderName, isMine }
+    let activeReply = null;
 
     function messagePreviewText(msg) {
         if (msg.deleted) return T.deleted_msg_text;
@@ -585,6 +569,26 @@ const AI_MODEL = "openai/gpt-oss-120b";
 
     function findMsg(id) {
         return history.find(m => m.id === id);
+    }
+
+    const URL_REGEX = /(https?:\/\/[^\s<>"']+)/g;
+    function renderTextWithLinks(container, text) {
+        container.textContent = '';
+        const parts = String(text || '').split(URL_REGEX);
+        parts.forEach((part) => {
+            if (!part) return;
+            if (/^https?:\/\//.test(part)) {
+                const a = document.createElement('a');
+                a.className = 'bubble-inline-link';
+                a.href = part;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.textContent = part;
+                container.appendChild(a);
+            } else {
+                container.appendChild(document.createTextNode(part));
+            }
+        });
     }
 
     function appendMessage(msg) {
@@ -625,7 +629,11 @@ const AI_MODEL = "openai/gpt-oss-120b";
 
         const textEl = document.createElement('p');
         textEl.className = 'bubble-text' + (msg.deleted ? ' deleted' : '');
-        textEl.textContent = msg.deleted ? T.deleted_msg_text : msg.content;
+        if (msg.deleted) {
+            textEl.textContent = T.deleted_msg_text;
+        } else {
+            renderTextWithLinks(textEl, msg.content);
+        }
         bubble.appendChild(textEl);
 
         // ===== روابط المصادر (لو الرد ده جه من بحث في الإنترنت) =====
