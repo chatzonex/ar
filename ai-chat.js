@@ -1,11 +1,3 @@
-// =====================================================
-// ChatZone Ai — منطق صفحة شات الذكاء الاصطناعي
-// بيتكلم مع Cloudflare Worker (اللي بيخبي مفتاح Groq API)
-// بدل ما يتكلم مع Firestore زي شات الأشخاص العادي.
-// كل حاجة (رسايل، ألوان الفقاعات) متخزنة محليًا بس (localStorage).
-// =====================================================
-
-// ⚠️ غيّر الرابط ده لو غيّرت اسم الـ Worker بتاعك على Cloudflare
 const AI_WORKER_URL = "https://chatzone-ai.m7ashr213.workers.dev/";
 
 // اسم الموديل المستخدم (لازم يتطابق مع اللي مكتوب في كود الـ Worker)
@@ -81,9 +73,9 @@ const AI_MODEL = "openai/gpt-oss-120b";
             copied_toast: 'اتنسخت الرسالة',
             deleted_toast: 'اتحذفت الرسالة',
             placeholder: 'اكتب رسالة...',
-            error_connection: 'حصلت مشكلة في الاتصال بالذكاء الاصطناعي، حاول تاني.',
-            error_network: 'في مشكلة في الاتصال بالإنترنت، جرب تاني.',
-            error_fallback: 'معرفتش أرد دلوقتي، حاول تسأل بطريقة تانية.',
+            error_connection: 'حصلت مشكلة في الاتصال بالذكاء الاصطناعي، حاول تاني. لو المشكلة استمرت كلّم الدعم على 01019569018.',
+            error_network: 'في مشكلة في الاتصال بالإنترنت، جرب تاني. لو المشكلة استمرت كلّم الدعم على 01019569018.',
+            error_fallback: 'معرفتش أرد دلوقتي، حاول تسأل بطريقة تانية. لو المشكلة استمرت كلّم الدعم على 01019569018.',
             default: 'افتراضي', dark: 'داكن', silver: 'فضي', green: 'أخضر',
             blue: 'أزرق', pink: 'وردي', purple: 'بنفسجي', orange: 'برتقالي',
             cyan: 'سماوي', red: 'أحمر'
@@ -132,9 +124,9 @@ const AI_MODEL = "openai/gpt-oss-120b";
             copied_toast: 'Message copied',
             deleted_toast: 'Message deleted',
             placeholder: 'Type a message...',
-            error_connection: 'There was a problem reaching the AI, please try again.',
-            error_network: 'There\'s a connection problem, please try again.',
-            error_fallback: "I couldn't answer that, try asking differently.",
+            error_connection: 'There was a problem reaching the AI, please try again. If it keeps happening, contact support at 01019569018.',
+            error_network: 'There\'s a connection problem, please try again. If it keeps happening, contact support at 01019569018.',
+            error_fallback: "I couldn't answer that, try asking differently. If it keeps happening, contact support at 01019569018.",
             default: 'Default', dark: 'Dark', silver: 'Silver', green: 'Green',
             blue: 'Blue', pink: 'Pink', purple: 'Purple', orange: 'Orange',
             cyan: 'Cyan', red: 'Red'
@@ -640,6 +632,23 @@ const AI_MODEL = "openai/gpt-oss-120b";
         textEl.textContent = msg.deleted ? T.deleted_msg_text : msg.content;
         bubble.appendChild(textEl);
 
+        // ===== روابط المصادر (لو الرد ده جه من بحث في الإنترنت) =====
+        if (!msg.deleted && Array.isArray(msg.sources) && msg.sources.length > 0) {
+            const sourcesWrap = document.createElement('div');
+            sourcesWrap.className = 'bubble-sources';
+            msg.sources.forEach((src) => {
+                if (!src || !src.link) return;
+                const link = document.createElement('a');
+                link.className = 'bubble-source-link';
+                link.href = src.link;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.textContent = src.title && src.title.trim() ? src.title : src.link;
+                sourcesWrap.appendChild(link);
+            });
+            if (sourcesWrap.childElementCount > 0) bubble.appendChild(sourcesWrap);
+        }
+
         const meta = document.createElement('div');
         meta.className = 'bubble-meta';
         const timeEl = document.createElement('span');
@@ -976,8 +985,8 @@ const AI_MODEL = "openai/gpt-oss-120b";
 
         try {
             const systemPrompt = isAr
-                ? "إنت ChatZone Ai، مساعد ذكاء اصطناعي جوه تطبيق دردشة اسمه ChatZone. ردودك تكون بالعربي المصري البسيط، ودودة ومختصرة ومفيدة، ومنظمة لما يكون المحتوى يحتاج نقط أو خطوات."
-                : "You are ChatZone Ai, an AI assistant inside a chat app called ChatZone. Reply in simple, friendly, concise, and helpful English, and use bullet points or numbered steps when the content needs structure.";
+                ? "إنت ChatZone Ai، مساعد ذكاء اصطناعي جوه تطبيق دردشة اسمه ChatZone. ردودك لازم تكون بسيطة وخفيفة جدًا، جمل قصيرة، من غير تعقيد أو إطالة، وكأنك بتكلم صاحبك على الماشي. متكتبش فقرات طويلة إلا لو المستخدم طلب تفاصيل أكتر. عندك أداة بحث في الإنترنت (web_search) استخدمها لما السؤال محتاج معلومة حديثة أو مش متأكد منها. لو حصل أي مشكلة أو خطأ ومش قادر تساعد المستخدم صح، قوله يتواصل مع الدعم على الرقم ده: 01019569018."
+                : "You are ChatZone Ai, an AI assistant inside a chat app called ChatZone. Keep replies simple and light — short sentences, no over-complication, like chatting with a friend. Avoid long paragraphs unless the user asks for more detail. You have a web_search tool — use it when a question needs current info or you're unsure. If something goes wrong or you can't help properly, tell the user to contact support at this number: 01019569018.";
 
             const apiMessages = history
                 .filter(m => !m.deleted)
@@ -1007,7 +1016,8 @@ const AI_MODEL = "openai/gpt-oss-120b";
             }
 
             const reply = data.reply || T.error_fallback;
-            const aiMsg = { id: nextMsgId(), role: 'assistant', content: reply, ts: Date.now() };
+            const sources = Array.isArray(data.sources) ? data.sources : [];
+            const aiMsg = { id: nextMsgId(), role: 'assistant', content: reply, ts: Date.now(), sources };
             history.push(aiMsg);
             saveHistory(history);
             appendMessage(aiMsg);
