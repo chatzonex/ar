@@ -1180,11 +1180,12 @@ html[dir="rtl"] .group-photo-picker-badge {
 }
 
 /* ===== Floating/Docked Bottom Nav =====
-   الوضع الافتراضي: بار عادي solid، واصل لآخر الشاشة تمامًا، لاصق
-   في الأرض بدون أي هوامش أو تدوير زوايا كبير.
-   لما "الزجاج السائل" يتفعّل من الإعدادات (lg-bottombar-on)، الشكل
-   بيتحول بالكامل: يرجع عايم فوق الأرض شوية، حواف مدورة تمامًا،
-   وواصل لقبل آخر الشاشة بمسافة بسيطة من الجنبين، مع بلور حقيقي. */
+   الوضع الافتراضي: بار واصل لآخر الشاشة تمامًا، لاصق في الأرض، بس
+   بردو فيه بلور خفيف بيغرشن اللي وراه (مش لون solid جامد بالكامل).
+   لما "الزجاج السائل" يتفعّل من الإعدادات (lg-bottombar-on)، البلور
+   بيزيد بقوة أكبر بكتير وشفافية أعلى — لكن يفضل بنفس العرض الكامل
+   للشاشة (edge-to-edge) زي الوضع العادي بالظبط، من غير ما يصغر أو
+   يبقى عايم بمسافات من الجنبين. */
 .bottom-nav {
     position: fixed;
     bottom: 0;
@@ -1200,32 +1201,27 @@ html[dir="rtl"] .group-photo-picker-badge {
     padding-bottom: max(7px, env(safe-area-inset-bottom));
     height: 62px;
     height: calc(62px + env(safe-area-inset-bottom));
-    background: var(--bg-elevated);
+    background: var(--bg-elevated-translucent, rgba(16, 22, 28, 0.55));
+    backdrop-filter: blur(45px) saturate(1.8) brightness(1.1);
+    -webkit-backdrop-filter: blur(45px) saturate(1.8) brightness(1.1);
     border: none;
     border-top: 1px solid var(--glass-border);
     border-radius: 0;
     box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.25);
     z-index: 100;
     isolation: isolate;
-    transition: background 0.3s ease, border-radius 0.3s ease, box-shadow 0.3s ease,
-        bottom 0.3s ease, left 0.3s ease, right 0.3s ease, max-width 0.3s ease, padding-bottom 0.3s ease;
+    transition: background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* ===== وضع الزجاج السائل (لما المستخدم يفعّله من الإعدادات) ===== */
-body.lg-bottombar-on .bottom-nav {
-    bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px));
-    left: 10px;
-    right: 10px;
-    max-width: 460px;
-    margin: 0 auto;
-    padding-bottom: 7px;
-    height: 62px;
+/* ===== وضع الزجاج السائل (لما المستخدم يفعّله من الإعدادات) =====
+   نفس الموضع والعرض الكامل بالظبط، بس بلور أقوى وأكتر شفافية */
+body.lg-bottombar-on .bottom-nav,
+html.lg-bottombar-on .bottom-nav {
     background: rgba(255, 255, 255, 0.10);
     backdrop-filter: blur(40px) saturate(2) brightness(1.25);
     -webkit-backdrop-filter: blur(40px) saturate(2) brightness(1.25);
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    border-radius: 999px;
-    box-shadow: 0 16px 46px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .bottom-nav::before {
@@ -1240,7 +1236,8 @@ body.lg-bottombar-on .bottom-nav {
     transition: opacity 0.3s ease, background 0.3s ease;
 }
 
-body.lg-bottombar-on .bottom-nav::before {
+body.lg-bottombar-on .bottom-nav::before,
+html.lg-bottombar-on .bottom-nav::before {
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 50%);
     opacity: 1;
 }
