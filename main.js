@@ -36,6 +36,7 @@ import {
     const cancelNewChat = document.getElementById('cancelNewChat');
     const startNewChat = document.getElementById('startNewChat');
     const chatsListEl = document.getElementById('chatsList');
+    const chatSearch = document.getElementById('chatSearch');
 
     // ===== اختيار "تحدث مع اكونت قديم" / "شخص جديد" =====
     const addChoiceOverlay = document.getElementById('addChoiceOverlay');
@@ -356,9 +357,23 @@ import {
     async function renderChatsList() {
         // الشات اللي اتحذف "من عندي" بيتخفي من القائمة، إلا لو وصلت
         // رسالة جديدة بعد وقت الحذف (يعني لسه في محادثة فعلية شغالة).
-        const entries = Array.from(chatsState.entries())
+        let entries = Array.from(chatsState.entries())
             .filter(([, entry]) => !entry.deletedAt || (entry.lastAt || 0) > entry.deletedAt)
             .map(([chatId, entry]) => ({ chatId, ...entry }));
+
+        // فلترة بحسب نص البحث (بالاسم المعروض)، لو المستخدم كاتب حاجة
+        const searchText = (chatSearch && chatSearch.value.trim().toLowerCase()) || '';
+        if (searchText) {
+            const withNames = await Promise.all(entries.map(async (entry) => {
+                const profile = await getUserProfile(entry.otherEmail);
+                entry.realName = profile.name;
+                return entry;
+            }));
+            entries = withNames.filter((entry) => {
+                const name = (displayNameForChat(entry) || entry.realName || '').toLowerCase();
+                return name.includes(searchText);
+            });
+        }
 
         if (!entries.length) {
             renderEmptyChatsState();
@@ -946,7 +961,11 @@ import {
 
     initChatsList();
 
-    window.addEventListener('unload', () => {
+    if (chatSearch) {
+        chatSearch.addEventListener('input', () => renderChatsList());
+    }
+
+    window.addEventListener('pagehide', () => {
         messageUnsubscribers.forEach(unsub => unsub());
         unreadUnsubscribers.forEach(unsub => unsub());
         typingUnsubscribers.forEach(unsub => unsub());
