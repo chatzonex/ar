@@ -629,6 +629,15 @@ function initEvents() {
 
 // ===== Init =====
 async function init() {
+  // نشغّل زرار الإيموجي فورًا قبل أي حاجة تانية، عشان يظهر
+  // دايمًا حتى لو حصل أي خطأ في الاتصال بفايرستور أو أي كود
+  // تاني جوه init (زي مشاكل الصلاحيات).
+  try {
+    initEmojiFeature();
+  } catch (e) {
+    console.error('emoji feature init error', e);
+  }
+
   if (!myEmail) {
     location.replace('index.html');
     return;
@@ -638,14 +647,17 @@ async function init() {
     return;
   }
   
-  await ensureAuthenticated();
-  applyBubbleColors();
-  applyChatFont();
-  applyChatBg();
-  await loadOtherUser();
-  listenToMessages();
-  initEvents();
-  initEmojiFeature();
+  try {
+    await ensureAuthenticated();
+    applyBubbleColors();
+    applyChatFont();
+    applyChatBg();
+    await loadOtherUser();
+    listenToMessages();
+    initEvents();
+  } catch (e) {
+    console.error('init error', e);
+  }
   
   // Show about toast once
   setTimeout(() => {

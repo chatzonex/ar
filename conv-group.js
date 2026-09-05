@@ -613,6 +613,14 @@ function initEvents() {
 }
 
 async function init() {
+  // نشغّل زرار الإيموجي فورًا قبل أي حاجة تانية، عشان يظهر
+  // دايمًا حتى لو حصل أي خطأ في الاتصال بفايرستور.
+  try {
+    initEmojiFeature();
+  } catch (e) {
+    console.error('emoji feature init error', e);
+  }
+
   if (!myEmail) {
     location.replace('index.html');
     return;
@@ -622,13 +630,16 @@ async function init() {
     return;
   }
   
-  await ensureAuthenticated();
-  applyBubbleColors();
-  applyChatFont();
-  await loadGroupInfo();
-  listenToMessages();
-  initEvents();
-  initEmojiFeature();
+  try {
+    await ensureAuthenticated();
+    applyBubbleColors();
+    applyChatFont();
+    await loadGroupInfo();
+    listenToMessages();
+    initEvents();
+  } catch (e) {
+    console.error('init error', e);
+  }
 }
 
 init();
