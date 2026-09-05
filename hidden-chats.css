@@ -299,7 +299,7 @@
 }
 
 .hc-keypad.hidden {
-    display: none !important;
+    display: none;
 }
 
 /* ===== Pattern (النقش) ===== */
