@@ -253,13 +253,57 @@
         observer.observe(container, { childList: true, subtree: true });
     }
 
-    /* ============ نقطة الدخول ============ */
-    function init() {
-        var btn = injectEmojiButton();
-        if (btn) {
-            loadManifest(); // نحمل الـ manifest بدري عشان يبقى جاهز
+    /* ============ نقطة الدخول ============
+       المشكلة اللي كانت موجودة: conversation.js بيبني عناصر
+       الشات (convInputBar / convTextarea / convMessages) بشكل
+       ديناميكي بعد ما يجيب بيانات الشات من فايرستور — يعني وقت
+       ما الصفحة بتحمّل لأول مرة، العناصر دي لسه مش موجودة.
+       الحل: نستنى ونحاول كل شوية لحد ما العناصر تظهر فعلاً،
+       بدل محاولة واحدة بس وقت تحميل الصفحة. ============ */
+
+    var readyState = { btnDone: false, watchDone: false };
+
+    function tryInit() {
+        if (!readyState.btnDone) {
+            var btn = injectEmojiButton();
+            if (btn) {
+                readyState.btnDone = true;
+                loadManifest();
+            }
         }
-        watchMessagesContainer();
+        if (!readyState.watchDone) {
+            var container = $('convMessages');
+            if (container) {
+                watchMessagesContainer();
+                readyState.watchDone = true;
+            }
+        }
+        return readyState.btnDone && readyState.watchDone;
+    }
+
+    function init() {
+        // محاولة فورية
+        if (tryInit()) return;
+
+        // لو العناصر لسه مبنيتش، نراقب الصفحة كلها لحد ما تتبنى
+        var bodyObserver = new MutationObserver(function () {
+            if (tryInit()) {
+                bodyObserver.disconnect();
+            }
+        });
+        bodyObserver.observe(document.body, { childList: true, subtree: true });
+
+        // أمان إضافي: محاولة كل نص ثانية لمدة 20 ثانية، تحسبًا
+        // لأي حالة ماوتيشن أوبزيرفر مش بتلقطها (مثلاً لو العناصر
+        // اتبنت جوه Shadow DOM أو استبدال كامل للصفحة)
+        var attempts = 0;
+        var pollInterval = setInterval(function () {
+            attempts++;
+            if (tryInit() || attempts > 40) {
+                clearInterval(pollInterval);
+                bodyObserver.disconnect();
+            }
+        }, 500);
     }
 
     if (document.readyState === 'loading') {
