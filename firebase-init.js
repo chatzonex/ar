@@ -1,14 +1,10 @@
 /**
- * ChatZone - firebase-init.js (Clean Rebuilt)
- * نسخة نضيفة 100% بدون تشفير - تصلح مشكلة _0xff0a65 is not a function
+ * ChatZone - firebase-init.js (Clean)
  */
-
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
 import { getAnalytics } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js';
 import {
-  initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager,
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
   doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, deleteField,
   arrayUnion, arrayRemove, collection, query, where, orderBy, limit,
   onSnapshot, serverTimestamp, enableNetwork, disableNetwork, writeBatch
@@ -29,56 +25,32 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-
-try {
-  getAnalytics(app);
-} catch (e) {
-  console.warn('Analytics غير متاح في البيئة الحالية:', e);
-}
-
+try { getAnalytics(app); } catch(e) {}
 let db;
 try {
-  db = initializeFirestore(app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager()
-    })
-  });
-} catch (e) {
-  console.warn("تعذّر تفعيل التخزين المحلي (IndexedDB)، هنكمل أونلاين بس:", e);
+  db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+} catch(e) {
   db = initializeFirestore(app, {});
 }
-
 const auth = getAuth(app);
 
 function waitForAuthUser() {
   return new Promise((resolve) => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        unsubscribe();
-        resolve(user);
-      }
-    });
+    const unsub = onAuthStateChanged(auth, (u) => { unsub(); resolve(u); });
   });
 }
 
 async function ensureAuthenticated() {
   try {
-    const existingUser = await new Promise((resolve) => {
-      const unsub = onAuthStateChanged(auth, (u) => {
-        unsub();
-        resolve(u);
-      });
+    const existing = await new Promise((resolve) => {
+      const unsub = onAuthStateChanged(auth, (u) => { unsub(); resolve(u); });
     });
-    if (existingUser) return existingUser;
+    if (existing) return existing;
   } catch(e) {}
-  
   try {
     const cred = await signInAnonymously(auth);
     return cred.user;
-  } catch (e) {
-    console.warn('فشل تسجيل الدخول المجهول:', e);
-    return null;
-  }
+  } catch(e) { return null; }
 }
 
 async function signInAdmin(email, password) {

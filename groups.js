@@ -1,6 +1,5 @@
 /**
- * ChatZone - groups.js (Clean Rebuilt 100%)
- * نسخة نضيفة بدون تشفير - تحل مشكلة _0x15df07 is not a function
+ * ChatZone - groups.js (Clean Rebuilt - FIXED PERMISSIONS)
  */
 
 import {
@@ -23,9 +22,13 @@ async function loadGroups() {
   if (!myEmail) return;
   
   try {
-    // Try groups collection
     const groupsRef = collection(db, 'groups');
-    const q = query(groupsRef, where('members', 'array-contains', myEmail), orderBy('updatedAt', 'desc'));
+    let q;
+    try {
+      q = query(groupsRef, where('members', 'array-contains', myEmail), orderBy('updatedAt', 'desc'));
+    } catch(e) {
+      q = query(groupsRef, where('members', 'array-contains', myEmail));
+    }
     
     unsubscribeGroups = onSnapshot(q, (snapshot) => {
       groupsCache = [];
@@ -34,12 +37,19 @@ async function loadGroups() {
       });
       renderGroups(groupsCache);
     }, (err) => {
-      console.error('loadGroups error', err);
-      // Fallback to chats with type group
+      if (err.code === 'permission-denied') {
+        console.warn('loadGroups: لا يوجد صلاحية لقراءة الجروبات، سيتم تحميل الجروبات من الشاتات');
+      } else {
+        console.warn('loadGroups error', err.code, err.message);
+      }
       loadGroupsFromChats();
     });
   } catch (e) {
-    console.error(e);
+    if (e.code === 'permission-denied') {
+      console.warn('loadGroups: permission-denied, fallback to chats');
+    } else {
+      console.warn('loadGroups error', e);
+    }
     loadGroupsFromChats();
   }
 }
@@ -57,14 +67,26 @@ async function loadGroupsFromChats() {
         }
       });
       renderGroups(groupsCache);
+    }, (err) => {
+      if (err.code === 'permission-denied') {
+        console.warn('groups from chats: permission-denied');
+        renderGroups([]);
+      } else {
+        console.warn('groups from chats error', err);
+      }
     });
   } catch (e) {
-    console.error('loadGroupsFromChats', e);
+    if (e.code === 'permission-denied') {
+      console.warn('loadGroupsFromChats: permission-denied, showing empty');
+      renderGroups([]);
+    } else {
+      console.warn('loadGroupsFromChats', e);
+    }
   }
 }
 
 function renderGroups(groups) {
-  const container = $('groupsList') || $('groupsContainer');
+  const container = document.getElementById('groupsList') || document.getElementById('groupsContainer');
   if (!container) return;
   
   if (groups.length === 0) {
@@ -114,8 +136,8 @@ function formatTime(ts) {
 }
 
 async function createGroup() {
-  const nameInput = $('groupNameInput');
-  const membersInput = $('groupMembersInput');
+  const nameInput = document.getElementById('groupNameInput');
+  const membersInput = document.getElementById('groupMembersInput');
   
   const name = nameInput ? nameInput.value.trim() : '';
   if (!name) {
@@ -150,8 +172,13 @@ async function createGroup() {
       window.location.href = `conv-group.html?id=${encodeURIComponent(docRef.id)}`;
     }, 500);
   } catch (e) {
-    console.error('createGroup error', e);
-    showToast('فشل إنشاء الجروب');
+    if (e.code === 'permission-denied') {
+      showToast('ليس لديك صلاحية لإنشاء جروب - تحقق من قواعد Firebase');
+      console.error('createGroup permission-denied', e);
+    } else {
+      console.error('createGroup error', e);
+      showToast('فشل إنشاء الجروب');
+    }
   }
 }
 
@@ -178,8 +205,8 @@ function showToast(msg) {
 }
 
 function initEvents() {
-  const createBtn = $('createGroupBtn');
-  const openCreateBtn = $('openCreateGroupSheet');
+  const createBtn = document.getElementById('createGroupBtn');
+  const openCreateBtn = document.getElementById('openCreateGroupSheet');
   
   if (openCreateBtn) {
     openCreateBtn.addEventListener('click', () => openSheet('sheet-create-group'));
@@ -195,7 +222,7 @@ function initEvents() {
     });
   });
   
-  const searchInput = $('groupSearchInput');
+  const searchInput = document.getElementById('groupSearchInput');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase();

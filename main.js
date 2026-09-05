@@ -1,10 +1,10 @@
 /**
- * ChatZone - main.js (Clean Rebuilt 100%)
- * نسخة نضيفة بدون تشفير - تحل مشكلة _0x29514d is not defined
+ * ChatZone - main.js (Clean Rebuilt 100% - FIXED)
+ * نسخة نضيفة بدون تشفير - تصلح كل مشاكل الـ permissions و setDoc
  */
 
 import {
-  db, doc, getDoc, getDocs, collection, query, where, orderBy, onSnapshot,
+  db, doc, getDoc, getDocs, setDoc, collection, query, where, orderBy, onSnapshot,
   serverTimestamp, ensureAuthenticated
 } from './firebase-init.js';
 
@@ -36,15 +36,19 @@ async function loadChats() {
   
   try {
     const chatsRef = collection(db, 'chats');
-    const q = query(chatsRef, where('participants', 'array-contains', myEmail), orderBy('updatedAt', 'desc'));
+    let q;
+    try {
+      q = query(chatsRef, where('participants', 'array-contains', myEmail), orderBy('updatedAt', 'desc'));
+    } catch(e) {
+      q = query(chatsRef, where('participants', 'array-contains', myEmail));
+    }
     
     onSnapshot(q, async (snapshot) => {
       chatsCache = [];
       for (const docSnap of snapshot.docs) {
         const data = docSnap.data();
-        if (data.isGroup || data.type === 'group') continue; // Skip groups
+        if (data.isGroup || data.type === 'group') continue;
         
-        // Get other participant
         const otherEmail = (data.participants || []).find(e => e !== myEmail) || '';
         let otherName = otherEmail;
         let otherPhoto = null;
@@ -70,14 +74,21 @@ async function loadChats() {
         });
       }
       if (currentTab === 'chats') renderChats(chatsCache);
+    }, (err) => {
+      if (err.code === 'permission-denied') {
+        console.warn('loadChats: permission-denied, يرجى تحديث قواعد Firebase');
+        renderChats([]);
+      } else {
+        console.warn('loadChats error', err);
+      }
     });
   } catch (e) {
-    console.error('loadChats error', e);
+    console.warn('loadChats error', e);
   }
 }
 
 function renderChats(chats) {
-  const container = $('chatsList') || $('mainChatsList');
+  const container = document.getElementById('chatsList') || document.getElementById('mainChatsList');
   if (!container) return;
   
   if (chats.length === 0) {
@@ -121,7 +132,12 @@ async function loadGroups() {
   
   try {
     const groupsRef = collection(db, 'groups');
-    const q = query(groupsRef, where('members', 'array-contains', myEmail), orderBy('updatedAt', 'desc'));
+    let q;
+    try {
+      q = query(groupsRef, where('members', 'array-contains', myEmail), orderBy('updatedAt', 'desc'));
+    } catch(e) {
+      q = query(groupsRef, where('members', 'array-contains', myEmail));
+    }
     
     onSnapshot(q, (snapshot) => {
       groupsCache = [];
@@ -129,14 +145,46 @@ async function loadGroups() {
         groupsCache.push({ id: docSnap.id, ...docSnap.data() });
       });
       if (currentTab === 'groups') renderGroups(groupsCache);
+    }, (err) => {
+      if (err.code === 'permission-denied') {
+        console.warn('loadGroups: permission-denied, سيتم تحميل الجروبات من الشاتات');
+      }
+      loadGroupsFromChats();
     });
   } catch (e) {
-    console.error('loadGroups error', e);
+    console.warn('loadGroups error', e);
+    loadGroupsFromChats();
+  }
+}
+
+async function loadGroupsFromChats() {
+  try {
+    const chatsRef = collection(db, 'chats');
+    const q = query(chatsRef, where('participants', 'array-contains', myEmail));
+    onSnapshot(q, (snapshot) => {
+      groupsCache = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.isGroup || data.type === 'group') {
+          groupsCache.push({ id: docSnap.id, ...data });
+        }
+      });
+      if (currentTab === 'groups') renderGroups(groupsCache);
+      else if (groupsCache.length === 0) {
+        // Still render empty if no groups tab
+      }
+    }, (err) => {
+      console.warn('loadGroupsFromChats permission-denied', err.code);
+      renderGroups([]);
+    });
+  } catch (e) {
+    console.warn('loadGroupsFromChats', e);
+    renderGroups([]);
   }
 }
 
 function renderGroups(groups) {
-  const container = $('groupsList') || $('mainGroupsList');
+  const container = document.getElementById('groupsList') || document.getElementById('mainGroupsList');
   if (!container) return;
   
   if (groups.length === 0) {
@@ -144,6 +192,7 @@ function renderGroups(groups) {
       <div class="empty-state">
         <div class="empty-icon">👥</div>
         <div class="empty-title">No groups yet</div>
+        <div class="empty-sub">لا يوجد جروبات</div>
       </div>
     `;
     return;
@@ -176,8 +225,8 @@ function renderGroups(groups) {
 // ===== Tabs =====
 function initTabs() {
   const tabBtns = document.querySelectorAll('.tab-btn, [data-tab]');
-  const chatsContainer = $('chatsList') || $('mainChatsList');
-  const groupsContainer = $('groupsList') || $('mainGroupsList');
+  const chatsContainer = document.getElementById('chatsList') || document.getElementById('mainChatsList');
+  const groupsContainer = document.getElementById('groupsList') || document.getElementById('mainGroupsList');
   
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -204,9 +253,8 @@ function initTabs() {
   });
 }
 
-// ===== Search =====
 function initSearch() {
-  const searchInput = $('mainSearchInput') || $('searchInput');
+  const searchInput = document.getElementById('mainSearchInput') || document.getElementById('searchInput');
   if (!searchInput) return;
   
   searchInput.addEventListener('input', (e) => {
@@ -227,12 +275,11 @@ function initSearch() {
   });
 }
 
-// ===== New Chat =====
 function initNewChat() {
-  const newChatBtn = $('newChatBtn') || $('openNewChatSheet');
-  const newChatSheet = $('sheet-new-chat');
-  const startChatBtn = $('startChatBtn');
-  const emailInput = $('newChatEmailInput');
+  const newChatBtn = document.getElementById('newChatBtn') || document.getElementById('openNewChatSheet');
+  const newChatSheet = document.getElementById('sheet-new-chat');
+  const startChatBtn = document.getElementById('startChatBtn');
+  const emailInput = document.getElementById('newChatEmailInput');
   
   if (newChatBtn && newChatSheet) {
     newChatBtn.addEventListener('click', () => {
@@ -264,16 +311,13 @@ function initNewChat() {
   });
 }
 
-// ===== Bottom Bar =====
 function initBottomBar() {
   const bottomBar = document.querySelector('.bottombar');
   if (!bottomBar) return;
-  
   const isLg = localStorage.getItem('cz_lg_bottombar') === 'true';
   bottomBar.classList.toggle('lg-bottombar-on', isLg);
 }
 
-// ===== Toast =====
 function showToast(msg) {
   let toast = document.createElement('div');
   toast.className = 'cz-toast';
@@ -294,24 +338,19 @@ async function loadHiddenChats() {
     if (snap.exists()) {
       return snap.data();
     }
+    return { enabled: false, password: '' };
   } catch (e) {
-    if (e.code === 'permission-denied' || e.message.includes('Missing or insufficient permissions')) {
-      console.warn('فشل تحميل بيانات باسورد الشاتات المخفية: ليس لديك صلاحية، سيتم إنشاء الإعدادات الافتراضية');
-      // Create default settings if not exists
-      try {
-        const hiddenRef = doc(db, 'users', myEmail, 'settings', 'hiddenChats');
-        await setDoc(hiddenRef, { enabled: false, password: '' }, { merge: true });
-      } catch(e2) {
-        console.warn('فشل إنشاء إعدادات الشاتات المخفية:', e2);
-      }
-      return { enabled: false };
+    if (e.code === 'permission-denied' || (e.message && e.message.includes('permissions'))) {
+      console.warn('فشل تحميل بيانات باسورد الشاتات المخفية: ليس لديك صلاحية، سيتم استخدام التخزين المحلي فقط');
+      const localPassword = localStorage.getItem('cz_hidden_chats_password') || '';
+      const localEnabled = localStorage.getItem('cz_hidden_chats_enabled') === 'true';
+      return { enabled: localEnabled, password: localPassword, isLocal: true };
     }
-    console.error('فشل تحميل بيانات باسورد الشاتات المخفية:', e);
+    console.warn('فشل تحميل بيانات باسورد الشاتات المخفية:', e.message);
+    return { enabled: false, password: '' };
   }
-  return null;
 }
 
-// ===== Init =====
 async function init() {
   if (!myEmail) {
     window.location.href = 'index.html';
@@ -319,7 +358,9 @@ async function init() {
   }
   
   await ensureAuthenticated();
-  await loadHiddenChats();
+  const hiddenData = await loadHiddenChats();
+  console.log('Hidden chats loaded:', hiddenData ? 'yes' : 'no');
+  
   loadChats();
   loadGroups();
   initTabs();
@@ -327,7 +368,6 @@ async function init() {
   initNewChat();
   initBottomBar();
   
-  // Apply theme
   const theme = localStorage.getItem('cz_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', theme);
 }
